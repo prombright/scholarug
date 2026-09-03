@@ -1,0 +1,15 @@
+AddHandler application/x-httpd-lsphp83 .php
+
+# Scholar gets its own session cookie name so it never shares a PHP
+# session with iClinic, Bulk SMS, MediCare, or devportal -- all of which
+# run under the same host/domain. Without this, every app's session_start()
+# uses the same default "PHPSESSID" cookie/path, and several apps happen
+# to write into identically-named $_SESSION keys (user_id, role, school_id)
+# with overlapping role vocabularies (e.g. 'developer', 'school_admin',
+# 'nurse', 'teacher') -- so logging into one app could get treated as a
+# valid login in another, with no password ever checked there. Found in
+# the 2026-08-04 security audit. This must take effect before ANY
+# session_start() call, so it's set here at the web-server level rather
+# than in PHP, since dozens of files call session_start() as their very
+# first statement, before any shared include runs.
+php_value session.name "SCHOLARSESSID"

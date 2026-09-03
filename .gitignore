@@ -1,0 +1,11 @@
+# Environment-specific overrides (contain real credentials on prod) -- never commit
+**/config.local.php
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+*.log
+
+# Dependency directories, if ever introduced
+/vendor/
+/node_modules/

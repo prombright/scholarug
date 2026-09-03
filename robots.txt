@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /scholar/
+Disallow: /mail/
+Disallow: /payments/
+Disallow: /devportal.php
+
+Sitemap: https://scholarug.com/sitemap.xml

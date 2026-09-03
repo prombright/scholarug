@@ -1,0 +1,12 @@
+# Blocks direct HTTP access to every migration .sql file in this folder --
+# they're only ever meant to be run via `mysql ... < file.sql` on the
+# server itself, never fetched over HTTP. Without this, anyone who guesses
+# a filename (e.g. hr_role_migration.sql) can download it and read the
+# full table/column schema. Same pattern as uploads/ilearning_private/.htaccess.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
