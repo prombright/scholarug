@@ -13,14 +13,13 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
+require_once __DIR__ . '/_history_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
 $school_id = current_school_id();
 
-$campaigns_stmt = $pdo->prepare("SELECT * FROM sms_campaigns WHERE school_id = ? ORDER BY created_at DESC LIMIT 50");
-$campaigns_stmt->execute([$school_id]);
-$campaigns = $campaigns_stmt->fetchAll(PDO::FETCH_ASSOC);
+$campaigns = hr_sms_history_campaigns($pdo, $school_id);
 
 $open_campaign_id = isset($_GET['campaign_id']) ? (int) $_GET['campaign_id'] : null;
 $open_campaign = null;
@@ -33,9 +32,7 @@ if ($open_campaign_id !== null) {
         }
     }
     if ($open_campaign !== null) {
-        $r_stmt = $pdo->prepare("SELECT phone, channel, full_name, delivery_status FROM sms_campaign_recipients WHERE campaign_id = ? ORDER BY id");
-        $r_stmt->execute([$open_campaign_id]);
-        $recipients = $r_stmt->fetchAll(PDO::FETCH_ASSOC);
+        $recipients = hr_sms_history_recipients($pdo, $open_campaign_id);
     }
 }
 

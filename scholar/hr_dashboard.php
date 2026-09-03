@@ -3,49 +3,25 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/_hr_dashboard_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
+// Superseded by the Vue HR SPA (app_hr.php) -- kept only so old
+// bookmarks/links to this URL still land somewhere useful.
+header("Location: " . SCHOLAR_BASE . "/app_hr.php");
+exit;
+
 $school_id = current_school_id();
 
-$staff_count = $pdo->prepare("SELECT COUNT(*) FROM staff WHERE school_id = ? AND status = 'active'");
-$staff_count->execute([$school_id]);
-$staff_count = (int) $staff_count->fetchColumn();
-
-// sms_wallets may not exist yet on a fresh install that hasn't applied
-// _setup/sms_module_migration.sql -- same defensive pattern as $pending_leave.
-try {
-    require_once __DIR__ . '/lib/ScholarSmsWallet.php';
-    $sms_balance = ScholarSmsWallet::balance($pdo, $school_id);
-} catch (Throwable $e) {
-    $sms_balance = 0.0;
-}
-
-// leave_requests may not exist yet on a fresh install that hasn't applied
-// _setup/leave_management_migration.sql -- same defensive pattern used
-// elsewhere in this app (e.g. developer_dashboard.php's $total_teachers).
-try {
-    $pending_leave = $pdo->prepare("SELECT COUNT(*) FROM leave_requests WHERE school_id = ? AND status = 'pending'");
-    $pending_leave->execute([$school_id]);
-    $pending_leave = (int) $pending_leave->fetchColumn();
-} catch (Throwable $e) {
-    $pending_leave = 0;
-}
-
-// Real Teaching vs Non-Teaching split for the donut chart.
-$staff_category_stmt = $pdo->prepare("SELECT staff_category, COUNT(*) AS cnt FROM staff WHERE school_id = ? AND status = 'active' GROUP BY staff_category");
-$staff_category_stmt->execute([$school_id]);
-$teaching_count = 0;
-$non_teaching_count = 0;
-foreach ($staff_category_stmt->fetchAll() as $row) {
-    if ($row['staff_category'] === 'Teaching') {
-        $teaching_count = (int) $row['cnt'];
-    } elseif ($row['staff_category'] === 'Non-Teaching') {
-        $non_teaching_count = (int) $row['cnt'];
-    }
-}
-$staff_category_total = $teaching_count + $non_teaching_count;
-$teaching_pct = $staff_category_total > 0 ? round($teaching_count / $staff_category_total * 100) : 0;
+$stats = hr_dashboard_stats($pdo, $school_id);
+$staff_count = $stats['staff_count'];
+$sms_balance = $stats['sms_balance'];
+$pending_leave = $stats['pending_leave'];
+$teaching_count = $stats['teaching_count'];
+$non_teaching_count = $stats['non_teaching_count'];
+$staff_category_total = $stats['staff_category_total'];
+$teaching_pct = $stats['teaching_pct'];
 
 $__school_brand = $pdo->prepare("SELECT school_name, school_badge FROM schools WHERE id = ?");
 $__school_brand->execute([$school_id]);

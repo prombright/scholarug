@@ -17,8 +17,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../lib/ScholarSmsWallet.php';
 require_once __DIR__ . '/../../lib/ScholarSmsPricing.php';
-require_once __DIR__ . '/../../lib/ScholarSmsContacts.php';
-require_once __DIR__ . '/../../lib/ScholarCampaignSender.php';
+require_once __DIR__ . '/_send_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
@@ -31,73 +30,20 @@ $error = '';
 $preview = null;
 $sent_result = null;
 
-$groups_stmt = $pdo->prepare("SELECT * FROM sms_contact_groups WHERE school_id = ? ORDER BY name");
-$groups_stmt->execute([$school_id]);
-$groups = $groups_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Resolves the posted group selection (a real group id, or the sentinel
-// "whole_school" for the always-available option with no stored row) into
-// the group array ScholarSmsContacts::resolveGroup() expects.
-function scholar_sms_resolve_selection(PDO $pdo, int $schoolId, string $selection, array $groups): ?array
-{
-    if ($selection === 'whole_school') {
-        return ['id' => 0, 'group_type' => 'whole_school', 'class_id' => null];
-    }
-    $groupId = (int) $selection;
-    foreach ($groups as $g) {
-        if ((int) $g['id'] === $groupId) {
-            return $g;
-        }
-    }
-    return null;
-}
+$groups = hr_sms_send_groups($pdo, $school_id);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'preview') {
-    $selection = (string) ($_POST['group_selection'] ?? '');
-    $message = trim($_POST['message'] ?? '');
-    $group = scholar_sms_resolve_selection($pdo, $school_id, $selection, $groups);
-
-    if ($group === null) {
-        $error = 'Choose who to send to.';
-    } elseif ($message === '') {
-        $error = 'Write a message.';
-    } else {
-        $recipients = ScholarSmsContacts::resolveGroup($pdo, $school_id, $group);
-        $info = ScholarSmsPricing::segmentInfo($message);
-        $cost = ScholarSmsPricing::totalCost($pdo, max(1, $info['segments']), count($recipients));
-
-        $preview = [
-            'group_selection' => $selection,
-            'group_label' => $group['group_type'] === 'whole_school' ? 'Whole School' : $group['name'],
-            'message' => $message,
-            'recipient_count' => count($recipients),
-            'segments' => max(1, $info['segments']),
-            'cost' => $cost,
-            'can_afford' => $balance >= $cost,
-        ];
-
-        if (count($recipients) === 0) {
-            $error = 'No reachable phone numbers for that selection yet.';
-            $preview = null;
-        }
-    }
+    $result = hr_sms_send_preview($pdo, $school_id, $balance, (string) ($_POST['group_selection'] ?? ''), trim($_POST['message'] ?? ''), $groups);
+    if ($result['ok']) { $preview = $result['preview']; } else { $error = $result['message']; }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'confirm_send') {
-    $selection = (string) ($_POST['group_selection'] ?? '');
-    $message = trim($_POST['message'] ?? '');
-    $group = scholar_sms_resolve_selection($pdo, $school_id, $selection, $groups);
-
-    if ($group === null || $message === '') {
-        $error = 'Something about that send was invalid -- please try again.';
+    $result = hr_sms_send_confirm($pdo, $school_id, $user_id, (string) ($_POST['group_selection'] ?? ''), trim($_POST['message'] ?? ''), $groups);
+    if ($result['ok']) {
+        $sent_result = $result['result'];
+        $balance = ScholarSmsWallet::balance($pdo, $school_id);
     } else {
-        $recipients = ScholarSmsContacts::resolveGroup($pdo, $school_id, $group);
-        try {
-            $sent_result = ScholarCampaignSender::send($pdo, $school_id, $user_id, $message, $recipients);
-            $balance = ScholarSmsWallet::balance($pdo, $school_id);
-        } catch (RuntimeException $e) {
-            $error = $e->getMessage();
-        }
+        $error = $result['message'];
     }
 }
 

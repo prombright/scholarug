@@ -4,36 +4,24 @@ import { useRoute } from 'vue-router'
 
 const SB = window.__SCHOLAR_BASE__ || '/ScholarUg/scholar/'
 
-// `route:` items are migrated pages inside this SPA (router-link, no
-// reload); `href:` items still go to the classic PHP app. Mirrors
-// _admin_shell.php's $nav_items grouping exactly.
+// `route:` items are migrated pages inside this SPA; `href:` items still
+// go to the classic PHP app -- Staff stays classic since its add/edit
+// form bundles a photo upload with a dozen other fields (same reasoning
+// as school_admin/edit_student.php staying classic).
 const NAV_GROUPS = [
-  { key: 'home', label: 'Home', icon: 'bi-grid-1x2', route: '/' },
-  { key: 'hr', label: 'Human Resources', icon: 'bi-briefcase', href: SB + 'app_hr.php' },
+  { key: 'dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', route: '/' },
+  { key: 'staff', label: 'Staff', icon: 'bi-people', href: SB + 'staff_manager.php' },
+  { key: 'leave', label: 'Leave Management', icon: 'bi-calendar2-week', route: '/leave' },
+  { key: 'payroll', label: 'Payroll', icon: 'bi-cash-stack', route: '/payroll' },
   {
-    key: 'academics', label: 'Academics', icon: 'bi-mortarboard', children: [
-      { key: 'students', label: 'Students', icon: 'bi-people', route: '/students' },
-      { key: 'subjects', label: 'Subjects', icon: 'bi-journal-bookmark', route: '/subjects' },
-      { key: 'assessments', label: 'Assessments', icon: 'bi-clipboard-data', route: '/assessments' },
-      { key: 'report_cards', label: 'Report Cards', icon: 'bi-file-earmark-text', route: '/grading' },
-      { key: 'classes', label: 'Classes', icon: 'bi-diagram-3', route: '/classes' },
-      { key: 'teacher_submissions', label: 'Teacher Submissions', icon: 'bi-clipboard-check', route: '/teacher-submissions' },
-      { key: 'assignments', label: 'Assignments', icon: 'bi-person-check', route: '/assignments' },
-      { key: 'attendance', label: 'Attendance', icon: 'bi-calendar-check', route: '/attendance' },
-      { key: 'library', label: 'Library', icon: 'bi-book', route: '/library' },
-      { key: 'timetable', label: 'Timetable', icon: 'bi-calendar3', route: '/timetable' }
+    key: 'sms', label: 'Bulk SMS', icon: 'bi-chat-square-text', children: [
+      { key: 'sms_wallet', label: 'Wallet', icon: 'bi-wallet2', route: '/sms/wallet' },
+      { key: 'sms_contacts', label: 'Contacts', icon: 'bi-person-lines-fill', route: '/sms/contacts' },
+      { key: 'sms_send', label: 'Send', icon: 'bi-send', route: '/sms/send' },
+      { key: 'sms_history', label: 'History', icon: 'bi-clock-history', route: '/sms/history' },
+      { key: 'sms_whatsapp', label: 'WhatsApp', icon: 'bi-whatsapp', route: '/sms/whatsapp' }
     ]
-  },
-  {
-    key: 'students_family', label: 'Students & Family', icon: 'bi-people-fill', children: [
-      { key: 'parents', label: 'Parent Accounts', icon: 'bi-person-hearts', route: '/parents' },
-      { key: 'elections', label: 'Student Elections', icon: 'bi-check2-square', route: '/elections' }
-    ]
-  },
-  { key: 'projects', label: 'Projects', icon: 'bi-kanban', route: '/projects' },
-  { key: 'finance', label: 'Finance', icon: 'bi-cash-coin', children: [{ key: 'fees', label: 'Fees', icon: 'bi-cash-coin', route: '/fees' }] },
-  { key: 'settings', label: 'School Settings', icon: 'bi-gear', route: '/settings' },
-  { key: 'contact_dev', label: 'Contact Developer', icon: 'bi-headset', route: '/contact-developer' }
+  }
 ]
 const logoutHref = SB + 'logout.php'
 
@@ -60,7 +48,7 @@ function groupActive(group) {
         <div v-else class="badge-fallback">{{ (brand.school_name || 'S').charAt(0).toUpperCase() }}</div>
         <div class="text">
           <div class="name">{{ brand.school_name || 'Scholar' }}</div>
-          <div class="tag">Admin Panel</div>
+          <div class="tag">HR Portal</div>
         </div>
       </div>
       <nav class="sidebar-nav">

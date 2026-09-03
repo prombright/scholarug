@@ -18,6 +18,7 @@ require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../lib/XlsxReader.php';
 require_once __DIR__ . '/../../lib/ScholarPhone.php';
 require_once __DIR__ . '/../../lib/ScholarSmsContacts.php';
+require_once __DIR__ . '/_contacts_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
@@ -27,26 +28,8 @@ $error = '';
 
 // ---- Add a class as a live group ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_class_group'])) {
-    $class_id = (int) ($_POST['class_id'] ?? 0);
-
-    $class_stmt = $pdo->prepare("SELECT class_name, stream_name FROM classes WHERE id = ? AND school_id = ?");
-    $class_stmt->execute([$class_id, $school_id]);
-    $class_row = $class_stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$class_row) {
-        $error = 'Invalid class selected.';
-    } else {
-        $dup = $pdo->prepare("SELECT id FROM sms_contact_groups WHERE school_id = ? AND group_type = 'class' AND class_id = ?");
-        $dup->execute([$school_id, $class_id]);
-        if ($dup->fetchColumn()) {
-            $error = 'That class is already a group.';
-        } else {
-            $name = $class_row['class_name'] . ($class_row['stream_name'] ? ' - ' . $class_row['stream_name'] : '');
-            $pdo->prepare("INSERT INTO sms_contact_groups (school_id, name, group_type, class_id) VALUES (?, ?, 'class', ?)")
-                ->execute([$school_id, $name, $class_id]);
-            $message = "\"$name\" added as a group.";
-        }
-    }
+    $result = hr_sms_contacts_add_class_group($pdo, $school_id, (int) ($_POST['class_id'] ?? 0));
+    if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
 }
 
 // ---- Import Excel/CSV into a new static group ----
@@ -115,26 +98,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file'])) {
 
 // ---- Delete a group ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_group'])) {
-    $group_id = (int) ($_POST['group_id'] ?? 0);
-    $pdo->prepare("DELETE FROM sms_contact_groups WHERE id = ? AND school_id = ?")->execute([$group_id, $school_id]);
-    $message = 'Group deleted.';
+    $result = hr_sms_contacts_delete_group($pdo, $school_id, (int) ($_POST['group_id'] ?? 0));
+    $message = $result['message'];
 }
 
-$groups_stmt = $pdo->prepare("SELECT * FROM sms_contact_groups WHERE school_id = ? ORDER BY created_at DESC");
-$groups_stmt->execute([$school_id]);
-$groups = $groups_stmt->fetchAll(PDO::FETCH_ASSOC);
-foreach ($groups as &$g) {
-    $g['recipient_count'] = count(ScholarSmsContacts::resolveGroup($pdo, $school_id, $g));
-}
-unset($g);
-
-$classes_stmt = $pdo->prepare("
-    SELECT id, class_name, stream_name FROM classes
-    WHERE school_id = ? AND id NOT IN (SELECT class_id FROM sms_contact_groups WHERE school_id = ? AND group_type = 'class' AND class_id IS NOT NULL)
-    ORDER BY class_name, stream_name
-");
-$classes_stmt->execute([$school_id, $school_id]);
-$available_classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
+$state = hr_sms_contacts_state($pdo, $school_id);
+$groups = $state['groups'];
+$available_classes = $state['available_classes'];
 
 $is_hr_role = ($_SESSION['role'] ?? '') === 'hr';
 $ACTIVE_NAV = $is_hr_role ? 'sms_contacts' : 'hr';

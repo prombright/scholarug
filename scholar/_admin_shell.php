@@ -86,7 +86,7 @@ $nav_items = [
     // moving between them without coming back here.
     'hr' => [
         'label' => 'Human Resources',
-        'href'  => 'hr_dashboard.php'
+        'href'  => 'app_hr.php'
     ],
 
     'academics' => [

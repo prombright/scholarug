@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
+require_once __DIR__ . '/_payroll_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
@@ -23,26 +24,16 @@ $message = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_payment'])) {
-    $staff_id = (int) ($_POST['staff_id'] ?? 0);
-    $month = (int) ($_POST['pay_period_month'] ?? 0);
-    $year = (int) ($_POST['pay_period_year'] ?? 0);
-    $amount = (float) ($_POST['amount'] ?? 0);
-    $payment_date = $_POST['payment_date'] ?? '';
-    $notes = trim($_POST['notes'] ?? '');
-
-    $staff_check = $pdo->prepare("SELECT staff_id FROM staff WHERE staff_id = ? AND school_id = ?");
-    $staff_check->execute([$staff_id, $school_id]);
-
-    if (!$staff_check->fetch() || $month < 1 || $month > 12 || $amount <= 0 || $payment_date === '') {
-        $error = 'Please fill in a valid staff member, month, amount, and payment date.';
-    } else {
-        $ins = $pdo->prepare("
-            INSERT INTO payroll_payments (school_id, staff_id, pay_period_month, pay_period_year, amount, payment_date, notes, recorded_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $ins->execute([$school_id, $staff_id, $month, $year, $amount, $payment_date, $notes, $recorded_by]);
-        $message = 'Payment recorded.';
-    }
+    $result = hr_payroll_record(
+        $pdo, $school_id, $recorded_by,
+        (int) ($_POST['staff_id'] ?? 0),
+        (int) ($_POST['pay_period_month'] ?? 0),
+        (int) ($_POST['pay_period_year'] ?? 0),
+        (float) ($_POST['amount'] ?? 0),
+        $_POST['payment_date'] ?? '',
+        trim($_POST['notes'] ?? '')
+    );
+    if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
 }
 
 // Single-payslip print view.
@@ -102,22 +93,9 @@ if (isset($_GET['print'])) {
     exit;
 }
 
-$staff_stmt = $pdo->prepare("SELECT staff_id, first_name, last_name FROM staff WHERE school_id = ? AND status = 'active' ORDER BY first_name");
-$staff_stmt->execute([$school_id]);
-$staff_list = $staff_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$history_stmt = $pdo->prepare("
-    SELECT pp.*, TRIM(CONCAT(s.first_name, ' ', s.last_name)) AS staff_name
-    FROM payroll_payments pp
-    JOIN staff s ON s.staff_id = pp.staff_id AND s.school_id = pp.school_id
-    WHERE pp.school_id = ?
-    ORDER BY pp.payment_date DESC, pp.id DESC
-    LIMIT 100
-");
-$history_stmt->execute([$school_id]);
-$history = $history_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+$staff_list = hr_payroll_staff_list($pdo, $school_id);
+$history = hr_payroll_history($pdo, $school_id);
+$months = HR_PAYROLL_MONTHS;
 
 // Same role-based shell split as hr_dashboard.php/staff_manager.php --
 // 'HR' gets its own small sidebar, school_admin keeps the normal one.

@@ -271,7 +271,7 @@ function role_destination(string $role): string
         'parent'       => 'parent_portal.php',
         'student'      => 'app_student.php',
         'nurse'        => 'nurse_dashboard.php',
-        'hr'           => 'hr_dashboard.php',
+        'hr'           => 'app_hr.php',
     ];
 
     return $map[$role] ?? 'index.php';

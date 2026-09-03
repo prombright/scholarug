@@ -16,28 +16,24 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
-require_once __DIR__ . '/../../lib/ScholarSmsWallet.php';
-require_once __DIR__ . '/../../lib/ScholarSmsPricing.php';
-require_once __DIR__ . '/../../../payments/Gateways.php';
-require_once __DIR__ . '/../../../payments/CountryCodes.php';
+require_once __DIR__ . '/_wallet_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
 $school_id = current_school_id();
 
-$balance = ScholarSmsWallet::balance($pdo, $school_id);
-$currency = ScholarSmsPricing::currency($pdo);
+$wallet = hr_sms_wallet_state($pdo, $school_id);
+$balance = $wallet['balance'];
+$currency = $wallet['currency'];
+$transactions = $wallet['transactions'];
+$pending_topups = $wallet['pending_topups'];
 
+// $mtnGateway/$airtelGateway kept as objects here (not just the helper's
+// bool) since the template below calls ->isConfigured() directly.
+require_once __DIR__ . '/../../../payments/Gateways.php';
+require_once __DIR__ . '/../../../payments/CountryCodes.php';
 $mtnGateway = Gateways::mobileMoney('mtn');
 $airtelGateway = Gateways::mobileMoney('airtel');
-
-$tx_stmt = $pdo->prepare("SELECT type, amount, balance_after, reference, created_by, created_at FROM sms_wallet_transactions WHERE school_id = ? ORDER BY created_at DESC LIMIT 50");
-$tx_stmt->execute([$school_id]);
-$transactions = $tx_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$pending_stmt = $pdo->prepare("SELECT reference, network, phone, amount, currency, created_at FROM sms_topup_requests WHERE school_id = ? AND status = 'pending' ORDER BY created_at DESC");
-$pending_stmt->execute([$school_id]);
-$pending_topups = $pending_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $is_hr_role = ($_SESSION['role'] ?? '') === 'hr';
 $ACTIVE_NAV = $is_hr_role ? 'sms_wallet' : 'hr';

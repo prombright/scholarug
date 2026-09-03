@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
+require_once __DIR__ . '/_leave_review_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
@@ -23,29 +24,13 @@ $reviewer_id = (int) ($_SESSION['user_id'] ?? 0);
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    $request_id = (int) ($_POST['request_id'] ?? 0);
-    $new_status = $_POST['action'] === 'approve' ? 'approved' : ($_POST['action'] === 'reject' ? 'rejected' : null);
-
-    if ($new_status !== null) {
-        $upd = $pdo->prepare("
-            UPDATE leave_requests
-            SET status = ?, reviewed_by = ?, reviewed_at = NOW()
-            WHERE id = ? AND school_id = ? AND status = 'pending'
-        ");
-        $upd->execute([$new_status, $reviewer_id, $request_id, $school_id]);
-        $message = 'Leave request ' . $new_status . '.';
+    $result = hr_leave_review($pdo, $school_id, $reviewer_id, (int) ($_POST['request_id'] ?? 0), $_POST['action']);
+    if ($result['ok']) {
+        $message = $result['message'];
     }
 }
 
-$requests_stmt = $pdo->prepare("
-    SELECT lr.*, TRIM(CONCAT(s.first_name, ' ', s.last_name)) AS staff_name
-    FROM leave_requests lr
-    JOIN staff s ON s.staff_id = lr.staff_id AND s.school_id = lr.school_id
-    WHERE lr.school_id = ?
-    ORDER BY (lr.status = 'pending') DESC, lr.applied_at DESC
-");
-$requests_stmt->execute([$school_id]);
-$requests = $requests_stmt->fetchAll(PDO::FETCH_ASSOC);
+$requests = hr_leave_requests_list($pdo, $school_id);
 
 // Same role-based shell split as hr_dashboard.php/staff_manager.php --
 // 'HR' gets its own small sidebar, school_admin keeps the normal one.

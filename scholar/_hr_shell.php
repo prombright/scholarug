@@ -23,7 +23,7 @@ declare(strict_types=1);
 $__SB = rtrim(SCHOLAR_BASE, '/');
 
 $HR_NAV_ITEMS = [
-    'dashboard'    => ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2', 'href' => "$__SB/hr_dashboard.php"],
+    'dashboard'    => ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2', 'href' => "$__SB/app_hr.php"],
     'staff'        => ['label' => 'Staff', 'icon' => 'bi-people', 'href' => "$__SB/staff_manager.php"],
     'leave'        => ['label' => 'Leave Management', 'icon' => 'bi-calendar2-week', 'href' => "$__SB/hr/leave_review.php"],
     'payroll'      => ['label' => 'Payroll', 'icon' => 'bi-cash-stack', 'href' => "$__SB/hr/payroll.php"],

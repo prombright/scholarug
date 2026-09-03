@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
-require_once __DIR__ . '/../../lib/ScholarSecrets.php';
+require_once __DIR__ . '/_whatsapp_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
@@ -23,52 +23,24 @@ $school_id = current_school_id();
 $message = '';
 $error = '';
 
-$stmt = $pdo->prepare(
-    "SELECT sender_name, whatsapp_number, phone_number_id, status
-     FROM sms_whatsapp_settings WHERE school_id = ?"
-);
-$stmt->execute([$school_id]);
-$settings = $stmt->fetch(PDO::FETCH_ASSOC);
+$settings = hr_sms_whatsapp_settings($pdo, $school_id);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'save';
 
     if ($action === 'disable') {
-        $pdo->prepare("UPDATE sms_whatsapp_settings SET status = 'disabled' WHERE school_id = ?")->execute([$school_id]);
-        $message = 'WhatsApp disconnected. Sends will use SMS only.';
+        $result = hr_sms_whatsapp_disable($pdo, $school_id);
+        $message = $result['message'];
     } else {
-        $sender_name = trim($_POST['sender_name'] ?? '');
-        $whatsapp_number = trim($_POST['whatsapp_number'] ?? '');
-        $phone_number_id = trim($_POST['phone_number_id'] ?? '');
-        $access_token = trim($_POST['access_token'] ?? '');
-
-        if ($sender_name === '' || $whatsapp_number === '' || $phone_number_id === '') {
-            $error = 'Sender name, WhatsApp number, and Phone Number ID are all required.';
-        } elseif ($access_token === '' && $settings === false) {
-            $error = 'Access token is required the first time you connect.';
-        } else {
-            if ($access_token !== '') {
-                $encrypted = ScholarSecrets::encrypt($access_token);
-                $upsert = $pdo->prepare(
-                    "INSERT INTO sms_whatsapp_settings (school_id, sender_name, whatsapp_number, phone_number_id, access_token_encrypted, status)
-                     VALUES (?, ?, ?, ?, ?, 'active')
-                     ON DUPLICATE KEY UPDATE sender_name = VALUES(sender_name), whatsapp_number = VALUES(whatsapp_number),
-                         phone_number_id = VALUES(phone_number_id), access_token_encrypted = VALUES(access_token_encrypted), status = 'active'"
-                );
-                $upsert->execute([$school_id, $sender_name, $whatsapp_number, $phone_number_id, $encrypted]);
-            } else {
-                // Editing details without replacing an already-saved token.
-                $update = $pdo->prepare(
-                    "UPDATE sms_whatsapp_settings SET sender_name = ?, whatsapp_number = ?, phone_number_id = ?, status = 'active' WHERE school_id = ?"
-                );
-                $update->execute([$sender_name, $whatsapp_number, $phone_number_id, $school_id]);
-            }
-            $message = 'WhatsApp settings saved. New sends will attempt WhatsApp first.';
-        }
+        $result = hr_sms_whatsapp_save(
+            $pdo, $school_id, $settings,
+            trim($_POST['sender_name'] ?? ''), trim($_POST['whatsapp_number'] ?? ''),
+            trim($_POST['phone_number_id'] ?? ''), trim($_POST['access_token'] ?? '')
+        );
+        if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
     }
 
-    $stmt->execute([$school_id]);
-    $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+    $settings = hr_sms_whatsapp_settings($pdo, $school_id);
 }
 
 $is_hr_role = ($_SESSION['role'] ?? '') === 'hr';
