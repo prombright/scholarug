@@ -6,6 +6,11 @@ require_once __DIR__ . '/../auth_guard.php';
 
 require_role(['school_admin']);
 
+// Superseded by the Vue admin SPA (app_admin.php) -- kept only so old
+// bookmarks/links to this URL still land somewhere useful.
+header("Location: " . SCHOLAR_BASE . "/app_admin.php");
+exit;
+
 $school_id = current_school_id();
 
 $school_type_stmt = $pdo->prepare("SELECT school_type FROM schools WHERE id = ?");

@@ -65,7 +65,7 @@ async function save() {
       <h1>Attendance Management</h1>
       <p>Daily Student Attendance</p>
     </div>
-    <a :href="`${SB}school_admin/school_admin_dashboard.php`" class="back-btn">← Dashboard</a>
+    <router-link to="/" class="back-btn">← Dashboard</router-link>
   </header>
 
   <div v-if="message" class="alert" :class="message.type">{{ message.text }}</div>
@@ -125,7 +125,7 @@ async function save() {
   </section>
 
   <section class="modules">
-    <a :href="`${SB}school_admin/students.php`">Students</a>
+    <router-link to="/students">Students</router-link>
     <a :href="`${SB}school_admin/student_profile.php`">Profiles</a>
     <span class="disabled">Reports<small>Coming soon</small></span>
     <span class="disabled">SMS Parents<small>Coming soon</small></span>

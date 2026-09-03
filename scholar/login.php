@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
-                        header("Location: school_admin/school_admin_dashboard.php");
+                        header("Location: app_admin.php");
 
 
                         exit;

@@ -20,6 +20,11 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     exit();
 }
 
+// Superseded by the Vue teacher SPA (app_teacher.php) -- kept only so old
+// bookmarks/links to this URL still land somewhere useful.
+header("Location: " . SCHOLAR_BASE . "/app_teacher.php");
+exit();
+
 $school_id = $_SESSION['school_id'];
 $staff_id  = $_SESSION['staff_id'];
 

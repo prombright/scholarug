@@ -36,8 +36,7 @@ $open_positions_to_vote = $open_positions_to_vote ?? 0;
 $__SB = rtrim(SCHOLAR_BASE, '/');
 
 $STUDENT_NAV_ITEMS = [
-    'dashboard'  => ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2', 'href' => "$__SB/student_portal.php"],
-    'pilot'      => ['label' => 'Student Portal (Vue pilot)', 'icon' => 'bi-lightning-charge', 'href' => "$__SB/app_student.php"],
+    'dashboard'  => ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2', 'href' => "$__SB/app_student.php"],
     'results'    => ['label' => 'My Results', 'icon' => 'bi-mortarboard', 'href' => "$__SB/student_results.php"],
     'fees'       => ['label' => 'Fees', 'icon' => 'bi-cash-coin', 'href' => "$__SB/student_fees.php"],
     'attendance' => ['label' => 'Attendance', 'icon' => 'bi-calendar-check', 'href' => "$__SB/student_attendance.php"],

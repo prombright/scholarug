@@ -88,7 +88,6 @@ function groupActive(group) {
     <div class="main-col">
       <div class="topbar">
         <button class="mobile-nav-toggle" @click="mobileOpen = !mobileOpen"><i class="bi bi-list"></i></button>
-        <span class="island-pill">⚡ Vue pilot</span>
       </div>
       <div class="page-inner">
         <router-view />
@@ -123,7 +122,6 @@ function groupActive(group) {
 .logout-btn{display:flex;align-items:center;gap:6px;color:var(--danger);text-decoration:none;font-size:0.85rem;font-weight:700;justify-content:center;}
 .main-col{flex:1;min-width:0;overflow:auto;}
 .topbar{display:flex;align-items:center;gap:14px;padding:8px 0 16px;}
-.island-pill{margin-left:auto;font-size:0.68rem;font-weight:700;letter-spacing:0.03em;color:var(--cyan);background:rgba(0,168,168,0.12);border:1px solid rgba(0,168,168,0.3);padding:4px 10px;border-radius:20px;}
 .page-inner{width:100%;}
 .mobile-nav-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:1.1rem;cursor:pointer;}
 

@@ -75,11 +75,6 @@ if ($SCHOOL_BADGE && !file_exists(__DIR__ . '/' . $SCHOOL_BADGE)) {
 $nav_items = [
     'home' => [
         'label' => 'Home',
-        'href'  => 'school_admin/school_admin_dashboard.php'
-    ],
-
-    'pilot' => [
-        'label' => 'Admin Panel (Vue pilot)',
         'href'  => 'app_admin.php'
     ],
 

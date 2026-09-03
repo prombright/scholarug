@@ -54,7 +54,6 @@ const mobileOpen = ref(false)
     <div class="main-col">
       <div class="topbar">
         <button class="mobile-nav-toggle" @click="mobileOpen = !mobileOpen"><i class="bi bi-list"></i></button>
-        <span class="island-pill" title="Analytics and Marks Entry are migrated -- everything else in the sidebar is still the classic PHP app">⚡ Vue pilot</span>
         <a class="logout-btn" :href="logoutHref">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Log Out
@@ -81,8 +80,7 @@ const mobileOpen = ref(false)
 .sidebar-nav a i{font-size:1.05rem;width:20px;text-align:center;}
 .main-col{flex:1;min-width:0;display:flex;flex-direction:column;}
 .topbar{display:flex;align-items:center;gap:14px;padding:16px 28px;border-bottom:1px solid var(--border);}
-.island-pill{margin-left:auto;font-size:0.68rem;font-weight:700;letter-spacing:0.03em;color:var(--cyan);background:rgba(0,168,168,0.12);border:1px solid rgba(0,168,168,0.3);padding:4px 10px;border-radius:20px;}
-.logout-btn{display:flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.82rem;font-weight:600;}
+.logout-btn{display:flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.82rem;font-weight:600;margin-left:auto;}
 .logout-btn:hover{color:var(--text);}
 .page-inner{padding:28px;width:100%;margin:0;}
 .mobile-nav-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:1.1rem;cursor:pointer;}

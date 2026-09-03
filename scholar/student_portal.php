@@ -22,6 +22,11 @@ require_once __DIR__ . '/elections/_election_helpers.php';
 
 require_role(['student']);
 
+// Superseded by the Vue student SPA (app_student.php) -- kept only so old
+// bookmarks/links to this URL still land somewhere useful.
+header("Location: " . SCHOLAR_BASE . "/app_student.php");
+exit;
+
 $school_id  = current_school_id();
 $student_id = current_student_id();
 

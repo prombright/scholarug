@@ -263,13 +263,13 @@ function role_destination(string $role): string
 {
     $map = [
         'developer'    => 'developer/developer_dashboard.php',
-        'school_admin' => 'school_admin/school_admin_dashboard.php',
-        'teacher'      => 'teachers_portal.php',
+        'school_admin' => 'app_admin.php',
+        'teacher'      => 'app_teacher.php',
         'dos'          => 'dos_dashboard.php',
         'headteacher'  => 'headteacher_dashboard.php',
         'bursar'       => 'bursar_dashboard.php',
         'parent'       => 'parent_portal.php',
-        'student'      => 'student_portal.php',
+        'student'      => 'app_student.php',
         'nurse'        => 'nurse_dashboard.php',
         'hr'           => 'hr_dashboard.php',
     ];
