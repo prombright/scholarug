@@ -104,14 +104,14 @@ Digital Transformation
 </a>
 
 
-<a href="#" aria-label="LinkedIn">
+<a href="https://www.linkedin.com/feed" aria-label="LinkedIn">
 
 <i class="bi bi-linkedin"></i>
 
 </a>
 
 
-<a href="#" aria-label="GitHub">
+<a href="https://github.com/dashboard" aria-label="GitHub">
 
 <i class="bi bi-github"></i>
 

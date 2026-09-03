@@ -15,38 +15,28 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['school_admin']);
 require_once __DIR__ . '/_election_helpers.php';
+require_once __DIR__ . '/_admin_pages_helpers.php';
 
 $school_id = current_school_id();
 $election_id = (int) ($_GET['election_id'] ?? $_POST['election_id'] ?? 0);
 $error = '';
 $success = '';
 
-$elec_stmt = $pdo->prepare('SELECT * FROM elections WHERE id = ? AND school_id = ?');
-$elec_stmt->execute([$election_id, $school_id]);
-$election = $elec_stmt->fetch(PDO::FETCH_ASSOC);
+$election = admin_election_resolve($pdo, $school_id, $election_id);
 
 if (!$election) {
     header('Location: index.php?err=notfound');
     exit;
 }
 
-$phase = election_phase($election, $pdo);
-$locked = ($phase === 'voting' || $phase === 'closed');
+$locked = admin_election_locked($election, $pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_position'])) {
     if ($locked) {
         $error = 'Positions can no longer be changed once voting has started.';
     } else {
-        $title = trim($_POST['title'] ?? '');
-        if ($title === '') {
-            $error = 'Position title is required.';
-        } else {
-            $order_stmt = $pdo->prepare('SELECT COALESCE(MAX(display_order),0)+1 FROM election_positions WHERE election_id = ?');
-            $order_stmt->execute([$election_id]);
-            $pdo->prepare('INSERT INTO election_positions (election_id, title, display_order) VALUES (?, ?, ?)')
-                ->execute([$election_id, $title, (int) $order_stmt->fetchColumn()]);
-            $success = 'Position added.';
-        }
+        $result = admin_election_position_add($pdo, $election_id, trim($_POST['title'] ?? ''));
+        if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
     }
 }
 
@@ -54,16 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_position'])) {
     if ($locked) {
         $error = 'Positions can no longer be changed once voting has started.';
     } else {
-        $position_id = (int) ($_POST['position_id'] ?? 0);
-        $pdo->prepare('DELETE FROM election_positions WHERE id = ? AND election_id = ?')
-            ->execute([$position_id, $election_id]);
-        $success = 'Position removed.';
+        $result = admin_election_position_delete($pdo, $election_id, (int) ($_POST['position_id'] ?? 0));
+        $success = $result['message'];
     }
 }
 
-$pos_stmt = $pdo->prepare('SELECT * FROM election_positions WHERE election_id = ? ORDER BY display_order, title');
-$pos_stmt->execute([$election_id]);
-$positions = $pos_stmt->fetchAll(PDO::FETCH_ASSOC);
+$positions = admin_election_positions_list($pdo, $election_id);
 
 $ACTIVE_NAV = 'elections';
 require_once __DIR__ . '/../_admin_shell.php';

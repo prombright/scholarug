@@ -78,6 +78,11 @@ $nav_items = [
         'href'  => 'school_admin/school_admin_dashboard.php'
     ],
 
+    'pilot' => [
+        'label' => 'Admin Panel (Vue pilot)',
+        'href'  => 'app_admin.php'
+    ],
+
     // Same treatment as 'report_cards' below: Staff / Leave Management /
     // Payroll used to be three separate dropdown entries -- now one entry
     // pointing at hr_dashboard.php (already existed as a stat-card hub

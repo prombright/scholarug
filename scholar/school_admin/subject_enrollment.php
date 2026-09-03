@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
+require_once __DIR__ . '/_subject_enrollment_helpers.php';
 
 require_role(['school_admin']);
 
@@ -27,99 +28,25 @@ $message_type = '';
 $sel_class_id   = (int) ($_GET['class_id'] ?? $_POST['class_id'] ?? 0);
 $sel_subject_id = (int) ($_GET['subject_id'] ?? $_POST['subject_id'] ?? 0);
 
-// Every class -- O-Level and A-Level alike. A-Level electives (subsidiary
-// subjects like Sub Math/Sub ICT, or combination principals a school
-// prefers to manage in bulk here instead of per-student) work the same
-// way as O-Level ones: this screen only ever deals with Elective subjects,
-// never Core, and student_subjects has no level_type awareness at all.
-$classes_stmt = $pdo->prepare("SELECT id, class_name FROM classes WHERE school_id = ? ORDER BY class_name ASC");
-$classes_stmt->execute([$school_id]);
-$classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$sel_class = null;
-foreach ($classes as $c) {
-    if ((int) $c['id'] === $sel_class_id) { $sel_class = $c; break; }
-}
-
-// Deep-link support: subject_matrix.php/subject_catalog.php link straight
-// to a subject_id without knowing its class_id (they only have the
-// subject's own, possibly differently-formatted, class_name). Resolve the
-// class from the subject itself so those "Assign Students" links work
-// without the class dropdown having been touched first.
-if (!$sel_class && $sel_class_id === 0 && $sel_subject_id > 0) {
-    $deep_stmt = $pdo->prepare("SELECT class_name FROM subjects WHERE id = ? AND school_id = ? AND subject_type = 'Elective'");
-    $deep_stmt->execute([$sel_subject_id, $school_id]);
-    $deep_class_name = $deep_stmt->fetchColumn();
-    if ($deep_class_name) {
-        foreach ($classes as $c) {
-            if (strtoupper(str_replace('.', '', $c['class_name'])) === strtoupper(str_replace('.', '', $deep_class_name))) {
-                $sel_class = $c;
-                $sel_class_id = (int) $c['id'];
-                break;
-            }
-        }
-    }
-}
-
-$electives = [];
-if ($sel_class) {
-    $elec_stmt = $pdo->prepare("
-        SELECT id, subject_name, subject_code
-        FROM subjects
-        WHERE school_id = ? AND subject_type = 'Elective'
-          AND REPLACE(UPPER(class_name), '.', '') = REPLACE(UPPER(?), '.', '')
-        ORDER BY subject_name ASC
-    ");
-    $elec_stmt->execute([$school_id, $sel_class['class_name']]);
-    $electives = $elec_stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-$sel_subject = null;
-foreach ($electives as $e) {
-    if ((int) $e['id'] === $sel_subject_id) { $sel_subject = $e; break; }
-}
+$state = admin_subject_enrollment_load($pdo, $school_id, $sel_class_id, $sel_subject_id);
+$classes = $state['classes'];
+$sel_class = $state['sel_class'];
+$electives = $state['electives'];
+$sel_subject = $state['sel_subject'];
+$students = $state['students'];
+$enrolled_ids = $state['enrolled_ids'];
 
 // ---- Save ticked students (full replace-set for this subject) ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_students']) && $sel_class && $sel_subject) {
-    $ticked_ids = array_map('intval', $_POST['student_ids'] ?? []);
+    $save_result = admin_subject_enrollment_save($pdo, $school_id, $sel_class, $sel_subject, $_POST['student_ids'] ?? []);
+    $message = $save_result['message'];
+    $message_type = $save_result['ok'] ? 'success' : 'error';
 
-    // Re-validate every ticked ID actually belongs to this class/school.
-    $roster_stmt = $pdo->prepare("SELECT id FROM students WHERE school_id = ? AND class_id = ?");
-    $roster_stmt->execute([$school_id, $sel_class['id']]);
-    $valid_ids = array_map('intval', array_column($roster_stmt->fetchAll(PDO::FETCH_ASSOC), 'id'));
-    $final_ids = array_values(array_intersect($ticked_ids, $valid_ids));
-
-    try {
-        $pdo->beginTransaction();
-        $del = $pdo->prepare("DELETE FROM student_subjects WHERE subject_id = ? AND school_id = ?");
-        $del->execute([$sel_subject['id'], $school_id]);
-
-        if ($final_ids) {
-            $ins = $pdo->prepare("INSERT INTO student_subjects (school_id, student_id, subject_id) VALUES (?, ?, ?)");
-            foreach ($final_ids as $sid) {
-                $ins->execute([$school_id, $sid, $sel_subject['id']]);
-            }
-        }
-        $pdo->commit();
-        $message = count($final_ids) . ' student(s) enrolled in ' . $sel_subject['subject_name'] . '.';
-        $message_type = 'success';
-    } catch (Throwable $e) {
-        $pdo->rollBack();
-        $message = 'Could not save: ' . $e->getMessage();
-        $message_type = 'error';
+    if ($save_result['ok']) {
+        $state = admin_subject_enrollment_load($pdo, $school_id, $sel_class_id, $sel_subject_id);
+        $students = $state['students'];
+        $enrolled_ids = $state['enrolled_ids'];
     }
-}
-
-$students = [];
-$enrolled_ids = [];
-if ($sel_class && $sel_subject) {
-    $stud_stmt = $pdo->prepare("SELECT id, full_name FROM students WHERE school_id = ? AND class_id = ? ORDER BY full_name ASC");
-    $stud_stmt->execute([$school_id, $sel_class['id']]);
-    $students = $stud_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $enrolled_stmt = $pdo->prepare("SELECT student_id FROM student_subjects WHERE subject_id = ? AND school_id = ?");
-    $enrolled_stmt->execute([$sel_subject['id'], $school_id]);
-    $enrolled_ids = array_map('intval', array_column($enrolled_stmt->fetchAll(PDO::FETCH_ASSOC), 'student_id'));
 }
 
 $SCHOLAR_BASE = '../';

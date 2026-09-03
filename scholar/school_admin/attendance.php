@@ -6,6 +6,7 @@ declare(strict_types=1);
 // db.php below) -- this used to force display_errors=1 unconditionally,
 // leaking stack traces to any visitor regardless of SCHOLAR_ENV.
 require '../db.php';
+require_once __DIR__ . '/_attendance_helpers.php';
 
 
 
@@ -114,34 +115,7 @@ if(!$school){
 */
 
 
-$class_stmt =
-$pdo->prepare(
-
-"
-SELECT *
-
-FROM classes
-
-WHERE school_id=?
-
-ORDER BY class_name ASC
-
-"
-
-);
-
-
-
-$class_stmt->execute([
-
-$school_id
-
-]);
-
-
-
-$classes =
-$class_stmt->fetchAll(PDO::FETCH_ASSOC);
+$classes = admin_attendance_fetch_classes($pdo, $school_id);
 
 
 
@@ -178,48 +152,7 @@ $_GET['date']
 */
 
 
-$students = [];
-
-
-
-if($class_id > 0){
-
-
-$student_stmt =
-$pdo->prepare(
-
-"
-SELECT *
-
-FROM students
-
-WHERE school_id=?
-
-AND class_id=?
-
-ORDER BY student_name ASC
-
-"
-
-);
-
-
-
-$student_stmt->execute([
-
-$school_id,
-$class_id
-
-]);
-
-
-
-$students =
-$student_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-
-
-}
+$students = admin_attendance_fetch_students($pdo, $school_id, $class_id);
 
 
 
@@ -237,193 +170,12 @@ $student_stmt->fetchAll(PDO::FETCH_ASSOC);
 if($_SERVER['REQUEST_METHOD']==='POST'
 && isset($_POST['save_attendance'])){
 
-
-$class_id =
-(int)$_POST['class_id'];
-
-
-
-$date =
-$_POST['attendance_date'];
-
-
-
-$attendance_data =
-$_POST['attendance'] ?? [];
-
-
-
-
-try{
-
-
-$pdo->beginTransaction();
-
-
-
-foreach($attendance_data as $student_id=>$status){
-
-
-
-    /*
-    Check existing attendance
-    */
-
-
-    $check =
-    $pdo->prepare(
-
-    "
-    SELECT id
-
-    FROM attendance
-
-    WHERE student_id=?
-
-    AND school_id=?
-
-    AND attendance_date=?
-
-    AND subject_id IS NULL
-
-    LIMIT 1
-
-    "
-
-    );
-
-
-
-    $check->execute([
-
-    $student_id,
-    $school_id,
-    $date
-
-    ]);
-
-
-
-    $existing =
-    $check->fetchColumn();
-
-
-
-
-
-    if($existing){
-
-
-        $update =
-        $pdo->prepare(
-
-        "
-        UPDATE attendance
-
-        SET status=?
-
-        WHERE id=?
-
-        "
-
-        );
-
-
-        $update->execute([
-
-        $status,
-        $existing
-
-        ]);
-
-
-
-    }
-    else{
-
-
-        $insert =
-        $pdo->prepare(
-
-        "
-        INSERT INTO attendance
-
-        (
-        school_id,
-        student_id,
-        class_id,
-        attendance_date,
-        status
-        )
-
-        VALUES
-
-        (?,?,?,?,?)
-
-        "
-
-        );
-
-
-
-        $insert->execute([
-
-        $school_id,
-        $student_id,
-        $class_id,
-        $date,
-        $status
-
-        ]);
-
-
-
-    }
-
-
-
-
-}
-
-
-
-$pdo->commit();
-
-
-
-$message =
-"Attendance saved successfully.";
-
-
-$message_type =
-"success";
-
-
-
-}
-catch(Throwable $e){
-
-
-if($pdo->inTransaction()){
-
-    $pdo->rollBack();
-
-}
-
-
-$message =
-"Unable to save attendance: ".$e->getMessage();
-
-
-$message_type =
-"error";
-
-
-
-}
-
-
-
+    $class_id = (int) $_POST['class_id'];
+    $date = $_POST['attendance_date'];
+    $result = admin_attendance_save($pdo, $school_id, $class_id, $date, $_POST['attendance'] ?? []);
+
+    $message = $result['message'];
+    $message_type = $result['ok'] ? 'success' : 'error';
 }
 
 
@@ -438,62 +190,7 @@ $message_type =
 */
 
 
-$today_summary = [];
-
-
-
-try{
-
-
-$summary_stmt =
-$pdo->prepare(
-
-"
-SELECT
-
-status,
-
-COUNT(*) total
-
-
-FROM attendance
-
-
-WHERE school_id=?
-
-AND attendance_date=?
-
-
-GROUP BY status
-
-"
-
-);
-
-
-
-$summary_stmt->execute([
-
-$school_id,
-$attendance_date
-
-]);
-
-
-
-$today_summary =
-$summary_stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-
-
-
-}
-catch(Throwable $e){
-
-
-$today_summary=[];
-
-
-}
+$today_summary = admin_attendance_today_summary($pdo, $school_id, $attendance_date);
 
 
 

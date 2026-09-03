@@ -22,6 +22,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/_chat_helpers.php';
+require_once __DIR__ . '/_student_messages_helpers.php';
 
 require_role(['student']);
 
@@ -34,38 +35,10 @@ $class_id = (int) ($stu_stmt->fetchColumn() ?: 0);
 
 $error = '';
 
-// Teachers this student is actually allowed to message.
-$teachers = [];
-if ($class_id > 0) {
-    $t_stmt = $pdo->prepare("
-        SELECT st.staff_id, TRIM(CONCAT(st.first_name, ' ', st.last_name)) AS teacher_name
-        FROM teacher_assignments ta
-        JOIN staff st ON st.staff_id = ta.teacher_id AND st.school_id = ta.school_id
-        WHERE ta.class_id = ? AND ta.school_id = ?
-        UNION
-        SELECT st.staff_id, TRIM(CONCAT(st.first_name, ' ', st.last_name)) AS teacher_name
-        FROM classes c
-        JOIN staff st ON st.staff_id = c.class_teacher_id AND st.school_id = c.school_id
-        WHERE c.id = ? AND c.school_id = ? AND c.class_teacher_id IS NOT NULL
-        ORDER BY teacher_name ASC
-    ");
-    $t_stmt->execute([$class_id, $school_id, $class_id, $school_id]);
-    $teachers = $t_stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+$teachers = student_reachable_teachers($pdo, $school_id, $class_id);
 $allowed_teacher_ids = array_map('intval', array_column($teachers, 'staff_id'));
 
-// Existing threads, latest message first.
-$threads_stmt = $pdo->prepare("
-    SELECT cv.id, cv.teacher_id, TRIM(CONCAT(st.first_name, ' ', st.last_name)) AS teacher_name,
-        (SELECT COUNT(*) FROM conversation_messages cm WHERE cm.conversation_id = cv.id AND cm.sender_role = 'teacher' AND cm.read_at IS NULL) AS unread,
-        (SELECT MAX(created_at) FROM conversation_messages cm WHERE cm.conversation_id = cv.id) AS last_at
-    FROM conversations cv
-    JOIN staff st ON st.staff_id = cv.teacher_id AND st.school_id = cv.school_id
-    WHERE cv.student_id = ? AND cv.school_id = ?
-    ORDER BY last_at DESC
-");
-$threads_stmt->execute([$student_id, $school_id]);
-$threads = $threads_stmt->fetchAll(PDO::FETCH_ASSOC);
+$threads = student_message_threads($pdo, $school_id, $student_id);
 
 // Live sidebar refresh -- the whole thread list (unread counts, ordering,
 // brand-new threads a teacher just started) as JSON, polled independently
@@ -74,33 +47,10 @@ $threads = $threads_stmt->fetchAll(PDO::FETCH_ASSOC);
 // so a teacher with zero messages yet still appears.
 if (($_GET['poll_threads'] ?? '') === '1') {
     header('Content-Type: application/json');
-    $out = [];
-    foreach ($teachers as $t) {
-        $tid = (int) $t['staff_id'];
-        $unread = 0;
-        $last_at = null;
-        foreach ($threads as $th) {
-            if ((int) $th['teacher_id'] === $tid) {
-                $unread = (int) $th['unread'];
-                $last_at = $th['last_at'];
-            }
-        }
-        $out[] = [
-            'teacher_id' => $tid,
-            'teacher_name' => $t['teacher_name'],
-            'unread' => $unread,
-            'last_at' => $last_at,
-            'last_at_label' => chat_relative_time($last_at),
-        ];
-    }
-    // Same ordering the sidebar renders in: most recently active first,
-    // never-messaged teachers (no last_at) after, alphabetical among those.
-    usort($out, function ($a, $b) {
-        if ($a['last_at'] === $b['last_at']) return strcmp($a['teacher_name'], $b['teacher_name']);
-        if ($a['last_at'] === null) return 1;
-        if ($b['last_at'] === null) return -1;
-        return strcmp($b['last_at'], $a['last_at']);
-    });
+    $out = array_map(static function ($row) {
+        $row['last_at_label'] = chat_relative_time($row['last_at']);
+        return $row;
+    }, student_message_rows($teachers, $threads));
     echo json_encode(['threads' => $out]);
     exit;
 }
@@ -122,16 +72,7 @@ if ($open_teacher_id !== null) {
         }
     }
 
-    $find = $pdo->prepare("SELECT id FROM conversations WHERE student_id = ? AND teacher_id = ? AND school_id = ?");
-    $find->execute([$student_id, $open_teacher_id, $school_id]);
-    $conversation_id = $find->fetchColumn();
-
-    if (!$conversation_id) {
-        $ins = $pdo->prepare("INSERT INTO conversations (school_id, student_id, teacher_id) VALUES (?, ?, ?)");
-        $ins->execute([$school_id, $student_id, $open_teacher_id]);
-        $conversation_id = (int) $pdo->lastInsertId();
-    }
-    $conversation_id = (int) $conversation_id;
+    $conversation_id = student_find_or_create_conversation($pdo, $school_id, $student_id, $open_teacher_id);
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_message') {
         $body = trim($_POST['body'] ?? '');
@@ -165,21 +106,12 @@ if ($open_teacher_id !== null) {
     if (($_GET['poll'] ?? '') === '1') {
         header('Content-Type: application/json');
         $after_id = (int) ($_GET['after_id'] ?? 0);
-        $mark_read = $pdo->prepare("UPDATE conversation_messages SET read_at = NOW() WHERE conversation_id = ? AND sender_role = 'teacher' AND read_at IS NULL");
-        $mark_read->execute([$conversation_id]);
-        $poll_stmt = $pdo->prepare("SELECT id, sender_role, body, created_at FROM conversation_messages WHERE conversation_id = ? AND id > ? ORDER BY created_at ASC");
-        $poll_stmt->execute([$conversation_id, $after_id]);
-        echo json_encode(['messages' => $poll_stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        echo json_encode(['messages' => student_poll_messages($pdo, $conversation_id, $after_id)]);
         exit;
     }
 
     // Viewing the thread marks the teacher's messages as read.
-    $mark_read = $pdo->prepare("UPDATE conversation_messages SET read_at = NOW() WHERE conversation_id = ? AND sender_role = 'teacher' AND read_at IS NULL");
-    $mark_read->execute([$conversation_id]);
-
-    $msgs_stmt = $pdo->prepare("SELECT id, sender_role, body, created_at FROM conversation_messages WHERE conversation_id = ? ORDER BY created_at ASC");
-    $msgs_stmt->execute([$conversation_id]);
-    $messages = $msgs_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $messages = student_conversation_messages($pdo, $conversation_id);
 } else {
     $messages = [];
 }

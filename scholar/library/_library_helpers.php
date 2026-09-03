@@ -84,3 +84,50 @@ function library_save_pdf(array $file): ?array
         'original_name' => $file['name'],
     ];
 }
+
+/**
+ * Deletes $docId if (and only if) it belongs to $teacherId at $schoolId --
+ * both the DB row and the file on disk, with the same containment check
+ * as everywhere else in library/ that touches the filesystem (never trust
+ * a stored path alone; confirm it resolves inside uploads/ before unlink).
+ *
+ * @return bool true if a document was actually deleted
+ */
+function library_delete_document(PDO $pdo, int $docId, int $schoolId, int $teacherId): bool
+{
+    $stmt = $pdo->prepare('SELECT * FROM library_documents WHERE id = ? AND school_id = ? AND teacher_id = ?');
+    $stmt->execute([$docId, $schoolId, $teacherId]);
+    $doc = $stmt->fetch();
+    if (!$doc) {
+        return false;
+    }
+
+    $pdo->prepare('DELETE FROM library_documents WHERE id = ?')->execute([$docId]);
+
+    $fullPath = realpath(__DIR__ . '/../' . $doc['file_path']);
+    $allowedRoot = realpath(__DIR__ . '/../uploads');
+    if ($fullPath !== false && $allowedRoot !== false && strpos($fullPath, $allowedRoot) === 0 && is_file($fullPath)) {
+        @unlink($fullPath);
+    }
+    return true;
+}
+
+/**
+ * Flips $docId between Draft/Published if it belongs to $teacherId at
+ * $schoolId.
+ *
+ * @return string|null the new status, or null if no matching document
+ */
+function library_toggle_status(PDO $pdo, int $docId, int $schoolId, int $teacherId): ?string
+{
+    $stmt = $pdo->prepare('SELECT status FROM library_documents WHERE id = ? AND school_id = ? AND teacher_id = ?');
+    $stmt->execute([$docId, $schoolId, $teacherId]);
+    $current = $stmt->fetchColumn();
+    if ($current === false) {
+        return null;
+    }
+
+    $next = $current === 'Published' ? 'Draft' : 'Published';
+    $pdo->prepare('UPDATE library_documents SET status = ? WHERE id = ?')->execute([$next, $docId]);
+    return $next;
+}

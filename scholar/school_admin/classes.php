@@ -22,36 +22,13 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/../_subject_helpers.php';
+require_once __DIR__ . '/_classes_helpers.php';
 
 require_role(['school_admin']);
 
 $school_id = current_school_id();
 $error = '';
 $success = '';
-
-// Creates the classes row for a class+stream and keeps the reusable
-// streams catalog (other pages read class_name/stream_name pairs from it)
-// pointed at that row's id -- the one action both add_stream and
-// seed_alevel_streams need, so a school never has to "define a stream"
-// and then separately "add the class" as two trips through the UI.
-function scholar_add_class_stream(PDO $pdo, int $schoolId, string $className, string $streamName): int
-{
-    $pdo->prepare("INSERT INTO classes (school_id, class_name, stream_name) VALUES (?, ?, ?)")
-        ->execute([$schoolId, $className, $streamName]);
-    $classId = (int) $pdo->lastInsertId();
-
-    $exists = $pdo->prepare("SELECT id FROM streams WHERE school_id = ? AND class_name = ? AND stream_name = ?");
-    $exists->execute([$schoolId, $className, $streamName]);
-    if ($exists->fetchColumn()) {
-        $pdo->prepare("UPDATE streams SET class_id = ? WHERE school_id = ? AND class_name = ? AND stream_name = ?")
-            ->execute([$classId, $schoolId, $className, $streamName]);
-    } else {
-        $pdo->prepare("INSERT INTO streams (school_id, class_name, stream_name, class_id) VALUES (?, ?, ?, ?)")
-            ->execute([$schoolId, $className, $streamName, $classId]);
-    }
-
-    return $classId;
-}
 
 $school_type_stmt = $pdo->prepare("SELECT school_type FROM schools WHERE id = ?");
 $school_type_stmt->execute([$school_id]);
@@ -73,127 +50,44 @@ $ALL_CLASS_NAMES = array_merge(...array_values($LEVEL_CLASSES));
 // school that genuinely needs streams still adds those explicitly below,
 // but starting from "everything already exists" instead of "everything
 // needs to be built" is the whole point.
-$existing_class_names_stmt = $pdo->prepare("SELECT DISTINCT class_name FROM classes WHERE school_id = ?");
-$existing_class_names_stmt->execute([$school_id]);
-$missing_class_names = array_diff($ALL_CLASS_NAMES, $existing_class_names_stmt->fetchAll(PDO::FETCH_COLUMN));
-if ($missing_class_names) {
-    $auto_ins = $pdo->prepare("INSERT INTO classes (school_id, class_name, stream_name) VALUES (?, ?, NULL)");
-    foreach ($missing_class_names as $cn) {
-        $auto_ins->execute([$school_id, $cn]);
-        scholar_ensure_compulsory_subjects($pdo, $school_id, $cn);
-    }
-}
+admin_classes_ensure_base_classes($pdo, $school_id, $ALL_CLASS_NAMES);
 
 // ---- Add a stream: one action instead of "define stream" then "add
 // class" -- creates the reusable streams-catalog row (other pages read
 // from it) AND the actual classes row for it together. ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_stream'])) {
-    $sclass = trim($_POST['stream_class_name'] ?? '');
-    $sname = trim($_POST['stream_name'] ?? '');
-
-    if (!in_array($sclass, $ALL_CLASS_NAMES, true) || $sname === '') {
-        $error = 'Enter a stream name.';
-    } else {
-        $dup_class = $pdo->prepare("SELECT id FROM classes WHERE school_id = ? AND class_name = ? AND stream_name = ?");
-        $dup_class->execute([$school_id, $sclass, $sname]);
-        if ($dup_class->fetchColumn()) {
-            $error = "{$sclass} {$sname} already exists.";
-        } else {
-            scholar_add_class_stream($pdo, $school_id, $sclass, $sname);
-            scholar_ensure_compulsory_subjects($pdo, $school_id, $sclass);
-            $success = "{$sclass} {$sname} added.";
-        }
-    }
+    $result = admin_classes_add_stream($pdo, $school_id, $ALL_CLASS_NAMES, trim($_POST['stream_class_name'] ?? ''), trim($_POST['stream_name'] ?? ''));
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
 // ---- One-click seed: Sciences + Arts for a given A-Level class (Secondary only) ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_alevel_streams'])) {
-    $sclass = trim($_POST['seed_class_name'] ?? '');
-    if ($school_type !== 'Secondary' || !in_array($sclass, $LEVEL_CLASSES['A-Level'] ?? [], true)) {
-        $error = 'Invalid class for A-Level streams.';
-    } else {
-        foreach (['Sciences', 'Arts'] as $default_stream) {
-            $dup_class = $pdo->prepare("SELECT id FROM classes WHERE school_id = ? AND class_name = ? AND stream_name = ?");
-            $dup_class->execute([$school_id, $sclass, $default_stream]);
-            if ($dup_class->fetchColumn()) continue;
-            scholar_add_class_stream($pdo, $school_id, $sclass, $default_stream);
-        }
-        $success = "Sciences and Arts classes added for {$sclass}.";
-    }
+    $result = admin_classes_seed_alevel($pdo, $school_id, $school_type, $LEVEL_CLASSES, trim($_POST['seed_class_name'] ?? ''));
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
 // ---- Delete a class ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_class'])) {
-    $class_id = (int) ($_POST['class_id'] ?? 0);
-    $del = $pdo->prepare("DELETE FROM classes WHERE id = ? AND school_id = ?");
-    $del->execute([$class_id, $school_id]);
+    admin_classes_delete($pdo, $school_id, (int) ($_POST['class_id'] ?? 0));
     $success = 'Class deleted. Students in it are now unassigned rather than deleted.';
 }
 
 // ---- Assign / change a class's class teacher ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_class_teacher'])) {
-    $class_id = (int) ($_POST['class_id'] ?? 0);
-    $teacher_id = (int) ($_POST['teacher_staff_id'] ?? 0);
-
-    if ($teacher_id <= 0) {
-        $error = 'Pick a teacher to assign.';
-    } else {
-        $valid_teacher = $pdo->prepare("SELECT staff_id FROM staff WHERE staff_id = ? AND school_id = ? AND staff_category = 'Teaching'");
-        $valid_teacher->execute([$teacher_id, $school_id]);
-        if (!$valid_teacher->fetchColumn()) {
-            $error = 'That teacher was not found for this school.';
-        } else {
-            $upd = $pdo->prepare("UPDATE classes SET class_teacher_id = ? WHERE id = ? AND school_id = ?");
-            $upd->execute([$teacher_id, $class_id, $school_id]);
-            $success = 'Class teacher assigned.';
-        }
-    }
+    $result = admin_classes_assign_teacher($pdo, $school_id, (int) ($_POST['class_id'] ?? 0), (int) ($_POST['teacher_staff_id'] ?? 0));
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
 // ---- Remove a class's class teacher ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_class_teacher'])) {
-    $class_id = (int) ($_POST['class_id'] ?? 0);
-    $upd = $pdo->prepare("UPDATE classes SET class_teacher_id = NULL WHERE id = ? AND school_id = ?");
-    $upd->execute([$class_id, $school_id]);
+    admin_classes_remove_teacher($pdo, $school_id, (int) ($_POST['class_id'] ?? 0));
     $success = 'Class teacher removed.';
 }
 
-// $ALL_CLASS_NAMES only ever comes from the fixed Primary/Secondary
-// arrays above (never user input), so interpolating it into FIELD() is
-// safe -- there's no way to build this ordering with a bound parameter.
-$class_order_sql = "'" . implode("','", $ALL_CLASS_NAMES) . "'";
-
-$classes = $pdo->prepare("
-    SELECT c.id, c.class_name, c.stream_name, c.class_teacher_id,
-           CONCAT(t.first_name, ' ', t.last_name) AS class_teacher_name,
-           (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) AS student_count
-    FROM classes c
-    LEFT JOIN staff t ON t.staff_id = c.class_teacher_id AND t.school_id = c.school_id
-    WHERE c.school_id = ?
-    ORDER BY FIELD(c.class_name, $class_order_sql), c.stream_name
-");
-$classes->execute([$school_id]);
-$classes = $classes->fetchAll();
-
-$teaching_staff = $pdo->prepare("
-    SELECT staff_id, CONCAT(first_name, ' ', last_name) AS full_name
-    FROM staff
-    WHERE school_id = ? AND staff_category = 'Teaching'
-    ORDER BY first_name, last_name
-");
-$teaching_staff->execute([$school_id]);
-$teaching_staff = $teaching_staff->fetchAll();
-
-$streams_raw = $pdo->prepare("
-    SELECT class_name, stream_name FROM streams
-    WHERE school_id = ?
-    ORDER BY FIELD(class_name, $class_order_sql), stream_name
-");
-$streams_raw->execute([$school_id]);
-$streams_by_class = [];
-foreach ($streams_raw->fetchAll() as $row) {
-    $streams_by_class[$row['class_name']][] = $row['stream_name'];
-}
+$__admin_classes_data = admin_classes_fetch_all($pdo, $school_id, $ALL_CLASS_NAMES);
+$classes = $__admin_classes_data['classes'];
+$teaching_staff = $__admin_classes_data['teaching_staff'];
+$streams_by_class = $__admin_classes_data['streams_by_class'];
 
 $SCHOLAR_BASE = '../';
 $ACTIVE_NAV = 'classes';

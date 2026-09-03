@@ -48,118 +48,53 @@ if (!function_exists('safe_text')) {
     }
 }
 
+require_once $base_dir . '/_assessments_helpers.php';
+
 $school_id = current_school_id();
 
 $message = '';
 $message_type = '';
 
-// A term's report-counted assessments (AOI, Mid-Term, Final Exam -- however
-// many the admin wants, split however they want, e.g. 10/10/80) must never
-// collectively exceed 100% -- past that, getCalculatedGradeAndComment()'s
-// weighted sum in _report_card_render.php produces a bogus >100 score.
-// Assessments excluded from the report (include_in_report=0, e.g. practice
-// quizzes) don't count toward this cap at all. Only the ceiling is
-// enforced -- a term sitting under 100% mid-setup (not all assessments
-// created yet) is normal and never blocked.
-function scholar_report_weight_used(PDO $pdo, int $school_id, string $term, int $year, ?int $exclude_id = null): float
-{
-    $sql = "SELECT COALESCE(SUM(weight_percentage),0) FROM assessments WHERE school_id = ? AND term = ? AND year = ? AND include_in_report = 1";
-    $params = [$school_id, $term, $year];
-    if ($exclude_id !== null) {
-        $sql .= " AND id != ?";
-        $params[] = $exclude_id;
-    }
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    return (float) $stmt->fetchColumn();
-}
-
 // ---------------------------------------------------------------------
 // Create a new assessment
 // ---------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_assessment') {
-    $title    = trim($_POST['title'] ?? '');
-    $weight   = (float) ($_POST['weight_percentage'] ?? 0);
-    $term     = in_array($_POST['term'] ?? '', ['Term 1', 'Term 2', 'Term 3'], true) ? $_POST['term'] : '';
-    $year     = (int) ($_POST['year'] ?? date('Y'));
-    $status   = in_array($_POST['status'] ?? '', ['Draft', 'Open', 'Closed'], true) ? $_POST['status'] : 'Draft';
-    $include  = isset($_POST['include_in_report']) ? 1 : 0;
-
-    if ($title === '' || $weight <= 0 || $term === '') {
-        $message = 'Title, a positive weight, and a term are required.';
-        $message_type = 'danger';
-    } elseif ($include === 1 && ($already = scholar_report_weight_used($pdo, $school_id, $term, $year)) + $weight > 100.001) {
-        $remaining = max(0, round(100 - $already, 2));
-        $message = "{$term} {$year} already has " . round($already, 2) . "% of its report weight allocated -- only {$remaining}% is left. Lower this weight, adjust another assessment first, or uncheck \"On report\" if this one shouldn't count toward the final grade.";
-        $message_type = 'danger';
-    } else {
-        $ins = $pdo->prepare("
-            INSERT INTO assessments (school_id, title, weight_percentage, term, year, status, include_in_report)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
-        $ins->execute([$school_id, $title, $weight, $term, $year, $status, $include]);
-        $message = 'Assessment created.';
-        $message_type = 'success';
-    }
+    $result = admin_assessments_create(
+        $pdo, $school_id,
+        trim($_POST['title'] ?? ''),
+        (float) ($_POST['weight_percentage'] ?? 0),
+        $_POST['term'] ?? '',
+        (int) ($_POST['year'] ?? date('Y')),
+        $_POST['status'] ?? 'Draft',
+        isset($_POST['include_in_report'])
+    );
+    $message = $result['message'];
+    $message_type = $result['ok'] ? 'success' : 'danger';
 }
 
 // ---------------------------------------------------------------------
 // Update an existing assessment's status / report-inclusion / weight
 // ---------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_assessment') {
-    $id      = (int) ($_POST['id'] ?? 0);
-    $weight  = (float) ($_POST['weight_percentage'] ?? 0);
-    $status  = in_array($_POST['status'] ?? '', ['Draft', 'Open', 'Closed'], true) ? $_POST['status'] : 'Draft';
-    $include = isset($_POST['include_in_report']) ? 1 : 0;
-
-    $existing_stmt = $pdo->prepare("SELECT term, year FROM assessments WHERE id = ? AND school_id = ?");
-    $existing_stmt->execute([$id, $school_id]);
-    $existing = $existing_stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($id > 0 && $weight > 0 && $existing) {
-        $already = $include === 1 ? scholar_report_weight_used($pdo, $school_id, $existing['term'], (int) $existing['year'], $id) : 0.0;
-        if ($include === 1 && $already + $weight > 100.001) {
-            $remaining = max(0, round(100 - $already, 2));
-            $message = "{$existing['term']} {$existing['year']}'s other report-counted assessments already use " . round($already, 2) . "% -- only {$remaining}% is left for this one.";
-            $message_type = 'danger';
-        } else {
-            $upd = $pdo->prepare("
-                UPDATE assessments
-                SET weight_percentage = ?, status = ?, include_in_report = ?
-                WHERE id = ? AND school_id = ?
-            ");
-            $upd->execute([$weight, $status, $include, $id, $school_id]);
-            $message = 'Assessment updated.';
-            $message_type = 'success';
-        }
-    }
+    $result = admin_assessments_update(
+        $pdo, $school_id,
+        (int) ($_POST['id'] ?? 0),
+        (float) ($_POST['weight_percentage'] ?? 0),
+        $_POST['status'] ?? 'Draft',
+        isset($_POST['include_in_report'])
+    );
+    $message = $result['message'];
+    $message_type = $result['ok'] ? 'success' : 'danger';
 }
 
 // ---------------------------------------------------------------------
 // List
 // ---------------------------------------------------------------------
-$list = $pdo->prepare("
-    SELECT id, title, weight_percentage, term, year, status, include_in_report
-    FROM assessments
-    WHERE school_id = ?
-    ORDER BY year DESC, term DESC, title ASC
-");
-$list->execute([$school_id]);
-$assessments = $list->fetchAll(PDO::FETCH_ASSOC);
+$__data = admin_assessments_fetch_list($pdo, $school_id);
+$assessments = $__data['assessments'];
+$weight_used_by_term = $__data['weight_used_by_term'];
 
 $current_year = (int) date('Y');
-
-// Report-counted weight already used per term/year, keyed "term|year" --
-// feeds the live "X% remaining" hint in the New Assessment form below, so
-// an admin building a 10/10/80 (AOI/Mid/Final) split sees how much room is
-// left as they type, without a page reload. The 100% cap itself is
-// enforced server-side above regardless of what this hint shows.
-$weight_used_by_term = [];
-foreach ($assessments as $a) {
-    if (!$a['include_in_report']) continue;
-    $key = $a['term'] . '|' . $a['year'];
-    $weight_used_by_term[$key] = ($weight_used_by_term[$key] ?? 0) + (float) $a['weight_percentage'];
-}
 ?>
 <style>
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}

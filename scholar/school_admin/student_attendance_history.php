@@ -36,35 +36,16 @@ if (
 $school_id = (int) $_SESSION['school_id'];
 $student_id = (int) ($_GET['id'] ?? 0);
 
-if ($student_id <= 0) {
-    exit("Invalid student.");
+require_once __DIR__ . '/_student_attendance_history_helpers.php';
+
+$history = admin_student_attendance_history_fetch($pdo, $school_id, $student_id);
+
+if (!$history['ok']) {
+    exit($history['message']);
 }
 
-$stmt = $pdo->prepare("
-    SELECT s.*, c.class_name
-    FROM students s
-    LEFT JOIN classes c ON s.class_id = c.id
-    WHERE s.id = ? AND s.school_id = ?
-    LIMIT 1
-");
-$stmt->execute([$student_id, $school_id]);
-$student = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$student) {
-    exit("Student not found in your school.");
-}
-
-$rows_stmt = $pdo->prepare("
-    SELECT a.attendance_date, a.status, a.subject_id, sub.subject_name
-    FROM attendance a
-    LEFT JOIN subjects sub ON sub.id = a.subject_id
-    WHERE a.student_id = ?
-      AND (a.school_id = ? OR a.subject_id IS NOT NULL)
-    ORDER BY a.attendance_date DESC, sub.subject_name ASC
-    LIMIT 200
-");
-$rows_stmt->execute([$student_id, $school_id]);
-$rows = $rows_stmt->fetchAll(PDO::FETCH_ASSOC);
+$student = $history['student'];
+$rows = $history['rows'];
 
 function safe($value): string
 {

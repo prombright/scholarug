@@ -28,25 +28,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/_chat_helpers.php';
+require_once __DIR__ . '/_teacher_messages_helpers.php';
 
 require_role(['teacher']);
 
 $school_id = current_school_id();
 $staff_id = current_staff_id();
 
-// Every class this teacher can message students in -- either they teach
-// a subject there (teacher_assignments) or they're its class_teacher.
-$classes_stmt = $pdo->prepare("
-    SELECT DISTINCT c.id, c.class_name, c.stream_name, (c.class_teacher_id = ?) AS is_class_teacher
-    FROM classes c
-    WHERE c.school_id = ? AND (
-        c.id IN (SELECT class_id FROM teacher_assignments WHERE school_id = ? AND teacher_id = ?)
-        OR c.class_teacher_id = ?
-    )
-    ORDER BY c.class_name, c.stream_name
-");
-$classes_stmt->execute([$staff_id, $school_id, $school_id, $staff_id, $staff_id]);
-$my_classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
+$my_classes = teacher_reachable_classes($pdo, $school_id, $staff_id);
 
 $selected_class_id = null;
 if (isset($_POST['class_id'])) {
@@ -69,43 +58,9 @@ foreach ($my_classes as $c) {
 // teacher's other classes.
 $class_roster = [];
 if ($selected_class !== null) {
-    if ($selected_class['is_class_teacher']) {
-        $roster_stmt = $pdo->prepare("SELECT id, full_name FROM students WHERE school_id = ? AND class_id = ? ORDER BY full_name");
-        $roster_stmt->execute([$school_id, $selected_class['id']]);
-    } else {
-        // Core subject = whole class; Elective = only students with a
-        // real student_subjects enrollment row -- exact same rule
-        // _report_card_render.php's subjects query already enforces.
-        $roster_stmt = $pdo->prepare("
-            SELECT DISTINCT st.id, st.full_name
-            FROM students st
-            JOIN subjects sub ON sub.school_id = st.school_id AND sub.class_name = st.class_name
-            JOIN teacher_assignments ta ON ta.subject_id = sub.id AND ta.class_id = st.class_id AND ta.school_id = st.school_id AND ta.teacher_id = ?
-            LEFT JOIN student_subjects ss ON ss.subject_id = sub.id AND ss.student_id = st.id
-            WHERE st.school_id = ? AND st.class_id = ?
-              AND (sub.subject_type != 'Elective' OR ss.id IS NOT NULL)
-            ORDER BY st.full_name
-        ");
-        $roster_stmt->execute([$staff_id, $school_id, $selected_class['id']]);
-    }
-    $class_roster = $roster_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $class_roster = teacher_class_roster($pdo, $school_id, $staff_id, $selected_class);
 }
 $class_roster_ids = array_map('intval', array_column($class_roster, 'id'));
-
-// Finds (or creates, if this teacher has never messaged this student
-// before) the conversation row for one student -- shared by the
-// individual-send and broadcast-send paths below so they can't drift.
-$find_or_create_conversation = function (int $studentId) use ($pdo, $school_id, $staff_id): int {
-    $find = $pdo->prepare("SELECT id FROM conversations WHERE student_id = ? AND teacher_id = ? AND school_id = ?");
-    $find->execute([$studentId, $staff_id, $school_id]);
-    $id = $find->fetchColumn();
-    if ($id) {
-        return (int) $id;
-    }
-    $ins = $pdo->prepare("INSERT INTO conversations (school_id, student_id, teacher_id) VALUES (?, ?, ?)");
-    $ins->execute([$school_id, $studentId, $staff_id]);
-    return (int) $pdo->lastInsertId();
-};
 
 $broadcast_error = '';
 $broadcast_count = null;
@@ -116,16 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_
 
     if ($selected_class === null) {
         $broadcast_error = 'Pick a class first.';
-    } elseif (!in_array($target_id, $class_roster_ids, true)) {
-        $broadcast_error = 'You can only message a student you actually teach in that class.';
-    } elseif ($body === '') {
-        $broadcast_error = 'Message cannot be empty.';
     } else {
-        $cid = $find_or_create_conversation($target_id);
-        $pdo->prepare("INSERT INTO conversation_messages (conversation_id, sender_role, body) VALUES (?, 'teacher', ?)")
-            ->execute([$cid, $body]);
-        header('Location: teacher_messages.php?student_id=' . $target_id . '&class_id=' . $selected_class['id']);
-        exit;
+        $result = teacher_send_individual($pdo, $school_id, $staff_id, $class_roster_ids, $target_id, $body);
+        if (!$result['ok']) {
+            $broadcast_error = $result['error'];
+        } else {
+            header('Location: teacher_messages.php?student_id=' . $target_id . '&class_id=' . $selected_class['id']);
+            exit;
+        }
     }
 }
 
@@ -134,33 +87,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_
 
     if ($selected_class === null) {
         $broadcast_error = 'Pick a class first.';
-    } elseif ($body === '') {
-        $broadcast_error = 'Message cannot be empty.';
-    } elseif (empty($class_roster_ids)) {
-        $broadcast_error = 'No students to message in that class yet.';
     } else {
-        foreach ($class_roster_ids as $sid) {
-            $cid = $find_or_create_conversation($sid);
-            $pdo->prepare("INSERT INTO conversation_messages (conversation_id, sender_role, body) VALUES (?, 'teacher', ?)")
-                ->execute([$cid, $body]);
+        $result = teacher_send_broadcast($pdo, $school_id, $staff_id, $class_roster_ids, $body);
+        if (!$result['ok']) {
+            $broadcast_error = $result['error'];
+        } else {
+            header('Location: teacher_messages.php?broadcast_sent=' . $result['count'] . '&class_id=' . $selected_class['id']);
+            exit;
         }
-        header('Location: teacher_messages.php?broadcast_sent=' . count($class_roster_ids) . '&class_id=' . $selected_class['id']);
-        exit;
     }
 }
 
-// Threads, latest message first.
-$threads_stmt = $pdo->prepare("
-    SELECT cv.id, cv.student_id, s.full_name AS student_name,
-        (SELECT COUNT(*) FROM conversation_messages cm WHERE cm.conversation_id = cv.id AND cm.sender_role = 'student' AND cm.read_at IS NULL) AS unread,
-        (SELECT MAX(created_at) FROM conversation_messages cm WHERE cm.conversation_id = cv.id) AS last_at
-    FROM conversations cv
-    JOIN students s ON s.id = cv.student_id AND s.school_id = cv.school_id
-    WHERE cv.teacher_id = ? AND cv.school_id = ?
-    ORDER BY last_at DESC
-");
-$threads_stmt->execute([$staff_id, $school_id]);
-$threads = $threads_stmt->fetchAll(PDO::FETCH_ASSOC);
+$threads = teacher_message_threads($pdo, $school_id, $staff_id);
 
 // Live sidebar refresh -- already sorted by last_at DESC from the query
 // above, so this is a straight pass-through to JSON (unlike the student
@@ -224,21 +162,12 @@ if ($open_student_id !== null) {
         if (($_GET['poll'] ?? '') === '1') {
             header('Content-Type: application/json');
             $after_id = (int) ($_GET['after_id'] ?? 0);
-            $mark_read = $pdo->prepare("UPDATE conversation_messages SET read_at = NOW() WHERE conversation_id = ? AND sender_role = 'student' AND read_at IS NULL");
-            $mark_read->execute([$conversation_id]);
-            $poll_stmt = $pdo->prepare("SELECT id, sender_role, body, created_at FROM conversation_messages WHERE conversation_id = ? AND id > ? ORDER BY created_at ASC");
-            $poll_stmt->execute([$conversation_id, $after_id]);
-            echo json_encode(['messages' => $poll_stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            echo json_encode(['messages' => teacher_poll_messages($pdo, $conversation_id, $after_id)]);
             exit;
         }
 
         // Viewing the thread marks the student's messages as read.
-        $mark_read = $pdo->prepare("UPDATE conversation_messages SET read_at = NOW() WHERE conversation_id = ? AND sender_role = 'student' AND read_at IS NULL");
-        $mark_read->execute([$conversation_id]);
-
-        $msgs_stmt = $pdo->prepare("SELECT id, sender_role, body, created_at FROM conversation_messages WHERE conversation_id = ? ORDER BY created_at ASC");
-        $msgs_stmt->execute([$conversation_id]);
-        $messages = $msgs_stmt->fetchAll(PDO::FETCH_ASSOC);
+        $messages = teacher_conversation_messages($pdo, $conversation_id);
     }
 }
 $messages = $messages ?? [];

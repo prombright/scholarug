@@ -16,18 +16,15 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
+require_once __DIR__ . '/_teacher_submissions_helpers.php';
 
 require_role(['school_admin']);
 
 $school_id = current_school_id();
 
-$assessments_stmt = $pdo->prepare("SELECT id, title, term, year FROM assessments WHERE school_id = ? ORDER BY year DESC, id DESC");
-$assessments_stmt->execute([$school_id]);
-$assessments = $assessments_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$classes_stmt = $pdo->prepare("SELECT id, class_name FROM classes WHERE school_id = ? ORDER BY class_name");
-$classes_stmt->execute([$school_id]);
-$classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
+$__filters = admin_teacher_submissions_fetch_filters($pdo, $school_id);
+$assessments = $__filters['assessments'];
+$classes = $__filters['classes'];
 
 $sel_assessment = isset($_GET['assessment_id']) && $_GET['assessment_id'] !== '' ? (int) $_GET['assessment_id'] : null;
 $sel_class = isset($_GET['class_id']) && $_GET['class_id'] !== '' ? (int) $_GET['class_id'] : null;
@@ -38,31 +35,7 @@ if ($sel_assessment !== null) {
     if (!in_array($sel_assessment, $allowed_assessment_ids, true)) {
         $sel_assessment = null;
     } else {
-        $sql = "
-            SELECT
-                ta.teacher_id, ta.class_id, ta.subject_id,
-                c.class_name, sub.subject_name,
-                TRIM(CONCAT(st.first_name, ' ', st.last_name)) AS teacher_name,
-                COUNT(CASE WHEN sm.submission_status = 'submitted' THEN 1 END) AS submitted_count,
-                COUNT(CASE WHEN sm.submission_status = 'draft' THEN 1 END) AS draft_count
-            FROM teacher_assignments ta
-            JOIN classes c ON c.id = ta.class_id
-            JOIN subjects sub ON sub.id = ta.subject_id
-            JOIN staff st ON st.staff_id = ta.teacher_id AND st.school_id = ta.school_id
-            LEFT JOIN student_marks sm ON sm.class_id = ta.class_id AND sm.subject_id = ta.subject_id
-                AND sm.teacher_id = ta.teacher_id AND sm.assessment_id = ?
-            WHERE ta.school_id = ?
-        ";
-        $params = [$sel_assessment, $school_id];
-        if ($sel_class !== null) {
-            $sql .= " AND ta.class_id = ?";
-            $params[] = $sel_class;
-        }
-        $sql .= " GROUP BY ta.class_id, ta.subject_id, ta.teacher_id ORDER BY c.class_name, sub.subject_name, teacher_name";
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = admin_teacher_submissions_fetch_rows($pdo, $school_id, $sel_assessment, $sel_class);
     }
 }
 

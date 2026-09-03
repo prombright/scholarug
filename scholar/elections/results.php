@@ -15,13 +15,12 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['school_admin']);
 require_once __DIR__ . '/_election_helpers.php';
+require_once __DIR__ . '/_admin_pages_helpers.php';
 
 $school_id = current_school_id();
 $election_id = (int) ($_GET['election_id'] ?? 0);
 
-$elec_stmt = $pdo->prepare('SELECT * FROM elections WHERE id = ? AND school_id = ?');
-$elec_stmt->execute([$election_id, $school_id]);
-$election = $elec_stmt->fetch(PDO::FETCH_ASSOC);
+$election = admin_election_resolve($pdo, $school_id, $election_id);
 
 if (!$election) {
     header('Location: index.php?err=notfound');
@@ -29,16 +28,7 @@ if (!$election) {
 }
 
 $phase = election_phase($election, $pdo);
-
-$pos_stmt = $pdo->prepare('SELECT * FROM election_positions WHERE election_id = ? ORDER BY display_order, title');
-$pos_stmt->execute([$election_id]);
-$positions = $pos_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-foreach ($positions as &$p) {
-    $p['turnout'] = election_turnout_for_position($pdo, (int) $p['id'], $school_id);
-    $p['tally'] = election_tally_for_position($pdo, (int) $p['id']);
-}
-unset($p);
+$positions = admin_election_results($pdo, $school_id, $election_id);
 
 $ACTIVE_NAV = 'elections';
 require_once __DIR__ . '/../_admin_shell.php';

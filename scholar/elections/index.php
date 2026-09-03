@@ -17,6 +17,7 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['school_admin']);
 require_once __DIR__ . '/_election_helpers.php';
+require_once __DIR__ . '/_index_helpers.php';
 
 $school_id = current_school_id();
 $staff_id = current_staff_id();
@@ -28,35 +29,20 @@ if (($_GET['err'] ?? '') === 'notfound') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_election'])) {
-    $title = trim($_POST['title'] ?? '');
-    $term = trim($_POST['term'] ?? current_term());
-    $year = trim($_POST['year'] ?? current_year());
-    $opens_at = trim($_POST['opens_at'] ?? '');
-    $closes_at = trim($_POST['closes_at'] ?? '');
-
-    if ($title === '' || $opens_at === '' || $closes_at === '') {
-        $error = 'Title, opens-at, and closes-at are all required.';
-    } elseif (strtotime($closes_at) <= strtotime($opens_at)) {
-        $error = 'Closing time must be after the opening time.';
-    } else {
-        $pdo->prepare('
-            INSERT INTO elections (school_id, title, term, year, opens_at, closes_at, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ')->execute([$school_id, $title, $term, $year, $opens_at, $closes_at, $staff_id > 0 ? $staff_id : null]);
-        $success = 'Election created as a Draft. Add positions next.';
-    }
+    $result = admin_elections_create(
+        $pdo, $school_id, $staff_id,
+        trim($_POST['title'] ?? ''), trim($_POST['term'] ?? current_term()), trim($_POST['year'] ?? current_year()),
+        trim($_POST['opens_at'] ?? ''), trim($_POST['closes_at'] ?? '')
+    );
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['publish_election'])) {
-    $election_id = (int) ($_POST['election_id'] ?? 0);
-    $pdo->prepare("UPDATE elections SET status = 'Published' WHERE id = ? AND school_id = ? AND status = 'Draft'")
-        ->execute([$election_id, $school_id]);
+    admin_elections_publish($pdo, $school_id, (int) ($_POST['election_id'] ?? 0));
     $success = 'Election published. Students can now apply for its positions.';
 }
 
-$elections_stmt = $pdo->prepare('SELECT * FROM elections WHERE school_id = ? ORDER BY created_at DESC');
-$elections_stmt->execute([$school_id]);
-$elections = $elections_stmt->fetchAll(PDO::FETCH_ASSOC);
+$elections = admin_elections_fetch_list($pdo, $school_id);
 
 $ACTIVE_NAV = 'elections';
 require_once __DIR__ . '/../_admin_shell.php';
@@ -131,7 +117,7 @@ a.act{color:var(--cyan);text-decoration:none;font-size:0.8rem;font-weight:600;ma
                     <tr><td colspan="6" class="empty">No elections yet — create one above.</td></tr>
                 <?php endif; ?>
                 <?php foreach ($elections as $e): ?>
-                    <?php $phase = election_phase($e, $pdo); ?>
+                    <?php $phase = $e['phase']; ?>
                     <tr>
                         <td><?= htmlspecialchars($e['title'], ENT_QUOTES) ?></td>
                         <td><?= htmlspecialchars($e['term'] . ' ' . $e['year'], ENT_QUOTES) ?></td>

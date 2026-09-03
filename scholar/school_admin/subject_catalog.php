@@ -33,6 +33,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/../_subject_helpers.php';
+require_once __DIR__ . '/_subject_catalog_helpers.php';
 
 require_role(['school_admin']);
 
@@ -45,172 +46,45 @@ $school_type = $school_type_stmt->fetchColumn() ?: 'Secondary';
 $message = '';
 $message_type = '';
 
-const LEVEL_CLASS_NAMES = [
-    'O-Level' => ['S.1', 'S.2', 'S.3', 'S.4'],
-    'A-Level' => ['S.5', 'S.6'],
-];
-
 // ---- Adopt ticked catalog subjects ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adopt_subjects']) && $school_type === 'Secondary') {
-    $level_type = in_array($_POST['level_type'] ?? '', ['O-Level', 'A-Level'], true) ? $_POST['level_type'] : 'O-Level';
-    $catalog_ids = array_map('intval', $_POST['catalog_ids'] ?? []);
-    $class_names = LEVEL_CLASS_NAMES[$level_type];
-
-    // Which of the ticked IDs is this school already carrying? (skip, additive-only)
-    $already = $pdo->prepare("SELECT DISTINCT subject_reference_id FROM subjects WHERE school_id = ? AND subject_reference_id IS NOT NULL AND class_name != ''");
-    $already->execute([$school_id]);
-    $already_ids = array_map('intval', array_column($already->fetchAll(PDO::FETCH_ASSOC), 'subject_reference_id'));
-
-    $new_ids = array_diff($catalog_ids, $already_ids);
-
-    if (empty($new_ids)) {
-        $message = 'Nothing new to adopt -- everything ticked was already added.';
-        $message_type = 'error';
-    } else {
-        $catalog_stmt = $pdo->prepare("SELECT * FROM subject_catalog WHERE id = ? AND level_type = ? AND is_active = 1");
-        $ins = $pdo->prepare("
-            INSERT INTO subjects (school_id, subject_reference_id, level_type, subject_name, subject_code, is_compulsory, papers_count, class_name, subject_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $prefix = $level_type === 'A-Level' ? 'A-' : 'O-';
-        $adopted_count = 0;
-
-        foreach ($new_ids as $cid) {
-            $catalog_stmt->execute([$cid, $level_type]);
-            $cat = $catalog_stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$cat) continue;
-
-            $final_code = $prefix . $cat['subject_code'];
-            $subject_type = $cat['is_compulsory'] ? 'Core' : 'Elective';
-
-            foreach ($class_names as $cn) {
-                // S.3/S.4 bump to 2 papers for Biology/Physics/Chemistry/
-                // Computer Studies -- a no-op for every other subject and
-                // for A-Level (S.5/S.6 never match the upper-form check),
-                // so this is safe to always call regardless of level.
-                $papers = scholar_papers_count_for_class($cat['subject_code'], $cn, (int) $cat['papers_count']);
-                $ins->execute([
-                    $school_id, $cid, $level_type, $cat['subject_name'], $final_code,
-                    (int) $cat['is_compulsory'], $papers, $cn, $subject_type,
-                ]);
-            }
-            $adopted_count++;
-        }
-
-        $message = "Adopted {$adopted_count} subject(s) across " . implode(', ', $class_names) . ".";
-        $message_type = 'success';
-    }
+    $result = admin_subjects_adopt($pdo, $school_id, $_POST['level_type'] ?? '', array_map('intval', $_POST['catalog_ids'] ?? []));
+    $message = $result['message'];
+    $message_type = $result['type'];
 }
 
 // ---- Adopt ticked combinations (A-Level only) ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['adopt_combinations']) && $school_type === 'Secondary') {
-    $combo_ids = array_map('intval', $_POST['combo_ids'] ?? []);
-
-    $already_combo = $pdo->prepare("SELECT combination_catalog_id FROM combinations WHERE school_id = ? AND combination_catalog_id IS NOT NULL");
-    $already_combo->execute([$school_id]);
-    $already_combo_ids = array_map('intval', array_column($already_combo->fetchAll(PDO::FETCH_ASSOC), 'combination_catalog_id'));
-
-    $new_combo_ids = array_diff($combo_ids, $already_combo_ids);
-
-    if (empty($new_combo_ids)) {
-        $message = 'Nothing new to adopt -- everything ticked was already added.';
-        $message_type = 'error';
-    } else {
-        // A combination can only be adopted once this school has already
-        // adopted all 3 of its constituent A-Level subjects (matched via
-        // subject_reference_id, since a subject's own code is editable
-        // per-school after adoption -- see combinations.sql).
-        $has_subject = $pdo->prepare("
-            SELECT COUNT(*) FROM subjects s
-            JOIN subject_catalog sc ON sc.id = s.subject_reference_id
-            WHERE s.school_id = ? AND sc.subject_code = ? AND sc.level_type = 'A-Level'
-        ");
-        $combo_stmt = $pdo->prepare("SELECT * FROM combination_catalog WHERE id = ? AND is_active = 1");
-        $ins_combo = $pdo->prepare("
-            INSERT INTO combinations (school_id, combination_catalog_id, code, name, subject_code_1, subject_code_2, subject_code_3)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
-
-        $adopted_count = 0;
-        $skipped_names = [];
-
-        foreach ($new_combo_ids as $cid) {
-            $combo_stmt->execute([$cid]);
-            $combo = $combo_stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$combo) continue;
-
-            $codes = [$combo['subject_code_1'], $combo['subject_code_2'], $combo['subject_code_3']];
-            $all_present = true;
-            foreach ($codes as $code) {
-                $has_subject->execute([$school_id, $code]);
-                if ((int) $has_subject->fetchColumn() === 0) { $all_present = false; break; }
-            }
-
-            if (!$all_present) {
-                $skipped_names[] = $combo['code'];
-                continue;
-            }
-
-            $ins_combo->execute([$school_id, $cid, $combo['code'], $combo['name'], $combo['subject_code_1'], $combo['subject_code_2'], $combo['subject_code_3']]);
-            $adopted_count++;
-        }
-
-        if ($adopted_count > 0) {
-            $message = "Adopted {$adopted_count} combination(s).";
-            $message_type = 'success';
-        }
-        if (!empty($skipped_names)) {
-            $message .= ($message ? ' ' : '') . 'Skipped ' . implode(', ', $skipped_names) . ' -- adopt all of its subjects (A-Level) first.';
-            $message_type = $adopted_count > 0 ? 'success' : 'error';
-        }
-    }
+    $result = admin_subjects_adopt_combinations($pdo, $school_id, array_map('intval', $_POST['combo_ids'] ?? []));
+    $message = $result['message'];
+    $message_type = $result['type'];
 }
-
-$catalog_stmt = $pdo->prepare("SELECT * FROM subject_catalog WHERE level_type = ? AND is_active = 1 ORDER BY display_order, subject_name");
-
-$already_stmt = $pdo->prepare("SELECT DISTINCT subject_reference_id FROM subjects WHERE school_id = ? AND subject_reference_id IS NOT NULL AND class_name != ''");
-$already_stmt->execute([$school_id]);
-$already_adopted = array_map('intval', array_column($already_stmt->fetchAll(PDO::FETCH_ASSOC), 'subject_reference_id'));
 
 $sel_view = ($_GET['view'] ?? '') === 'combinations' ? 'combinations' : 'subjects';
 $sel_level = in_array($_GET['level_type'] ?? '', ['O-Level', 'A-Level'], true) ? $_GET['level_type'] : 'O-Level';
-$catalog_stmt->execute([$sel_level]);
-$catalog_subjects = $catalog_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Same rows the PHP-rendered fallback below uses -- handed to the Vue
 // search widget as plain data. PHP still decides exactly which subjects
 // and which "adopted" flags reach the browser; Vue only filters what's
 // already here, it never fetches anything of its own.
-$catalog_json = array_map(static function (array $cs) use ($already_adopted): array {
-    return [
-        'id' => (int) $cs['id'],
-        'subject_name' => $cs['subject_name'],
-        'subject_code' => $cs['subject_code'],
-        'papers_count' => (int) $cs['papers_count'],
-        'is_compulsory' => (bool) $cs['is_compulsory'],
-        'adopted' => in_array((int) $cs['id'], $already_adopted, true),
-    ];
-}, $catalog_subjects);
+$catalog_json = admin_subjects_fetch_catalog($pdo, $school_id, $sel_level);
 
 // ---- Data for the Combinations tab ----
 $combo_catalog = [];
 $adopted_combo_catalog_ids = [];
+$adopted_subject_codes = [];
 if ($sel_view === 'combinations') {
-    $combo_catalog = $pdo->query("SELECT * FROM combination_catalog WHERE is_active = 1 ORDER BY display_order, name")->fetchAll(PDO::FETCH_ASSOC);
-
-    $already_combo = $pdo->prepare("SELECT combination_catalog_id FROM combinations WHERE school_id = ? AND combination_catalog_id IS NOT NULL");
-    $already_combo->execute([$school_id]);
-    $adopted_combo_catalog_ids = array_map('intval', array_column($already_combo->fetchAll(PDO::FETCH_ASSOC), 'combination_catalog_id'));
-
-    // Which A-Level subject codes has this school actually adopted?
-    $adopted_codes_stmt = $pdo->prepare("
-        SELECT DISTINCT sc.subject_code
-        FROM subjects s
-        JOIN subject_catalog sc ON sc.id = s.subject_reference_id
-        WHERE s.school_id = ? AND sc.level_type = 'A-Level'
-    ");
-    $adopted_codes_stmt->execute([$school_id]);
-    $adopted_subject_codes = array_column($adopted_codes_stmt->fetchAll(PDO::FETCH_ASSOC), 'subject_code');
+    $__combo_data = admin_subjects_fetch_combinations_data($pdo, $school_id);
+    // Template below (unchanged) expects raw combo_catalog rows + a plain
+    // id list -- reshape the helper's richer per-combo data back into that.
+    $combo_catalog = array_map(static function (array $c): array {
+        return [
+            'id' => $c['id'], 'code' => $c['code'], 'name' => $c['name'],
+            'subject_code_1' => $c['subject_codes'][0], 'subject_code_2' => $c['subject_codes'][1], 'subject_code_3' => $c['subject_codes'][2],
+        ];
+    }, $__combo_data['combinations']);
+    $adopted_combo_catalog_ids = array_values(array_map(static fn($c) => $c['id'], array_filter($__combo_data['combinations'], static fn($c) => $c['adopted'])));
+    $adopted_subject_codes = $__combo_data['adopted_subject_codes'];
 }
 
 $SCHOLAR_BASE = '../';

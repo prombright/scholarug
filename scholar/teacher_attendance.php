@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/_attendance_helpers.php';
 
 require_role(['teacher']);
 
@@ -44,23 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_attendance'])) {
     $statuses = $_POST['status'] ?? []; // [student_id => status]
 
     if ($class_id && !empty($statuses)) {
-        $check_stmt  = $pdo->prepare("SELECT id FROM attendance WHERE student_id = ? AND school_id = ? AND attendance_date = ? AND subject_id IS NULL LIMIT 1");
-        $update_stmt = $pdo->prepare("UPDATE attendance SET status = ?, teacher_id = ? WHERE id = ?");
-        $insert_stmt = $pdo->prepare("INSERT INTO attendance (school_id, student_id, class_id, teacher_id, attendance_date, status) VALUES (?, ?, ?, ?, ?, ?)");
-
-        foreach ($statuses as $student_id => $status) {
-            if (!in_array($status, ['present', 'absent', 'sick', 'permission'], true)) continue;
-
-            $check_stmt->execute([(int) $student_id, $school_id, $date]);
-            $existing_id = $check_stmt->fetchColumn();
-
-            if ($existing_id) {
-                $update_stmt->execute([$status, $staff_id, $existing_id]);
-            } else {
-                $insert_stmt->execute([$school_id, (int) $student_id, $class_id, $staff_id, $date, $status]);
-            }
-        }
-        $message = 'Roll call saved for ' . count($statuses) . ' student(s).';
+        $touched = attendance_save($pdo, $school_id, $class_id, $staff_id, $date, $statuses);
+        $message = 'Roll call saved for ' . $touched . ' student(s).';
         $message_type = 'success';
     } else {
         $message = 'Pick a class first.';
@@ -81,36 +67,15 @@ $roster = [];
 $taken_at = null; // when this class's roll call for this date was first recorded
 
 if ($sel_class) {
-    $roster_stmt = $pdo->prepare("
-        SELECT s.id, s.full_name, s.student_no, a.status, a.created_at
-        FROM students s
-        LEFT JOIN attendance a
-               ON a.student_id = s.id AND a.school_id = ? AND a.attendance_date = ? AND a.subject_id IS NULL
-        WHERE s.school_id = ? AND s.class_id = ?
-        ORDER BY s.full_name
-    ");
-    $roster_stmt->execute([$school_id, $sel_date, $school_id, $sel_class]);
-    $roster = $roster_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($roster as $r) {
-        if (!empty($r['created_at']) && ($taken_at === null || $r['created_at'] < $taken_at)) {
-            $taken_at = $r['created_at'];
-        }
-    }
+    $roster = attendance_fetch_roster($pdo, $school_id, $sel_class, $sel_date);
 }
 
 // Status counts for the clickable stat cards -- only meaningful once the
 // roll call for this date has actually been recorded ($taken_at set),
 // same "recorded yet or not" signal already used for the timestamp line.
-$status_counts = ['present' => 0, 'absent' => 0, 'sick' => 0, 'permission' => 0];
-if ($taken_at) {
-    foreach ($roster as $r) {
-        $st = $r['status'] ?? 'present';
-        if (isset($status_counts[$st])) {
-            $status_counts[$st]++;
-        }
-    }
-}
+$summary = attendance_summarize($roster);
+$taken_at = $summary['taken_at'];
+$status_counts = $summary['counts'];
 
 $class_teacher_stmt = $pdo->prepare("SELECT COUNT(*) FROM classes WHERE school_id = ? AND class_teacher_id = ?");
 $class_teacher_stmt->execute([$school_id, $staff_id]);

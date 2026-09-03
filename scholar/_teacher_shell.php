@@ -29,6 +29,7 @@ $TEACHER_NAV_ITEMS = [
     'dashboard'  => ['label' => 'Dashboard', 'icon' => 'bi-grid-1x2', 'href' => "$__SB/teachers_portal.php"],
     'marks'      => ['label' => 'Marks Entry', 'icon' => 'bi-pencil-square', 'href' => "$__SB/teacher_marks_entry.php"],
     'analytics'  => ['label' => 'Performance Analytics', 'icon' => 'bi-bar-chart-line', 'href' => "$__SB/performance_analytics.php"],
+    'analytics_pilot' => ['label' => 'Analytics (Vue pilot)', 'icon' => 'bi-lightning-charge', 'href' => "$__SB/app_teacher.php"],
     'timetable'  => ['label' => 'My Timetable', 'icon' => 'bi-calendar3', 'href' => "$__SB/my_timetable.php"],
     'attendance' => ['label' => 'Roll Call', 'icon' => 'bi-calendar-check', 'href' => "$__SB/teacher_attendance.php"],
     'library'    => ['label' => 'Library', 'icon' => 'bi-book', 'href' => "$__SB/library/manage.php"],

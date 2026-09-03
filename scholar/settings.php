@@ -11,6 +11,7 @@ require_once 'db.php';
 // scholar_class_ladder()/scholar_normalize_class_name(), used by the
 // Close Term / Close Year handlers.
 require_once __DIR__ . '/auth_guard.php';
+require_once __DIR__ . '/_settings_helpers.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -34,95 +35,22 @@ $msg_type = 'success';
 // 2. TRANSACTION PROCESSING: POST ROUTINES
 // ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commit_settings_matrix'])) {
-    $school_name = trim($_POST['school_name'] ?? '');
-    $phone       = trim($_POST['phone_contact'] ?? '');
-    $email       = trim($_POST['email_contact'] ?? '');
-    $location    = trim($_POST['address'] ?? '');
-    $academic_yr = trim($_POST['current_academic_year'] ?? '2026');
-    $curr_term   = trim($_POST['current_term'] ?? 'Term 1');
+    $result = admin_settings_save($pdo, $school_id, $_POST, $_FILES);
+    $msg = $result['message'];
+    $msg_type = $result['ok'] ? 'success' : 'error';
 
-    // Establish dynamic fallback badge if no previous logo exists
-    $logo_destination = $_POST['existing_logo_path'] ?? 'assets/img/default-logo.png';
-    
-    // Upload Pipeline
-    if (isset($_FILES['school_logo']) && $_FILES['school_logo']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp_path = $_FILES['school_logo']['tmp_name'];
-        $file_name     = $_FILES['school_logo']['name'];
-        $file_ext      = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-        
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        
-        if (in_array($file_ext, $allowed_extensions)) {
-            // Self-healing directory configuration
-            if (!is_dir('assets/uploads')) {
-                mkdir('assets/uploads', 0755, true);
-            }
-            
-            // Structured naming scheme using school ID and Unix epoch to avoid caching issues
-            $new_file_name    = 'badge_school_' . $school_id . '_' . time() . '.' . $file_ext;
-            $upload_file_path = 'assets/uploads/' . $new_file_name;
-            
-            if (move_uploaded_file($file_tmp_path, $upload_file_path)) {
-                $logo_destination = $upload_file_path;
-            } else {
-                $msg = "FILE SYSTEM NOTICE: Failed to migrate uploaded asset to destination storage.";
-                $msg_type = 'error';
-            }
-        } else {
-            $msg = "VALIDATION ERROR: Unsupported file type. Please use WebP, PNG, JPG, or JPEG.";
-            $msg_type = 'error';
-        }
-    }
-
-    // Execute database synchronization
-    if ($msg_type !== 'error') {
-        try {
-            // phone_contact/email_contact/address (not the older,
-            // disconnected phone/email/location columns this used to write
-            // to) -- the report card (generate_report.php et al.) has only
-            // ever read the *_contact/address columns, so anything saved
-            // here previously could never actually reach a printed report.
-            $update_stmt = $pdo->prepare("
-                UPDATE schools
-                SET school_name = ?,
-                    phone_contact = ?,
-                    email_contact = ?,
-                    address = ?,
-                    school_badge = ?,
-                    current_term = ?,
-                    current_year = ?
-                WHERE id = ?
-            ");
-            $update_stmt->execute([
-                $school_name,
-                $phone,
-                $email,
-                $location,
-                $logo_destination,
-                $curr_term,
-                $academic_yr,
-                $school_id
-            ]);
-            
-            // DYNAMIC UPDATE: Instantly change the session branding across the platform
-            $_SESSION['school_name']     = $school_name;
-            $_SESSION['school_badge']    = $logo_destination;
-            $_SESSION['school_location'] = $location;
-
-            // This dropdown used to just write these two columns with no
-            // effect anywhere else -- every page reading $_SESSION['current_term']
-            // was silently stuck on the 'Term 1'/current-year fallback
-            // regardless of what was picked here. Mirroring into the
-            // session is what actually makes the choice take effect.
-            $_SESSION['current_term'] = $curr_term;
-            $_SESSION['current_year'] = $academic_yr;
-
-            $msg = "SUCCESS: Core institutional matrix profiles updated. Logo changed successfully!";
-            $msg_type = 'success';
-        } catch (Exception $e) {
-            $msg = "DATABASE ERROR: " . $e->getMessage();
-            $msg_type = 'error';
-        }
+    if ($result['ok']) {
+        // DYNAMIC UPDATE: Instantly change the session branding across the platform.
+        // This dropdown used to just write these two columns with no effect
+        // anywhere else -- every page reading $_SESSION['current_term'] was
+        // silently stuck on the 'Term 1'/current-year fallback regardless of
+        // what was picked here. Mirroring into the session is what actually
+        // makes the choice take effect.
+        $_SESSION['school_name']     = trim($_POST['school_name'] ?? '');
+        $_SESSION['school_badge']    = $result['school_badge'];
+        $_SESSION['school_location'] = trim($_POST['address'] ?? '');
+        $_SESSION['current_term'] = trim($_POST['current_term'] ?? 'Term 1');
+        $_SESSION['current_year'] = trim($_POST['current_academic_year'] ?? '2026');
     }
 }
 
@@ -130,18 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['commit_settings_matri
 // 3. RECOVERY PIPELINE: PULL CURRENT RECORD
 // ==========================================
 try {
-    $school_profile = $pdo->prepare("SELECT * FROM schools WHERE id = ? LIMIT 1");
-    $school_profile->execute([$school_id]);
-    $school = $school_profile->fetch(PDO::FETCH_ASSOC);
-
-    if (!$school) {
-      // ✅ Fixed
-$insert_init = $pdo->prepare("INSERT INTO schools (id, school_name) VALUES (?, 'My New High School')");
-        $insert_init->execute([$school_id]);
-        
-        $school_profile->execute([$school_id]);
-        $school = $school_profile->fetch(PDO::FETCH_ASSOC);
-    }
+    $school = admin_settings_fetch_school($pdo, $school_id);
 } catch (Exception $e) {
     die("CRITICAL STRUCTURAL ARCHITECTURE RECOVERY FAULT: " . $e->getMessage());
 }
@@ -159,37 +76,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['close_current_term'])
     $term_to_close = $school['current_term'] ?? 'Term 1';
     $year_to_close = $school['current_year'] ?? (string) date('Y');
 
-    try {
-        $pdo->beginTransaction();
+    $result = admin_settings_close_term($pdo, $school_id, $term_to_close, $year_to_close);
+    $msg = $result['message'];
+    $msg_type = $result['ok'] ? 'success' : 'error';
 
-        $close_stmt = $pdo->prepare("
-            UPDATE assessments SET status = 'Closed'
-            WHERE school_id = ? AND term = ? AND year = ? AND status != 'Closed'
-        ");
-        $close_stmt->execute([$school_id, $term_to_close, $year_to_close]);
-        $affected = $close_stmt->rowCount();
-
-        // Closing Term 3 does NOT auto-roll into next year's Term 1 -- that
-        // stays Close Year's own deliberate action, so nobody promotes a
-        // whole school's students by clicking through term-closes on
-        // autopilot.
-        $next_term_map = ['Term 1' => 'Term 2', 'Term 2' => 'Term 3', 'Term 3' => 'Term 3'];
-        $next_term = $next_term_map[$term_to_close] ?? 'Term 1';
-
-        $pdo->prepare("UPDATE schools SET current_term = ? WHERE id = ?")->execute([$next_term, $school_id]);
-        $pdo->commit();
-
-        $_SESSION['current_term'] = $next_term;
-        $school['current_term'] = $next_term;
-
-        $msg = $term_to_close === 'Term 3'
-            ? "Term 3 {$year_to_close} closed -- {$affected} assessment(s) locked. This was the school's final term for {$year_to_close}; use Close Year below when ready to promote students and start {$year_to_close}+1."
-            : "{$term_to_close} {$year_to_close} closed -- {$affected} assessment(s) locked. Now on {$next_term}.";
-        $msg_type = 'success';
-    } catch (Throwable $e) {
-        $pdo->rollBack();
-        $msg = "Could not close the term: " . $e->getMessage();
-        $msg_type = 'error';
+    if ($result['ok']) {
+        $_SESSION['current_term'] = $result['new_term'];
+        $school['current_term'] = $result['new_term'];
     }
 }
 
@@ -197,146 +90,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['close_current_term'])
 // 5. CLOSE YEAR -- promote every active student to their next class,
 //    graduate the top of the ladder, advance to next year's Term 1
 // ==========================================
-/**
- * Resolves a promotion's target classes.id, reusing whatever spelling of
- * that class already exists rather than assuming the canonical dotted
- * form -- classes.class_name isn't consistently formatted across schools
- * ("S1" vs "S.1"), and creating a fresh "S.2" for a school that already
- * has "S2" would permanently fork it into two parallel spellings of the
- * same class. Only creates a new row (canonical dotted form, matching
- * classes.php's manual "Add Class" form) if truly nothing matches.
- */
-function scholar_resolve_or_create_class(PDO $pdo, int $school_id, string $class_name, ?string $stream_name): int
-{
-    $norm = scholar_normalize_class_name($class_name);
-    $all_stmt = $pdo->prepare("SELECT id, class_name, stream_name FROM classes WHERE school_id = ?");
-    $all_stmt->execute([$school_id]);
-    $rows = $all_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // 1. normalized class_name match with the same stream (catches both
-    //    "spelling differs but stream matches" -- e.g. target 'S.2' vs an
-    //    existing 'S2' that both use stream 'A' -- and the fully-exact case).
-    foreach ($rows as $row) {
-        $row_stream = $row['stream_name'] ?? null;
-        if (scholar_normalize_class_name($row['class_name']) === $norm && $row_stream === $stream_name) {
-            return (int) $row['id'];
-        }
-    }
-
-    // 2. normalized class_name match, any stream -- still reuse rather than
-    //    duplicate; a school with no bare/matching-stream target class yet
-    //    lands on whatever stream variant already exists over creating a
-    //    parallel spelling.
-    foreach ($rows as $row) {
-        if (scholar_normalize_class_name($row['class_name']) === $norm) {
-            return (int) $row['id'];
-        }
-    }
-
-    // 3. nothing at all matches -- create it, canonical spelling, no stream
-    $ins = $pdo->prepare("INSERT INTO classes (school_id, class_name, stream_name) VALUES (?, ?, NULL)");
-    $ins->execute([$school_id, $class_name]);
-    return (int) $pdo->lastInsertId();
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['close_current_year'])) {
     $year_to_close = $school['current_year'] ?? (string) date('Y');
+    $school_type = $school['school_type'] ?? 'Secondary';
 
-    $open_check = $pdo->prepare("
-        SELECT COUNT(*) FROM assessments
-        WHERE school_id = ? AND term = 'Term 3' AND year = ? AND status != 'Closed'
-    ");
-    $open_check->execute([$school_id, $year_to_close]);
+    $result = admin_settings_close_year($pdo, $school_id, $year_to_close, $school_type);
+    $msg = $result['message'];
+    $msg_type = $result['ok'] ? 'success' : 'error';
 
-    if ((int) $open_check->fetchColumn() > 0) {
-        $msg = "Term 3 {$year_to_close} still has open assessments -- close Term 3 first.";
-        $msg_type = 'error';
-    } else {
-        $school_type = $school['school_type'] ?? 'Secondary';
-        $ladder = array_merge(...array_values(scholar_class_ladder($school_type)));
-
-        try {
-            $pdo->beginTransaction();
-
-            $promoted_total = 0;
-            $graduated_total = 0;
-
-            // Top-down, one pass: classes.id rows are shared forever (no
-            // year column), so promoting bottom-up would have the very
-            // next step immediately re-sweep students who just arrived a
-            // moment earlier in the same run -- top-down guarantees each
-            // source class is only ever read once.
-            for ($i = count($ladder) - 1; $i >= 0; $i--) {
-                $current_name = $ladder[$i];
-                $norm_current = scholar_normalize_class_name($current_name);
-
-                if ($i === count($ladder) - 1) {
-                    $grad_stmt = $pdo->prepare("
-                        UPDATE students SET graduated_year = ?, class_id = NULL
-                        WHERE school_id = ? AND graduated_year IS NULL
-                          AND REPLACE(UPPER(class_name), '.', '') = ?
-                    ");
-                    $grad_stmt->execute([$year_to_close, $school_id, $norm_current]);
-                    $graduated_total += $grad_stmt->rowCount();
-                    continue;
-                }
-
-                $next_name = $ladder[$i + 1];
-                // level_type only flips at the O-Level -> A-Level boundary
-                $level_override = ($current_name === 'S.4' && $school_type === 'Secondary') ? 'A-Level' : null;
-
-                $find_stmt = $pdo->prepare("
-                    SELECT st.id, c.stream_name
-                    FROM students st
-                    LEFT JOIN classes c ON st.class_id = c.id
-                    WHERE st.school_id = ? AND st.graduated_year IS NULL
-                      AND REPLACE(UPPER(st.class_name), '.', '') = ?
-                ");
-                $find_stmt->execute([$school_id, $norm_current]);
-                $matched = $find_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                $class_cache = []; // stream key => [class_id, class_name]
-                $class_name_stmt = $pdo->prepare("SELECT class_name FROM classes WHERE id = ?");
-                $upd_student = $pdo->prepare("
-                    UPDATE students SET class_id = ?, class_name = ?, level_type = COALESCE(?, level_type)
-                    WHERE id = ?
-                ");
-                foreach ($matched as $stu) {
-                    $stream_key = $stu['stream_name'] ?? '';
-                    if (!array_key_exists($stream_key, $class_cache)) {
-                        $target_id = scholar_resolve_or_create_class($pdo, $school_id, $next_name, $stu['stream_name'] ?: null);
-                        // Mirror the resolved class's own spelling, not the
-                        // canonical ladder form -- otherwise a student ends
-                        // up with class_name='S.2' while class_id points at
-                        // an existing 'S2' row, the same class described two
-                        // different ways in the same table.
-                        $class_name_stmt->execute([$target_id]);
-                        $resolved_name = $class_name_stmt->fetchColumn() ?: $next_name;
-                        $class_cache[$stream_key] = [$target_id, $resolved_name];
-                    }
-                    [$target_class_id, $target_class_name] = $class_cache[$stream_key];
-                    $upd_student->execute([$target_class_id, $target_class_name, $level_override, $stu['id']]);
-                    $promoted_total++;
-                }
-            }
-
-            $new_year = (string) ((int) $year_to_close + 1);
-            $pdo->prepare("UPDATE schools SET current_year = ?, current_term = 'Term 1' WHERE id = ?")
-                ->execute([$new_year, $school_id]);
-            $pdo->commit();
-
-            $_SESSION['current_year'] = $new_year;
-            $_SESSION['current_term'] = 'Term 1';
-            $school['current_year'] = $new_year;
-            $school['current_term'] = 'Term 1';
-
-            $msg = "Year closed -- {$promoted_total} student(s) promoted, {$graduated_total} graduated. Now on Term 1 {$new_year}.";
-            $msg_type = 'success';
-        } catch (Throwable $e) {
-            $pdo->rollBack();
-            $msg = "Could not close the year: " . $e->getMessage();
-            $msg_type = 'error';
-        }
+    if ($result['ok']) {
+        $_SESSION['current_year'] = $result['new_year'];
+        $_SESSION['current_term'] = 'Term 1';
+        $school['current_year'] = $result['new_year'];
+        $school['current_term'] = 'Term 1';
     }
 }
 

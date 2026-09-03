@@ -17,6 +17,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/../_report_card_render.php'; // scholar_fetch_report_settings()
+require_once __DIR__ . '/_report_settings_helpers.php';
 
 require_role(['school_admin']);
 
@@ -25,19 +26,13 @@ $message = '';
 $message_type = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
-    $show_photos = isset($_POST['show_student_photos']) ? 1 : 0;
-    $allow_download = isset($_POST['allow_student_download']) ? 1 : 0;
-    $no_data_color = trim($_POST['no_data_color'] ?? '');
-    $no_data_color = (!empty($_POST['use_no_data_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $no_data_color)) ? $no_data_color : null;
-
-    $pdo->prepare("
-        INSERT INTO school_settings (school_id, show_student_photos, allow_student_download, no_data_color)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-            show_student_photos = VALUES(show_student_photos),
-            allow_student_download = VALUES(allow_student_download),
-            no_data_color = VALUES(no_data_color)
-    ")->execute([$school_id, $show_photos, $allow_download, $no_data_color]);
+    $no_data_color = admin_report_settings_clean_color(!empty($_POST['use_no_data_color']), (string) ($_POST['no_data_color'] ?? ''));
+    admin_report_settings_save(
+        $pdo, $school_id,
+        isset($_POST['show_student_photos']),
+        isset($_POST['allow_student_download']),
+        $no_data_color
+    );
 
     $message = 'Report card settings saved.';
     $message_type = 'success';

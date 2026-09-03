@@ -36,6 +36,10 @@ $classes_stmt = $pdo->prepare("SELECT id, class_name FROM classes WHERE school_i
 $classes_stmt->execute([$school_id]);
 $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$school_type_stmt = $pdo->prepare("SELECT school_type FROM schools WHERE id = ?");
+$school_type_stmt->execute([$school_id]);
+$school_type = $school_type_stmt->fetchColumn() ?: 'Secondary';
+
 $message = '';
 $error = '';
 
@@ -43,7 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $full_name  = trim($_POST['full_name'] ?? '');
     $gender     = trim($_POST['gender'] ?? '');
     $class_id   = trim($_POST['class_id'] ?? '');
-    $level_type = trim($_POST['level_type'] ?? 'O-Level');
+    // Never trust the posted value for a Primary school -- the "Curriculum
+    // Level" field isn't even rendered for one (see the form below), so a
+    // stale/absent field here always used to fall back to the 'O-Level'
+    // default, silently overwriting a Primary student's correct level_type
+    // the moment anyone saved an edit on their record.
+    $level_type = $school_type === 'Primary' ? 'Primary' : trim($_POST['level_type'] ?? 'O-Level');
 
     if (empty($full_name) || empty($gender) || empty($class_id)) {
         $error = "Please fill in all required fields.";
@@ -153,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <?php if ($school_type !== 'Primary'): ?>
                 <div class="mb-4">
                     <label class="form-label">Curriculum Level</label>
                     <select name="level_type" class="form-select">
@@ -161,6 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <?php endif; ?>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Apply Changes</button>
             </form>
         </div>

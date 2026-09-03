@@ -29,15 +29,8 @@ schools operate faster and more efficiently.
 <div class="social-links">
 
 
-<a href="#" aria-label="Facebook">
 
-<i class="bi bi-facebook"></i>
-
-</a>
-
-
-
-<a href="#" aria-label="Twitter">
+<a href="https://x.com/home" aria-label="Twitter">
 
 <i class="bi bi-twitter-x"></i>
 
@@ -45,7 +38,7 @@ schools operate faster and more efficiently.
 
 
 
-<a href="#" aria-label="LinkedIn">
+<a href="https://www.linkedin.com/feed" aria-label="LinkedIn">
 
 <i class="bi bi-linkedin"></i>
 
@@ -53,7 +46,7 @@ schools operate faster and more efficiently.
 
 
 
-<a href="#" aria-label="Github">
+<a href="https://github.com/dashboard" aria-label="GitHub">
 
 <i class="bi bi-github"></i>
 
@@ -97,11 +90,6 @@ Contact Us
 
 <a href="user_manual.php">
 User Manual
-</a>
-
-
-<a href="#">
-Careers
 </a>
 
 
@@ -169,7 +157,7 @@ info@scholarug.com
 
 <i class="bi bi-telephone"></i>
 
-+256 759815047 | +256 788643794
+0759815047 | 0788643794
 
 </p>
 

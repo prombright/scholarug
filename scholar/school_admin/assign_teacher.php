@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
+require_once __DIR__ . '/_assign_teacher_helpers.php';
 
 require_role(['school_admin']);
 
@@ -29,107 +30,42 @@ $selected_staff_id = (int) ($_GET['staff_id'] ?? $_POST['staff_id'] ?? 0);
 
 // ---- Save department memberships ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_departments'])) {
-    $dept_ids = array_map('intval', $_POST['department_ids'] ?? []);
-
-    $pdo->prepare("DELETE FROM staff_departments WHERE staff_id = ? AND school_id = ?")
-        ->execute([$selected_staff_id, $school_id]);
-
-    if ($dept_ids) {
-        $ins = $pdo->prepare("INSERT INTO staff_departments (school_id, staff_id, department_id) VALUES (?, ?, ?)");
-        foreach ($dept_ids as $did) {
-            $ins->execute([$school_id, $selected_staff_id, $did]);
-        }
-    }
+    admin_assign_save_departments($pdo, $school_id, $selected_staff_id, array_map('intval', $_POST['department_ids'] ?? []));
     $success = 'Departments updated.';
 }
 
 // ---- Add a subject+class assignment ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_assignment'])) {
-    $subject_id = (int) ($_POST['subject_id'] ?? 0);
-    $class_id = (int) ($_POST['class_id'] ?? 0);
-    // Clamped to a sane weekly range -- feeds the timetable generator
-    // directly as "how many lesson slots does this combo need per week".
-    $periods_per_week = max(1, min(15, (int) ($_POST['periods_per_week'] ?? 5)));
-
-    // Subjects with more than one paper (subjects.papers_count > 1) can
-    // have a different teacher per paper -- e.g. Paper 1 and Paper 2 of
-    // the same subject/class -- so the picked paper (1 if the subject
-    // has just one) is part of what makes an assignment unique, not just
-    // teacher+class+subject.
-    $papers_stmt = $pdo->prepare("SELECT papers_count FROM subjects WHERE id = ? AND school_id = ?");
-    $papers_stmt->execute([$subject_id, $school_id]);
-    $papers_count = max(1, (int) $papers_stmt->fetchColumn());
-    $paper_number = $papers_count > 1 ? max(1, min($papers_count, (int) ($_POST['paper_number'] ?? 1))) : 1;
-
-    if ($subject_id <= 0 || $class_id <= 0) {
-        $error = 'Pick both a subject and a class.';
-    } else {
-        $exists = $pdo->prepare("SELECT id FROM teacher_assignments WHERE teacher_id = ? AND class_id = ? AND subject_id = ? AND paper_number = ? AND school_id = ?");
-        $exists->execute([$selected_staff_id, $class_id, $subject_id, $paper_number, $school_id]);
-        if (!$exists->fetchColumn()) {
-            try {
-                $pdo->prepare("INSERT INTO teacher_assignments (teacher_id, class_id, subject_id, paper_number, periods_per_week, school_id) VALUES (?, ?, ?, ?, ?, ?)")
-                    ->execute([$selected_staff_id, $class_id, $subject_id, $paper_number, $periods_per_week, $school_id]);
-                $success = 'Assignment added.';
-            } catch (\PDOException $e) {
-                // A friendly failure instead of a raw fatal error/white
-                // screen if this ever hits a data-integrity issue again.
-                $error = 'Could not save this assignment. Please try again or contact support.';
-            }
-        } else {
-            $error = 'That assignment already exists.';
-        }
-    }
+    $result = admin_assign_add_assignment(
+        $pdo, $school_id, $selected_staff_id,
+        (int) ($_POST['subject_id'] ?? 0), (int) ($_POST['class_id'] ?? 0),
+        (int) ($_POST['periods_per_week'] ?? 5), (int) ($_POST['paper_number'] ?? 1)
+    );
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
 // ---- Update how many periods/week an existing assignment needs ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_periods'])) {
-    $assignment_id = (int) ($_POST['assignment_id'] ?? 0);
-    $periods_per_week = max(1, min(15, (int) ($_POST['periods_per_week'] ?? 5)));
-    $pdo->prepare("UPDATE teacher_assignments SET periods_per_week = ? WHERE id = ? AND school_id = ? AND teacher_id = ?")
-        ->execute([$periods_per_week, $assignment_id, $school_id, $selected_staff_id]);
+    admin_assign_update_periods($pdo, $school_id, $selected_staff_id, (int) ($_POST['assignment_id'] ?? 0), (int) ($_POST['periods_per_week'] ?? 5));
     $success = 'Periods/week updated.';
 }
 
 // ---- Remove a subject+class assignment ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_assignment'])) {
-    $assignment_id = (int) ($_POST['assignment_id'] ?? 0);
-    $pdo->prepare("DELETE FROM teacher_assignments WHERE id = ? AND school_id = ? AND teacher_id = ?")
-        ->execute([$assignment_id, $school_id, $selected_staff_id]);
+    admin_assign_remove_assignment($pdo, $school_id, $selected_staff_id, (int) ($_POST['assignment_id'] ?? 0));
     $success = 'Assignment removed.';
 }
 
 // ---- Change primary role (e.g. promote to DOS) ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_role'])) {
-    $new_role = $_POST['role'] ?? '';
-    if (in_array($new_role, ['teacher', 'dos', 'headteacher', 'bursar'], true)) {
-        $pdo->prepare("UPDATE users SET role = ? WHERE staff_id = ? AND school_id = ?")
-            ->execute([$new_role, $selected_staff_id, $school_id]);
-        $success = 'Role updated. They will see the new dashboard next time they log in.';
-    }
+    $result = admin_assign_change_role($pdo, $school_id, $selected_staff_id, $_POST['role'] ?? '');
+    if ($result['ok']) { $success = $result['message']; }
 }
 
 // ---- Data for the page ----
-$teachers = $pdo->prepare("
-    SELECT staff.staff_id, staff.first_name, staff.last_name, u.role AS acct_role
-    FROM staff
-    LEFT JOIN users u ON u.staff_id = staff.staff_id
-    WHERE staff.school_id = ? AND staff.staff_category = 'Teaching'
-    ORDER BY staff.first_name
-");
-$teachers->execute([$school_id]);
-$teachers = $teachers->fetchAll();
-
-// GROUP BY department_name (not just DISTINCT) so that if stale duplicate
-// rows ever reappear for this school, the checkbox list still shows each
-// department name once instead of nagging the admin with repeats.
-$departments = $pdo->prepare("SELECT MIN(id) AS id, department_name FROM departments WHERE school_id = ? GROUP BY department_name ORDER BY department_name");
-$departments->execute([$school_id]);
-$departments = $departments->fetchAll();
-
-$subjects = $pdo->prepare("SELECT id, subject_name, class_name, level_type, papers_count FROM subjects WHERE school_id = ? ORDER BY subject_name");
-$subjects->execute([$school_id]);
-$subjects = $subjects->fetchAll();
+$teachers = admin_assign_fetch_teachers($pdo, $school_id);
+$departments = admin_assign_fetch_departments($pdo, $school_id);
+$subjects = admin_assign_fetch_subjects($pdo, $school_id);
 
 // subjects is still one row per class+subject combo under the hood (papers
 // count genuinely varies by level, e.g. Biology has 2 papers at S.3/S.4),
@@ -137,19 +73,11 @@ $subjects = $subjects->fetchAll();
 // "Biology (S.2)" ... as separate entries -- group by name here so the
 // dropdown shows "Biology" once, and let choosing a class resolve back to
 // the right underlying row via JS (see $subjects_by_name below).
-$subjects_by_name = [];
-foreach ($subjects as $s) {
-    $subjects_by_name[$s['subject_name']][$s['class_name']] = [
-        'id' => (int) $s['id'],
-        'papers_count' => (int) $s['papers_count'],
-    ];
-}
+$subjects_by_name = admin_assign_subjects_by_name($subjects);
 $subject_names = array_keys($subjects_by_name);
 sort($subject_names, SORT_STRING);
 
-$classes = $pdo->prepare("SELECT id, class_name, stream_name FROM classes WHERE school_id = ? ORDER BY class_name, stream_name");
-$classes->execute([$school_id]);
-$classes = $classes->fetchAll();
+$classes = admin_assign_fetch_classes($pdo, $school_id);
 
 $selected_teacher = null;
 $their_departments = [];
@@ -157,30 +85,11 @@ $their_assignments = [];
 $their_current_role = null;
 
 if ($selected_staff_id > 0) {
-    foreach ($teachers as $t) {
-        if ((int) $t['staff_id'] === $selected_staff_id) {
-            $selected_teacher = $t;
-            $their_current_role = $t['acct_role'];
-            break;
-        }
-    }
-
-    if ($selected_teacher) {
-        $dstmt = $pdo->prepare("SELECT department_id FROM staff_departments WHERE staff_id = ? AND school_id = ?");
-        $dstmt->execute([$selected_staff_id, $school_id]);
-        $their_departments = array_column($dstmt->fetchAll(), 'department_id');
-
-        $astmt = $pdo->prepare("
-            SELECT ta.id, ta.paper_number, ta.periods_per_week, sub.subject_name, sub.papers_count, c.class_name, c.stream_name
-            FROM teacher_assignments ta
-            JOIN subjects sub ON sub.id = ta.subject_id
-            JOIN classes c ON c.id = ta.class_id
-            WHERE ta.teacher_id = ? AND ta.school_id = ?
-            ORDER BY c.class_name, sub.subject_name, ta.paper_number
-        ");
-        $astmt->execute([$selected_staff_id, $school_id]);
-        $their_assignments = $astmt->fetchAll();
-    }
+    $__detail = admin_assign_fetch_teacher_detail($pdo, $school_id, $teachers, $selected_staff_id);
+    $selected_teacher = $__detail['teacher'];
+    $their_departments = $__detail['departments'];
+    $their_assignments = $__detail['assignments'];
+    $their_current_role = $__detail['current_role'];
 }
 
 $SCHOLAR_BASE = '../';

@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
+require_once __DIR__ . '/_manage_parents_helpers.php';
 
 require_role(['school_admin']);
 
@@ -20,71 +21,19 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_parent'])) {
-    $full_name = trim($_POST['full_name'] ?? '');
-    $username = trim($_POST['username'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
-    $email = trim($_POST['email'] ?? '') ?: null;
-    $student_ids = array_map('intval', $_POST['student_ids'] ?? []);
-
-    if ($full_name === '' || $username === '' || !$student_ids) {
-        $error = 'Full name, username, and at least one linked child are required.';
-    } else {
-        // Confirm every selected student actually belongs to this school —
-        // never trust IDs from a <select> at face value.
-        $placeholders = implode(',', array_fill(0, count($student_ids), '?'));
-        $check = $pdo->prepare("SELECT id FROM students WHERE id IN ($placeholders) AND school_id = ?");
-        $check->execute([...$student_ids, $school_id]);
-        $valid_ids = array_column($check->fetchAll(), 'id');
-
-        if (count($valid_ids) !== count($student_ids)) {
-            $error = 'One or more selected students do not belong to this school.';
-        } else {
-            $temp_password = 'parent' . random_int(1000, 9999);
-            $hash = password_hash($temp_password, PASSWORD_BCRYPT);
-
-            try {
-                $pdo->beginTransaction();
-
-                $ins_user = $pdo->prepare("
-                    INSERT INTO users (school_id, username, email, password, role, phone_number, is_temp_password, account_status)
-                    VALUES (?, ?, ?, ?, 'parent', ?, 1, 'active')
-                ");
-                $ins_user->execute([$school_id, $username, $email, $hash, $phone]);
-                $new_user_id = (int) $pdo->lastInsertId();
-
-                $ins_link = $pdo->prepare("
-                    INSERT INTO parent_students (school_id, user_id, student_id) VALUES (?, ?, ?)
-                ");
-                foreach ($valid_ids as $sid) {
-                    $ins_link->execute([$school_id, $new_user_id, $sid]);
-                }
-
-                $pdo->commit();
-                $success = "Parent account created. Username: {$username} — Temporary password: {$temp_password}";
-            } catch (Throwable $e) {
-                $pdo->rollBack();
-                $error = 'Could not create account: ' . $e->getMessage();
-            }
-        }
-    }
+    $result = admin_parents_create(
+        $pdo, $school_id,
+        trim($_POST['full_name'] ?? ''),
+        trim($_POST['username'] ?? ''),
+        trim($_POST['phone'] ?? ''),
+        trim($_POST['email'] ?? '') ?: null,
+        array_map('intval', $_POST['student_ids'] ?? [])
+    );
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
-$students = $pdo->prepare("SELECT id, full_name, class_name FROM students WHERE school_id = ? ORDER BY class_name, full_name");
-$students->execute([$school_id]);
-$students = $students->fetchAll();
-
-$parents = $pdo->prepare("
-    SELECT u.id, u.username, u.email, u.phone_number,
-           GROUP_CONCAT(s.full_name SEPARATOR ', ') AS children
-    FROM users u
-    LEFT JOIN parent_students ps ON ps.user_id = u.id
-    LEFT JOIN students s ON s.id = ps.student_id
-    WHERE u.school_id = ? AND u.role = 'parent'
-    GROUP BY u.id
-    ORDER BY u.username
-");
-$parents->execute([$school_id]);
-$parents = $parents->fetchAll();
+$students = admin_parents_fetch_students($pdo, $school_id);
+$parents = admin_parents_fetch_list($pdo, $school_id);
 $ACTIVE_NAV = 'parents';
 require_once __DIR__ . '/../_admin_shell.php';
 ?>

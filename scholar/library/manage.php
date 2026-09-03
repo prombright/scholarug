@@ -63,27 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'delete') {
         $doc_id = (int) ($_POST['doc_id'] ?? 0);
-        $stmt = $pdo->prepare('SELECT * FROM library_documents WHERE id = ? AND school_id = ? AND teacher_id = ?');
-        $stmt->execute([$doc_id, $school_id, $staff_id]);
-        $doc = $stmt->fetch();
-        if ($doc) {
-            $pdo->prepare('DELETE FROM library_documents WHERE id = ?')->execute([$doc_id]);
-            $fullPath = realpath(__DIR__ . '/../' . $doc['file_path']);
-            $allowedRoot = realpath(__DIR__ . '/../uploads');
-            if ($fullPath !== false && $allowedRoot !== false && strpos($fullPath, $allowedRoot) === 0 && is_file($fullPath)) {
-                @unlink($fullPath);
-            }
+        if (library_delete_document($pdo, $doc_id, $school_id, $staff_id)) {
             $success = 'Deleted.';
         }
     } elseif ($action === 'toggle_status') {
         $doc_id = (int) ($_POST['doc_id'] ?? 0);
-        $stmt = $pdo->prepare("SELECT status FROM library_documents WHERE id = ? AND school_id = ? AND teacher_id = ?");
-        $stmt->execute([$doc_id, $school_id, $staff_id]);
-        $current = $stmt->fetchColumn();
-        if ($current !== false) {
-            $next = $current === 'Published' ? 'Draft' : 'Published';
-            $pdo->prepare('UPDATE library_documents SET status = ? WHERE id = ?')->execute([$next, $doc_id]);
-        }
+        library_toggle_status($pdo, $doc_id, $school_id, $staff_id);
     }
 }
 

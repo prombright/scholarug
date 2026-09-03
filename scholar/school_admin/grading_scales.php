@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
+require_once __DIR__ . '/_grading_scales_helpers.php';
 
 require_role(['school_admin']);
 
@@ -32,138 +33,63 @@ $message_type = '';
 
 // ---- Grading bands: create ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_band'])) {
-    $grade = trim($_POST['grade'] ?? '');
-    $min_mark = is_numeric($_POST['min_mark'] ?? '') ? (float) $_POST['min_mark'] : null;
-    $max_mark = is_numeric($_POST['max_mark'] ?? '') ? (float) $_POST['max_mark'] : null;
-    $remark = trim($_POST['remark'] ?? '');
-    $points = is_numeric($_POST['points'] ?? '') ? (float) $_POST['points'] : null;
-    // <input type="color"> always carries a value (browsers default it to
-    // black) -- gated behind this checkbox so "no color configured" stays
-    // a real, explicit choice instead of silently becoming black.
-    $color = trim($_POST['color'] ?? '');
-    $color = (!empty($_POST['use_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $color)) ? $color : null;
-
-    if ($grade === '' || $min_mark === null || $max_mark === null || $min_mark > $max_mark) {
-        $message = 'A grade label and a valid min/max range are required.';
-        $message_type = 'error';
-    } else {
-        $ins = $pdo->prepare("INSERT INTO grading_scales (school_id, grade, min_mark, max_mark, remark, points, color) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $ins->execute([$school_id, $grade, $min_mark, $max_mark, $remark ?: null, $points, $color]);
-        $message = 'Grading band added.';
-        $message_type = 'success';
-    }
+    $result = admin_grading_create_band($pdo, $school_id, $_POST);
+    $message = $result['message'];
+    $message_type = $result['ok'] ? 'success' : 'error';
 }
 
 // ---- Grading bands: update ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_band'])) {
-    $id = (int) ($_POST['id'] ?? 0);
-    $grade = trim($_POST['grade'] ?? '');
-    $min_mark = is_numeric($_POST['min_mark'] ?? '') ? (float) $_POST['min_mark'] : null;
-    $max_mark = is_numeric($_POST['max_mark'] ?? '') ? (float) $_POST['max_mark'] : null;
-    $remark = trim($_POST['remark'] ?? '');
-    $points = is_numeric($_POST['points'] ?? '') ? (float) $_POST['points'] : null;
-    $color = trim($_POST['color'] ?? '');
-    $color = (!empty($_POST['use_color']) && preg_match('/^#[0-9a-fA-F]{6}$/', $color)) ? $color : null;
-
-    if ($id > 0 && $grade !== '' && $min_mark !== null && $max_mark !== null && $min_mark <= $max_mark) {
-        $upd = $pdo->prepare("UPDATE grading_scales SET grade = ?, min_mark = ?, max_mark = ?, remark = ?, points = ?, color = ? WHERE id = ? AND school_id = ?");
-        $upd->execute([$grade, $min_mark, $max_mark, $remark ?: null, $points, $color, $id, $school_id]);
-        $message = 'Grading band updated.';
-        $message_type = 'success';
-    } else {
-        $message = 'Invalid band values.';
-        $message_type = 'error';
-    }
+    $result = admin_grading_update_band($pdo, $school_id, (int) ($_POST['id'] ?? 0), $_POST);
+    $message = $result['message'];
+    $message_type = $result['ok'] ? 'success' : 'error';
 }
 
 // ---- Grading bands: delete ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_band'])) {
-    $id = (int) ($_POST['id'] ?? 0);
-    $del = $pdo->prepare("DELETE FROM grading_scales WHERE id = ? AND school_id = ?");
-    $del->execute([$id, $school_id]);
+    admin_grading_delete_band($pdo, $school_id, (int) ($_POST['id'] ?? 0));
     $message = 'Grading band deleted.';
     $message_type = 'success';
 }
 
 // ---- Grading bands: explicit opt-in reset to competency-based defaults ----
-// Best-effort placeholder bands -- see file header. Hard delete+insert,
-// same convention as classes.php's class delete; never runs without this
-// exact POST + the confirm() dialog on the button.
+// Never runs without this exact POST + the confirm() dialog on the button.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_competency_defaults'])) {
-    $pdo->beginTransaction();
-    $pdo->prepare("DELETE FROM grading_scales WHERE school_id = ?")->execute([$school_id]);
-    $defaults = [
-        ['Outstanding', 80, 100, 'Consistently exceeds expectations across assessed competencies.', 4, '#dcfce7'],
-        ['Adequate',    60, 79.99, 'Meets expectations for this stage with solid understanding.', 3, '#dbeafe'],
-        ['Moderate',    40, 59.99, 'Partially meets expectations; more practice needed.', 2, '#fef3c7'],
-        ['Basic',       0,  39.99, 'Beginning to develop the expected competencies.', 1, '#fee2e2'],
-    ];
-    $ins = $pdo->prepare("INSERT INTO grading_scales (school_id, grade, min_mark, max_mark, remark, points, color) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    foreach ($defaults as $d) {
-        $ins->execute([$school_id, $d[0], $d[1], $d[2], $d[3], $d[4], $d[5]]);
-    }
-    $pdo->commit();
+    admin_grading_seed_competency_defaults($pdo, $school_id);
     $message = 'Grading scale reset to the competency-based default bands. Review the labels and cutoffs below.';
     $message_type = 'success';
 }
 
 // ---- Generic skills: create ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_skill'])) {
-    $skill_name = trim($_POST['skill_name'] ?? '');
-    if ($skill_name === '') {
-        $message = 'Enter a skill name.';
-        $message_type = 'error';
-    } else {
-        $ins = $pdo->prepare("INSERT INTO generic_skills (school_id, skill_name, display_order) VALUES (?, ?, (SELECT n FROM (SELECT COALESCE(MAX(display_order), 0) + 1 AS n FROM generic_skills WHERE school_id = ?) x))");
-        $ins->execute([$school_id, $skill_name, $school_id]);
-        $message = 'Skill added.';
-        $message_type = 'success';
-    }
+    $result = admin_grading_create_skill($pdo, $school_id, trim($_POST['skill_name'] ?? ''));
+    $message = $result['message'];
+    $message_type = $result['ok'] ? 'success' : 'error';
 }
 
 // ---- Generic skills: toggle active ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_skill'])) {
-    $id = (int) ($_POST['id'] ?? 0);
-    $upd = $pdo->prepare("UPDATE generic_skills SET is_active = NOT is_active WHERE id = ? AND school_id = ?");
-    $upd->execute([$id, $school_id]);
+    admin_grading_toggle_skill($pdo, $school_id, (int) ($_POST['id'] ?? 0));
     $message = 'Skill visibility updated.';
     $message_type = 'success';
 }
 
 // ---- Generic skills: delete ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_skill'])) {
-    $id = (int) ($_POST['id'] ?? 0);
-    $del = $pdo->prepare("DELETE FROM generic_skills WHERE id = ? AND school_id = ?");
-    $del->execute([$id, $school_id]);
+    admin_grading_delete_skill($pdo, $school_id, (int) ($_POST['id'] ?? 0));
     $message = 'Skill deleted (past ratings for it are removed too).';
     $message_type = 'success';
 }
 
 // ---- Generic skills: seed defaults ----
-// Best-effort placeholder list -- see file header.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_default_skills'])) {
-    $defaults = ['Critical Thinking', 'Communication', 'Cooperation', 'Creativity', 'Self-Management'];
-    $exists = $pdo->prepare("SELECT id FROM generic_skills WHERE school_id = ? AND skill_name = ?");
-    $ins = $pdo->prepare("INSERT INTO generic_skills (school_id, skill_name, display_order) VALUES (?, ?, ?)");
-    $order = 1;
-    foreach ($defaults as $name) {
-        $exists->execute([$school_id, $name]);
-        if (!$exists->fetchColumn()) {
-            $ins->execute([$school_id, $name, $order]);
-        }
-        $order++;
-    }
+    admin_grading_seed_default_skills($pdo, $school_id);
     $message = 'Default skills seeded (existing ones left untouched).';
     $message_type = 'success';
 }
 
-$bands = $pdo->prepare("SELECT * FROM grading_scales WHERE school_id = ? ORDER BY min_mark DESC");
-$bands->execute([$school_id]);
-$bands = $bands->fetchAll(PDO::FETCH_ASSOC);
-
-$skills = $pdo->prepare("SELECT * FROM generic_skills WHERE school_id = ? ORDER BY display_order, skill_name");
-$skills->execute([$school_id]);
-$skills = $skills->fetchAll(PDO::FETCH_ASSOC);
+$bands = admin_grading_fetch_bands($pdo, $school_id);
+$skills = admin_grading_fetch_skills($pdo, $school_id);
 
 $SCHOLAR_BASE = '../';
 $ACTIVE_NAV = 'grading';

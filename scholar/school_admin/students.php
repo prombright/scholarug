@@ -74,82 +74,11 @@ if (!function_exists('safe_text')) {
     }
 }
 
-// Secondary classes are named S.1-S.6 (see school_admin/classes.php's
-// $LEVEL_CLASSES) -- S.1-S.4 is O-Level, S.5-S.6 is A-Level. Used to filter
-// the "Register New Student" Class dropdown down to just the classes that
-// match whichever Level Type is picked, instead of showing every class in
-// the school (including the wrong level) at once.
-if (!function_exists('scholar_class_level_type')) {
-    function scholar_class_level_type(string $className): string {
-        if (preg_match('/([1-9][0-9]*)/', $className, $m)) {
-            return ((int) $m[1] >= 5) ? 'A-Level' : 'O-Level';
-        }
-        return '';
-    }
-}
-
-if (!function_exists('scholar_generate_temp_code')) {
-    // Excludes O/0/I/1 -- easy to misread on a printed sheet or misread
-    // aloud by a teacher.
-    function scholar_generate_temp_code(int $length = 6): string {
-        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        $code = '';
-        for ($i = 0; $i < $length; $i++) {
-            $code .= $alphabet[random_int(0, strlen($alphabet) - 1)];
-        }
-        return $code;
-    }
-}
+require_once $base_dir . '/_students_helpers.php';
 
 // scholar_generate_student_no() lives in auth_guard.php (already required
 // above) -- shared with the one-off _setup/backfill_missing_student_numbers.php
 // script, which can't load this whole page just for one helper function.
-
-if (!function_exists('scholar_create_student_login')) {
-    /**
-     * Creates a portal login for a student that doesn't have one yet. Used
-     * both by the manual "Create Login" button (legacy students) and
-     * automatically right after a student is added/imported.
-     */
-    function scholar_create_student_login(PDO $pdo, int $student_id, int $school_id): array {
-        $stu_stmt = $pdo->prepare("SELECT id, full_name, student_no FROM students WHERE id = ? AND school_id = ?");
-        $stu_stmt->execute([$student_id, $school_id]);
-        $student_row = $stu_stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$student_row) {
-            return ['ok' => false, 'error' => 'Student not found.'];
-        }
-
-        $existing_stmt = $pdo->prepare("SELECT id FROM users WHERE student_id = ? AND school_id = ?");
-        $existing_stmt->execute([$student_id, $school_id]);
-        if ($existing_stmt->fetch()) {
-            return ['ok' => false, 'error' => 'This student already has a login.'];
-        }
-
-        // One generated code serves as BOTH username and password -- easier
-        // for younger students to remember and for a teacher to read out
-        // loud than two separate strings. is_temp_password=1 still forces
-        // them to set a real password on first login (login.php redirects
-        // to force_password_reset.php). Deliberately derived from
-        // student_no (not random) so it stays re-printable later via
-        // print_student_credentials.php for as long as it's still active.
-        $code = $student_row['student_no'] ?: ('STU' . str_pad((string) $student_id, 4, '0', STR_PAD_LEFT));
-        $hash = password_hash($code, PASSWORD_BCRYPT);
-
-        $create_stmt = $pdo->prepare("
-            INSERT INTO users (username, password, role, student_id, school_id, is_temp_password, temp_password_plain, account_status)
-            VALUES (?, ?, 'student', ?, ?, 1, ?, 'active')
-        ");
-
-        try {
-            $create_stmt->execute([$code, $hash, $student_id, $school_id, $code]);
-        } catch (PDOException $e) {
-            return ['ok' => false, 'error' => 'Failed to create login: username may already be taken.'];
-        }
-
-        return ['ok' => true, 'full_name' => $student_row['full_name'], 'username' => $code, 'password' => $code];
-    }
-}
 
 $school_id = $_SESSION['school_id'] ?? null;
 if (!$school_id) {
@@ -177,56 +106,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             require_active_subscription();
         }
 
-        $full_name  = trim($_POST['full_name'] ?? '');
-        $gender     = trim($_POST['gender'] ?? '');
-        $class_id   = trim($_POST['class_id'] ?? '');
-        $level_type = trim($_POST['level_type'] ?? 'O-Level');
-
-        if (empty($full_name) || empty($gender) || empty($class_id)) {
-            $error = "Please fill in all required fields.";
-        } else {
-            $class_stmt = $pdo->prepare("SELECT class_name FROM classes WHERE id = ? AND school_id = ?");
-            $class_stmt->execute([$class_id, $school_id]);
-            $class_data = $class_stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$class_data) {
-                $error = "Invalid class selected.";
-            } else {
-                $class_name = $class_data['class_name'];
-
-                // Defensive backstop: classes.php auto-adopts these on
-                // creation now, but a class created before that shipped
-                // (or created some other way) still gets covered here,
-                // before the student who'd need them is even saved.
-                if (function_exists('scholar_ensure_compulsory_subjects')) {
-                    scholar_ensure_compulsory_subjects($pdo, $school_id, $class_name);
-                }
-
-                $student_no = scholar_generate_student_no($pdo);
-                // `gender` is a VIRTUAL GENERATED column derived from `sex` —
-                // it can only be read, never written. Write to `sex` instead.
-                $insert = $pdo->prepare("
-                    INSERT INTO students (school_id, full_name, sex, class_id, class_name, level_type, student_no)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ");
-                try {
-                    $insert->execute([$school_id, $full_name, $gender, $class_id, $class_name, $level_type, $student_no]);
-                    $new_student_id = (int) $pdo->lastInsertId();
-                    $login_result = scholar_create_student_login($pdo, $new_student_id, $school_id);
-                    if ($login_result['ok']) {
-                        $message = "Student registered — portal login created (Access Code: {$login_result['username']}, used as both username and password).";
-                    } else {
-                        // The student record itself is safely saved either
-                        // way -- login creation failing is a soft failure,
-                        // the "Create Login" button in the table below
-                        // still works as a manual retry.
-                        $message = "Student registered successfully! (Portal login not created: {$login_result['error']})";
-                    }
-                } catch (PDOException $e) {
-                    $error = "Failed to register student.";
-                }
-            }
-        }
+        $result = admin_students_add(
+            $pdo, $school_id,
+            trim($_POST['full_name'] ?? ''),
+            trim($_POST['gender'] ?? ''),
+            (int) ($_POST['class_id'] ?? 0),
+            trim($_POST['level_type'] ?? 'O-Level')
+        );
+        if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
     }
 
     // 2. Bulk CSV Import
@@ -292,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 // pattern (e.g. a primary school's "Baby Class"/"P.3") fall
                 // back to 'Primary', mirroring the single-add form's own
                 // hardcoded Primary path.
-                $csv_level = scholar_class_level_type($match['class_name']) ?: 'Primary';
+                $csv_level = admin_student_level_type($match['class_name']) ?: 'Primary';
 
                 if (function_exists('scholar_ensure_compulsory_subjects') && !isset($subjects_ensured_for_class[$match['id']])) {
                     scholar_ensure_compulsory_subjects($pdo, $school_id, $match['class_name']);
@@ -302,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 if ($insert_stmt->execute([$school_id, $csv_name, $csv_gender, $match['id'], $match['class_name'], $csv_level, scholar_generate_student_no($pdo)])) {
                     $imported_count++;
                     $new_student_id = (int) $pdo->lastInsertId();
-                    $login_result = scholar_create_student_login($pdo, $new_student_id, $school_id);
+                    $login_result = admin_create_student_login($pdo, $new_student_id, $school_id);
                     if ($login_result['ok']) {
                         $login_created_count++;
                     }
@@ -318,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // automatic; see scholar_create_student_login() above.
     if ($_POST['action'] === 'create_student_login') {
         $student_id = (int) ($_POST['student_id'] ?? 0);
-        $result = scholar_create_student_login($pdo, $student_id, $school_id);
+        $result = admin_create_student_login($pdo, $student_id, $school_id);
 
         if ($result['ok']) {
             $message = "Login created for {$result['full_name']} — Access Code: {$result['username']} (used as both username and password). Share this with the student now; they'll set their own password on first login.";
@@ -334,32 +221,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // access, and clears any pending reset_requested flag from a class
     // teacher (see teacher_class_logins.php).
     if ($_POST['action'] === 'regenerate_student_password') {
-        $student_id = (int) ($_POST['student_id'] ?? 0);
-
-        $user_stmt = $pdo->prepare("
-            SELECT u.id, s.full_name
-            FROM users u
-            JOIN students s ON s.id = u.student_id
-            WHERE u.student_id = ? AND u.school_id = ? AND u.role = 'student'
-        ");
-        $user_stmt->execute([$student_id, $school_id]);
-        $user_row = $user_stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$user_row) {
-            $error = "This student doesn't have a portal login yet.";
-        } else {
-            $new_code = scholar_generate_temp_code();
-            $hash = password_hash($new_code, PASSWORD_BCRYPT);
-
-            $upd = $pdo->prepare("
-                UPDATE users
-                SET password = ?, is_temp_password = 1, temp_password_plain = ?, reset_requested = 0
-                WHERE id = ? AND school_id = ?
-            ");
-            $upd->execute([$hash, $new_code, $user_row['id'], $school_id]);
-
-            $message = "Password reset for {$user_row['full_name']} — New Access Code: {$new_code}. Share this with the student now; they'll set their own password on first login.";
-        }
+        $result = admin_students_regenerate_password($pdo, $school_id, (int) ($_POST['student_id'] ?? 0));
+        if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
     }
 }
 
@@ -378,47 +241,24 @@ foreach ($student_logins_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 $search_query = trim($_GET['q'] ?? '');
 $filter_class = trim($_GET['class_id'] ?? '');
 
-$students_stmt = $pdo->prepare("
-    SELECT s.*, c.class_name
-    FROM students s
-    LEFT JOIN classes c ON s.class_id = c.id
-    WHERE s.school_id = ?
-    ORDER BY s.id DESC
-");
-$students_stmt->execute([$school_id]);
-$students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
+$__admin_students_data = admin_students_fetch_all($pdo, $school_id);
+$students = $__admin_students_data['students'];
+$classes = $__admin_students_data['classes'];
+$total_students = $__admin_students_data['total'];
+$total_male = $__admin_students_data['male'];
+$total_female = $__admin_students_data['female'];
 
-// Fold each student's login state + report-card link into the row itself,
-// since that's exactly the shape the Vue table below needs.
+// Fold each student's report-card/edit/subjects link into the row itself,
+// relative to school_admin/ (where this page lives) -- the JSON endpoint
+// for the SPA builds its own equivalents relative to scholar/ instead.
 $report_term = current_term();
 $report_year = current_year();
 foreach ($students as &$row) {
-    $login = $student_logins[(int) $row['id']] ?? null;
-    $row['login_username'] = $login['username'] ?? null;
-    $row['reset_requested'] = $login ? (bool) $login['reset_requested'] : false;
     $row['edit_url'] = 'edit_student.php?id=' . (int) $row['id'];
     $row['report_url'] = '../generate_report.php?student_id=' . (int) $row['id'] . '&term=' . urlencode($report_term) . '&year=' . urlencode($report_year);
     $row['subjects_url'] = 'student_subjects.php?student_id=' . (int) $row['id'];
 }
 unset($row);
-
-// Fetch classes for dropdown filter
-$classes_stmt = $pdo->prepare("SELECT id, class_name FROM classes WHERE school_id = ? ORDER BY class_name ASC");
-$classes_stmt->execute([$school_id]);
-$classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Fetch Student Stats
-$total_stmt = $pdo->prepare("SELECT COUNT(*) FROM students WHERE school_id = ?");
-$total_stmt->execute([$school_id]);
-$total_students = $total_stmt->fetchColumn();
-
-$male_stmt = $pdo->prepare("SELECT COUNT(*) FROM students WHERE school_id = ? AND (gender = 'Male' OR gender = 'M' OR sex = 'Male')");
-$male_stmt->execute([$school_id]);
-$total_male = $male_stmt->fetchColumn();
-
-$female_stmt = $pdo->prepare("SELECT COUNT(*) FROM students WHERE school_id = ? AND (gender = 'Female' OR gender = 'F' OR sex = 'Female')");
-$female_stmt->execute([$school_id]);
-$total_female = $female_stmt->fetchColumn();
 ?>
 
 <style>
@@ -548,7 +388,7 @@ tr:last-child td{border-bottom:none;}
                     <select name="class_id" id="reg_class_id" required>
                         <option value="">Select Class</option>
                         <?php foreach ($classes as $c): ?>
-                            <option value="<?= $c['id']; ?>" data-level="<?= safe_text(scholar_class_level_type($c['class_name'])) ?>"><?= safe_text($c['class_name']); ?></option>
+                            <option value="<?= $c['id']; ?>" data-level="<?= safe_text(admin_student_level_type($c['class_name'])) ?>"><?= safe_text($c['class_name']); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

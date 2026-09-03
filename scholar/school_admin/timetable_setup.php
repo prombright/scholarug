@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
+require_once __DIR__ . '/_timetable_setup_helpers.php';
 
 require_role(['school_admin']);
 
@@ -28,105 +29,41 @@ $school_id = current_school_id();
 $error = '';
 $success = '';
 
-$DAY_NAMES = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday'];
+$DAY_NAMES = ADMIN_TIMETABLE_DAY_NAMES;
 
 // ---- Quick Setup: replace the whole grid for the chosen days ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quick_setup'])) {
-    $days = array_map('intval', $_POST['days'] ?? []);
-    $dayStart = $_POST['day_start'] ?? '08:00';
-    $lessonMinutes = max(20, min(120, (int) ($_POST['lesson_minutes'] ?? 40)));
-    $periodsPerDay = max(1, min(14, (int) ($_POST['periods_per_day'] ?? 8)));
-    $breakAfter = (int) ($_POST['break_after'] ?? 0);
-    $breakMinutes = max(0, min(60, (int) ($_POST['break_minutes'] ?? 20)));
-    $lunchAfter = (int) ($_POST['lunch_after'] ?? 0);
-    $lunchMinutes = max(0, min(90, (int) ($_POST['lunch_minutes'] ?? 45)));
-
-    if (empty($days)) {
-        $error = 'Pick at least one day.';
-    } elseif (!preg_match('/^\d{2}:\d{2}$/', $dayStart)) {
-        $error = 'Day start time looks wrong.';
-    } else {
-        $pdo->beginTransaction();
-        try {
-            $del = $pdo->prepare("DELETE FROM timetable_periods WHERE school_id = ? AND day_of_week = ?");
-            $ins = $pdo->prepare("
-                INSERT INTO timetable_periods (school_id, day_of_week, period_number, label, start_time, end_time, is_teaching_period)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
-
-            foreach ($days as $day) {
-                if ($day < 1 || $day > 7) {
-                    continue;
-                }
-                $del->execute([$school_id, $day]);
-
-                $cursor = DateTime::createFromFormat('H:i', $dayStart);
-                $periodNumber = 0;
-
-                for ($lesson = 1; $lesson <= $periodsPerDay; $lesson++) {
-                    $periodNumber++;
-                    $start = clone $cursor;
-                    $cursor->modify("+{$lessonMinutes} minutes");
-                    $ins->execute([$school_id, $day, $periodNumber, "Period {$lesson}", $start->format('H:i:s'), $cursor->format('H:i:s'), 1]);
-
-                    if ($breakAfter > 0 && $lesson === $breakAfter && $breakMinutes > 0) {
-                        $periodNumber++;
-                        $start = clone $cursor;
-                        $cursor->modify("+{$breakMinutes} minutes");
-                        $ins->execute([$school_id, $day, $periodNumber, 'Break', $start->format('H:i:s'), $cursor->format('H:i:s'), 0]);
-                    }
-                    if ($lunchAfter > 0 && $lesson === $lunchAfter && $lunchMinutes > 0) {
-                        $periodNumber++;
-                        $start = clone $cursor;
-                        $cursor->modify("+{$lunchMinutes} minutes");
-                        $ins->execute([$school_id, $day, $periodNumber, 'Lunch', $start->format('H:i:s'), $cursor->format('H:i:s'), 0]);
-                    }
-                }
-            }
-
-            $pdo->commit();
-            $success = 'Day structure saved. Any previously generated timetable for the affected days was cleared -- regenerate when ready.';
-        } catch (\Throwable $e) {
-            $pdo->rollBack();
-            $error = 'Could not save the day structure. Please try again.';
-        }
-    }
+    $result = admin_timetable_quick_setup(
+        $pdo, $school_id,
+        array_map('intval', $_POST['days'] ?? []),
+        $_POST['day_start'] ?? '08:00',
+        (int) ($_POST['lesson_minutes'] ?? 40),
+        (int) ($_POST['periods_per_day'] ?? 8),
+        (int) ($_POST['break_after'] ?? 0),
+        (int) ($_POST['break_minutes'] ?? 20),
+        (int) ($_POST['lunch_after'] ?? 0),
+        (int) ($_POST['lunch_minutes'] ?? 45)
+    );
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
 // ---- Manual edit of one row (time/label tweak without redoing the day) ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_period'])) {
-    $periodId = (int) ($_POST['period_id'] ?? 0);
-    $label = trim($_POST['label'] ?? '');
-    $startTime = $_POST['start_time'] ?? '';
-    $endTime = $_POST['end_time'] ?? '';
-    $isTeaching = isset($_POST['is_teaching_period']) ? 1 : 0;
-
-    if ($label === '' || !preg_match('/^\d{2}:\d{2}$/', $startTime) || !preg_match('/^\d{2}:\d{2}$/', $endTime)) {
-        $error = 'Please fill in a label and valid start/end times.';
-    } else {
-        $pdo->prepare("
-            UPDATE timetable_periods SET label = ?, start_time = ?, end_time = ?, is_teaching_period = ?
-            WHERE id = ? AND school_id = ?
-        ")->execute([$label, $startTime, $endTime, $isTeaching, $periodId, $school_id]);
-        $success = 'Period updated.';
-    }
+    $result = admin_timetable_update_period(
+        $pdo, $school_id, (int) ($_POST['period_id'] ?? 0),
+        trim($_POST['label'] ?? ''), $_POST['start_time'] ?? '', $_POST['end_time'] ?? '',
+        isset($_POST['is_teaching_period'])
+    );
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
 // ---- Delete one row ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_period'])) {
-    $periodId = (int) ($_POST['period_id'] ?? 0);
-    $pdo->prepare("DELETE FROM timetable_periods WHERE id = ? AND school_id = ?")->execute([$periodId, $school_id]);
+    admin_timetable_delete_period($pdo, $school_id, (int) ($_POST['period_id'] ?? 0));
     $success = 'Period removed.';
 }
 
-$periods = $pdo->prepare("SELECT * FROM timetable_periods WHERE school_id = ? ORDER BY day_of_week, period_number");
-$periods->execute([$school_id]);
-$periods = $periods->fetchAll();
-
-$byDay = [];
-foreach ($periods as $p) {
-    $byDay[(int) $p['day_of_week']][] = $p;
-}
+$byDay = admin_timetable_fetch_by_day($pdo, $school_id);
 
 $SCHOLAR_BASE = '../';
 $ACTIVE_NAV = 'timetable';

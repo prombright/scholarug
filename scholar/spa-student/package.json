@@ -1,0 +1,20 @@
+{
+  "name": "scholarug-student-spa",
+  "version": "0.1.0",
+  "description": "Student-role Vue island, same pattern as scholar/spa/ (the teacher pilot). Build output ships into ../assets/spa-student/ and is committed like any other static asset -- the production host has no shell access to run npm.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "axios": "^1.7.4",
+    "vue": "^3.4.38",
+    "vue-router": "^4.4.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.2",
+    "vite": "^5.4.2"
+  }
+}

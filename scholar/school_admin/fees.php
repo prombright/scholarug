@@ -56,38 +56,8 @@ if (!$school_id) {
     exit();
 }
 
-// ==========================================
-// AUTO SCHEMA CHECK (Ensures tables exist)
-// ==========================================
-try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS `fee_structures` (
-          `id` INT AUTO_INCREMENT PRIMARY KEY,
-          `school_id` INT NOT NULL,
-          `class_id` INT NOT NULL,
-          `day_tuition` DECIMAL(12,2) DEFAULT 0.00,
-          `boarding_tuition` DECIMAL(12,2) DEFAULT 0.00,
-          `entry_fee` DECIMAL(12,2) DEFAULT 0.00,
-          `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          UNIQUE KEY `school_class_unique` (`school_id`, `class_id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-        CREATE TABLE IF NOT EXISTS `fee_payments` (
-          `id` INT AUTO_INCREMENT PRIMARY KEY,
-          `school_id` INT NOT NULL,
-          `student_id` INT NOT NULL,
-          `amount_paid` DECIMAL(12,2) DEFAULT 0.00,
-          `bursary_discount` DECIMAL(12,2) DEFAULT 0.00,
-          `residence_type` ENUM('Day', 'Boarding') DEFAULT 'Day',
-          `is_new_student` TINYINT(1) DEFAULT 0,
-          `notes` VARCHAR(255) DEFAULT NULL,
-          `paid_at` DATETIME DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ");
-} catch (PDOException $e) {
-    // Schema exists
-}
+require_once __DIR__ . '/_fees_helpers.php';
+admin_fees_ensure_schema($pdo);
 
 $message = '';
 $error = '';
@@ -98,148 +68,47 @@ $error = '';
 
 // A. Save / Update Fee Structure for a Class
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_fee_structure') {
-    $class_id       = intval($_POST['class_id'] ?? 0);
-    $day_tuition    = floatval($_POST['day_tuition'] ?? 0);
-    $board_tuition  = floatval($_POST['boarding_tuition'] ?? 0);
-    $entry_fee      = floatval($_POST['entry_fee'] ?? 0);
-
-    if ($class_id <= 0) {
-        $error = "Please select a valid class to configure fees.";
-    } elseif ($day_tuition < 0 || $board_tuition < 0 || $entry_fee < 0) {
-        // The form's number inputs already have min="0", but that's
-        // browser-side only -- a direct POST could otherwise record a
-        // negative fee amount with nothing stopping it here.
-        $error = "Fee amounts cannot be negative.";
-    } else {
-        $stmt = $pdo->prepare("
-            INSERT INTO fee_structures (school_id, class_id, day_tuition, boarding_tuition, entry_fee)
-            VALUES (?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE 
-                day_tuition = VALUES(day_tuition),
-                boarding_tuition = VALUES(boarding_tuition),
-                entry_fee = VALUES(entry_fee)
-        ");
-        if ($stmt->execute([$school_id, $class_id, $day_tuition, $board_tuition, $entry_fee])) {
-            $message = "Fee structure updated successfully!";
-        } else {
-            $error = "Failed to update fee structure.";
-        }
-    }
+    $result = admin_fees_save_structure(
+        $pdo, $school_id,
+        intval($_POST['class_id'] ?? 0),
+        floatval($_POST['day_tuition'] ?? 0),
+        floatval($_POST['boarding_tuition'] ?? 0),
+        floatval($_POST['entry_fee'] ?? 0)
+    );
+    if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
 }
 
 // B. Record Student Payment / Bursary Discount
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'record_payment') {
-    $student_id     = intval($_POST['student_id'] ?? 0);
-    $amount_paid    = floatval($_POST['amount_paid'] ?? 0);
-    $bursary_amount = floatval($_POST['bursary_amount'] ?? 0);
-    $residence_type = trim($_POST['residence_type'] ?? 'Day');
-    $is_new_student = isset($_POST['is_new_student']) ? 1 : 0;
-    $payment_notes  = trim($_POST['payment_notes'] ?? '');
-
-    if ($student_id <= 0) {
-        $error = "Invalid student selected.";
-    } elseif ($amount_paid < 0 || $bursary_amount < 0) {
-        $error = "Payment and bursary amounts cannot be negative.";
-    } else {
-        $pay_stmt = $pdo->prepare("
-            INSERT INTO fee_payments (school_id, student_id, amount_paid, bursary_discount, residence_type, is_new_student, notes, paid_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-        ");
-        
-        if ($pay_stmt->execute([$school_id, $student_id, $amount_paid, $bursary_amount, $residence_type, $is_new_student, $payment_notes])) {
-            $message = "Payment record saved successfully!";
-        } else {
-            $error = "Error recording payment transaction.";
-        }
-    }
+    $result = admin_fees_record_payment(
+        $pdo, $school_id,
+        intval($_POST['student_id'] ?? 0),
+        floatval($_POST['amount_paid'] ?? 0),
+        floatval($_POST['bursary_amount'] ?? 0),
+        trim($_POST['residence_type'] ?? 'Day'),
+        isset($_POST['is_new_student']),
+        trim($_POST['payment_notes'] ?? '')
+    );
+    if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
 }
 
 // ==========================================
 // 2. QUERY DATA FOR REPORTING & INTERFACE
 // ==========================================
 
-// Fetch Class Fee Structures
-$classes_fees_stmt = $pdo->prepare("
-    SELECT c.id AS class_id, c.class_name, 
-           COALESCE(fs.day_tuition, 0) AS day_tuition,
-           COALESCE(fs.boarding_tuition, 0) AS boarding_tuition,
-           COALESCE(fs.entry_fee, 0) AS entry_fee
-    FROM classes c
-    LEFT JOIN fee_structures fs ON c.id = fs.class_id AND fs.school_id = c.school_id
-    WHERE c.school_id = ?
-    ORDER BY c.class_name ASC
-");
-$classes_fees_stmt->execute([$school_id]);
-$fee_structures = $classes_fees_stmt->fetchAll(PDO::FETCH_ASSOC);
+$fee_structures = admin_fees_fetch_structures($pdo, $school_id);
 
-// Search and Filter Ledger Query
 $search_query = trim($_GET['q'] ?? '');
 $filter_class = trim($_GET['class_id'] ?? '');
 
-$ledger_sql = "
-    SELECT 
-        s.id AS student_id, 
-        s.full_name, 
-        s.class_id, 
-        c.class_name,
-        COALESCE(fs.day_tuition, 0) AS base_day,
-        COALESCE(fs.boarding_tuition, 0) AS base_boarding,
-        COALESCE(fs.entry_fee, 0) AS base_entry,
-        COALESCE(SUM(fp.amount_paid), 0) AS total_paid,
-        COALESCE(SUM(fp.bursary_discount), 0) AS total_bursary,
-        MAX(fp.residence_type) AS active_residence,
-        MAX(fp.is_new_student) AS is_new
-    FROM students s
-    LEFT JOIN classes c ON s.class_id = c.id
-    LEFT JOIN fee_structures fs ON s.class_id = fs.class_id AND fs.school_id = s.school_id
-    LEFT JOIN fee_payments fp ON s.id = fp.student_id AND fp.school_id = s.school_id
-    WHERE s.school_id = ?
-";
-
-$params = [$school_id];
-
-if (!empty($search_query)) {
-    $ledger_sql .= " AND s.full_name LIKE ?";
-    $params[] = '%' . $search_query . '%';
-}
-
-if (!empty($filter_class)) {
-    $ledger_sql .= " AND s.class_id = ?";
-    $params[] = $filter_class;
-}
-
-$ledger_sql .= " GROUP BY s.id ORDER BY s.full_name ASC";
-
-$ledger_stmt = $pdo->prepare($ledger_sql);
-$ledger_stmt->execute($params);
-$student_ledger = $ledger_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Metrics Calculation
-$total_students = count($student_ledger);
-$fully_paid_count = 0;
-$partial_paid_count = 0;
-$unpaid_count = 0;
-$total_collected = 0;
-
-foreach ($student_ledger as $row) {
-    $is_boarder = ($row['active_residence'] === 'Boarding');
-    $tuition = $is_boarder ? $row['base_boarding'] : $row['base_day'];
-    $entry = ($row['is_new'] == 1) ? $row['base_entry'] : 0;
-    
-    $gross_due = $tuition + $entry;
-    $net_due = max(0, $gross_due - $row['total_bursary']);
-    $balance = $net_due - $row['total_paid'];
-
-    $total_collected += $row['total_paid'];
-
-    if ($row['total_paid'] >= $net_due && $net_due > 0) {
-        $fully_paid_count++;
-    } elseif ($row['total_paid'] > 0 && $balance > 0) {
-        $partial_paid_count++;
-    } else {
-        $unpaid_count++;
-    }
-}
+$__ledger_raw = admin_fees_fetch_ledger($pdo, $school_id, $search_query, $filter_class);
+$__annotated = admin_fees_annotate_ledger($__ledger_raw);
+$student_ledger = $__annotated['ledger'];
+$total_students = $__annotated['metrics']['total_students'];
+$fully_paid_count = $__annotated['metrics']['fully_paid'];
+$partial_paid_count = $__annotated['metrics']['partial_paid'];
+$unpaid_count = $__annotated['metrics']['unpaid'];
+$total_collected = $__annotated['metrics']['total_collected'];
 ?>
     <main class="main-content">
     <div class="page-inner">

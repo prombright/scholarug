@@ -9,3 +9,6 @@ Thumbs.db
 # Dependency directories, if ever introduced
 /vendor/
 /node_modules/
+scholar/spa/node_modules/
+scholar/spa-student/node_modules/
+scholar/spa-admin/node_modules/

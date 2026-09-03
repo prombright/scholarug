@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 session_start();
 require_once 'db.php';
+require_once __DIR__ . '/_marks_entry_helpers.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header("Location: login.php");
@@ -36,22 +37,14 @@ if (isset($_GET['download_marks_template']) && $_GET['download_marks_template'] 
     $tpl_assessment_id = intval($_GET['assessment_id'] ?? 0);
     $tpl_paper_number  = intval($_GET['paper_number'] ?? 1);
 
-    $tpl_verify = $pdo->prepare("
-        SELECT id FROM teacher_assignments
-        WHERE school_id = ? AND teacher_id = ? AND class_id = ? AND subject_id = ? AND paper_number = ?
-    ");
-    $tpl_verify->execute([$school_id, $staff_id, $tpl_class_id, $tpl_subject_id, $tpl_paper_number]);
-
-    if (!$tpl_verify->fetch()) {
+    if (!marks_verify_assignment($pdo, $school_id, $staff_id, $tpl_class_id, $tpl_subject_id, $tpl_paper_number)) {
         http_response_code(403);
         exit('You are not assigned to this class/subject/paper.');
     }
 
     // Elective subjects only roster students actually enrolled in them
     // (via student_subjects); Core subjects keep today's whole-class list.
-    $tpl_type_stmt = $pdo->prepare("SELECT subject_type FROM subjects WHERE id = ? AND school_id = ?");
-    $tpl_type_stmt->execute([$tpl_subject_id, $school_id]);
-    $tpl_is_elective = $tpl_type_stmt->fetchColumn() === 'Elective';
+    $tpl_is_elective = marks_is_elective($pdo, $school_id, $tpl_subject_id);
 
     $tpl_students = $pdo->prepare("
         SELECT st.id, st.student_no, st.full_name, sm.marks
@@ -106,21 +99,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_marks_csv']) &
     $imp_assessment_id = intval($_POST['assessment_id']);
     $imp_paper_number  = intval($_POST['paper_number'] ?? 1);
 
-    $imp_verify = $pdo->prepare("
-        SELECT id FROM teacher_assignments
-        WHERE school_id = ? AND teacher_id = ? AND class_id = ? AND subject_id = ? AND paper_number = ?
-    ");
-    $imp_verify->execute([$school_id, $staff_id, $imp_class_id, $imp_subject_id, $imp_paper_number]);
-
     // 'Closed' used to only be a UI hint (hidden from the assessment
     // dropdown below) -- a direct POST could still write marks against a
     // closed assessment. Close Term relies on this actually being
     // enforced, not just hidden.
-    $imp_status_stmt = $pdo->prepare("SELECT status FROM assessments WHERE id = ? AND school_id = ?");
-    $imp_status_stmt->execute([$imp_assessment_id, $school_id]);
-    $imp_assessment_status = $imp_status_stmt->fetchColumn();
+    $imp_assessment_status = marks_assessment_status($pdo, $school_id, $imp_assessment_id);
 
-    if (!$imp_verify->fetch()) {
+    if (!marks_verify_assignment($pdo, $school_id, $staff_id, $imp_class_id, $imp_subject_id, $imp_paper_number)) {
         $message = "<div class='alert alert-danger'>Unauthorized import: You are not assigned to this class/subject/paper.</div>";
     } elseif ($imp_assessment_status !== 'Open') {
         $message = "<div class='alert alert-danger'>This assessment is closed and no longer accepting marks.</div>";
@@ -224,64 +209,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $posted_action !== null) {
     $paper_number  = intval($_POST['paper_number'] ?? 1);
     $marks_input   = $_POST['marks'] ?? [];
 
-    // Verify teacher is actually assigned to this class/subject/paper before saving
-    $verify_stmt = $pdo->prepare("
-        SELECT id FROM teacher_assignments
-        WHERE school_id = ? AND teacher_id = ? AND class_id = ? AND subject_id = ? AND paper_number = ?
-    ");
-    $verify_stmt->execute([$school_id, $staff_id, $class_id, $subject_id, $paper_number]);
-
     // Same enforcement as the CSV import path above -- 'Closed' must
     // actually block writes, not just be hidden from the dropdown.
-    $status_stmt = $pdo->prepare("SELECT status FROM assessments WHERE id = ? AND school_id = ?");
-    $status_stmt->execute([$assessment_id, $school_id]);
-    $assessment_status = $status_stmt->fetchColumn();
+    $assessment_status = marks_assessment_status($pdo, $school_id, $assessment_id);
 
     if ($assessment_status !== 'Open') {
         $message = "<div class='alert alert-danger'>This assessment is closed and no longer accepting marks.</div>";
-    } elseif ($verify_stmt->fetch()) {
+    } elseif (marks_verify_assignment($pdo, $school_id, $staff_id, $class_id, $subject_id, $paper_number)) {
         try {
-            $pdo->beginTransaction();
-            $stmt = $pdo->prepare("
-                INSERT INTO student_marks (school_id, student_id, class_id, subject_id, paper_number, teacher_id, assessment_id, marks, submission_status, submitted_at)
-                VALUES (:school_id, :student_id, :class_id, :subject_id, :paper_number, :teacher_id, :assessment_id, :marks, :status, :submitted_at)
-                ON DUPLICATE KEY UPDATE
-                    marks = VALUES(marks),
-                    teacher_id = VALUES(teacher_id),
-                    submission_status = VALUES(submission_status),
-                    submitted_at = VALUES(submitted_at),
-                    updated_at = NOW()
-            ");
-
-            $submitted_at = $posted_action === 'submitted' ? date('Y-m-d H:i:s') : null;
-            $touched = 0;
-            $out_of_range = 0;
-            foreach ($marks_input as $student_id => $mark_val) {
-                if ($mark_val === '' || $mark_val === null) continue;
-                // The form's inputs have min="0" max="100", browser-side
-                // only -- a direct POST could otherwise write a mark
-                // outside that range straight onto a report card with no
-                // error shown. Skip it rather than clamp/guess.
-                $mark_val = floatval($mark_val);
-                if ($mark_val < 0 || $mark_val > 100) {
-                    $out_of_range++;
-                    continue;
-                }
-                $stmt->execute([
-                    ':school_id'     => $school_id,
-                    ':student_id'    => intval($student_id),
-                    ':class_id'      => $class_id,
-                    ':subject_id'    => $subject_id,
-                    ':paper_number'  => $paper_number,
-                    ':teacher_id'    => $staff_id,
-                    ':assessment_id' => $assessment_id,
-                    ':marks'         => $mark_val,
-                    ':status'        => $posted_action,
-                    ':submitted_at'  => $submitted_at,
-                ]);
-                $touched++;
-            }
-            $pdo->commit();
+            $result = marks_save($pdo, $school_id, $staff_id, $class_id, $subject_id, $paper_number, $assessment_id, $marks_input, $posted_action);
+            $touched = $result['touched'];
+            $out_of_range = $result['out_of_range'];
 
             $out_of_range_notice = $out_of_range > 0
                 ? "<div class='alert alert-warning'>$out_of_range mark(s) outside the 0-100 range were skipped and not saved.</div>"
@@ -291,7 +229,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $posted_action !== null) {
                 ? "<div class='alert alert-success'>{$touched} mark(s) submitted — now counted on the report card.</div>"
                 : "<div class='alert alert-success'>{$touched} mark(s) saved as draft — not yet on the report. Submit when ready.</div>");
         } catch (Exception $e) {
-            $pdo->rollBack();
             $message = "<div class='alert alert-danger'>Error saving marks: " . htmlspecialchars($e->getMessage()) . "</div>";
         }
     } else {
@@ -380,64 +317,15 @@ if ($sel_class && $sel_subject) {
 $students_list = [];
 
 if ($sel_assessment && $sel_class && $sel_subject) {
-    // Elective subjects only roster students actually enrolled in them
-    // (via student_subjects); Core subjects keep today's whole-class list.
-    $sel_type_stmt = $pdo->prepare("SELECT subject_type FROM subjects WHERE id = ? AND school_id = ?");
-    $sel_type_stmt->execute([$sel_subject, $school_id]);
-    $sel_is_elective = $sel_type_stmt->fetchColumn() === 'Elective';
-
-    $students_stmt = $pdo->prepare("
-        SELECT st.id AS student_id, st.full_name, st.student_no, sm.marks, sm.submission_status
-        FROM students st
-        LEFT JOIN student_marks sm
-               ON st.id = sm.student_id
-              AND sm.subject_id = :subject_id
-              AND sm.assessment_id = :assessment_id
-              AND sm.paper_number = :paper_number
-        WHERE st.school_id = :school_id AND st.class_id = :class_id
-        " . ($sel_is_elective ? 'AND EXISTS (SELECT 1 FROM student_subjects ss WHERE ss.student_id = st.id AND ss.subject_id = :elective_subject_id)' : '') . "
-        ORDER BY st.full_name ASC
-    ");
-    $students_params = [
-        ':school_id'     => $school_id,
-        ':class_id'      => $sel_class,
-        ':subject_id'    => $sel_subject,
-        ':assessment_id' => $sel_assessment,
-        ':paper_number'  => $sel_paper,
-    ];
-    if ($sel_is_elective) {
-        $students_params[':elective_subject_id'] = $sel_subject;
-    }
-    $students_stmt->execute($students_params);
-    $students_list = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $students_list = marks_fetch_roster($pdo, $school_id, (int) $sel_class, (int) $sel_subject, $sel_assessment, $sel_paper);
 }
 
 // Per-assessment progress teaser for the picker view: how many of this
 // teacher's own assignments have at least one mark on file for that
 // assessment yet. One grouped query instead of one per assessment.
 $progress_by_assessment = [];
-if (!$sel_assessment && !empty($active_assessments) && !empty($my_assignments)) {
-    $progress_stmt = $pdo->prepare("
-        SELECT assessment_id, class_id, subject_id, paper_number
-        FROM student_marks
-        WHERE school_id = ? AND teacher_id = ?
-        GROUP BY assessment_id, class_id, subject_id, paper_number
-    ");
-    $progress_stmt->execute([$school_id, $staff_id]);
-    $started = [];
-    foreach ($progress_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $started[$row['assessment_id'] . ':' . $row['class_id'] . ':' . $row['subject_id'] . ':' . $row['paper_number']] = true;
-    }
-    foreach ($active_assessments as $a) {
-        $doneCount = 0;
-        foreach ($my_assignments as $assign) {
-            $key = $a['id'] . ':' . $assign['class_id'] . ':' . $assign['subject_id'] . ':' . $assign['paper_number'];
-            if (isset($started[$key])) {
-                $doneCount++;
-            }
-        }
-        $progress_by_assessment[$a['id']] = ['done' => $doneCount, 'total' => count($my_assignments)];
-    }
+if (!$sel_assessment) {
+    $progress_by_assessment = marks_progress_by_assessment($pdo, $school_id, $staff_id, $active_assessments, $my_assignments);
 }
 
 // Is this teacher the class teacher of anything? (drives the Phase 3 bulk-print link)
