@@ -75,7 +75,7 @@ const mobileOpen = ref(false)
 .sidebar-brand .name{font-size:0.85rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sidebar-nav{padding:14px 10px;display:flex;flex-direction:column;gap:2px;}
 .sidebar-nav a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:0.86rem;font-weight:500;transition:background .15s,color .15s;}
-.sidebar-nav a:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+.sidebar-nav a:hover{background:var(--panel-raised);color:var(--text);}
 .sidebar-nav a.active{background:rgba(0,168,168,0.12);color:var(--cyan);font-weight:700;}
 .sidebar-nav a i{font-size:1.05rem;width:20px;text-align:center;}
 .main-col{flex:1;min-width:0;display:flex;flex-direction:column;}

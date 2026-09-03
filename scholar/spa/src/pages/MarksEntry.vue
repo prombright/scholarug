@@ -222,7 +222,7 @@ a.btn-link{color:var(--cyan);text-decoration:none;font-size:0.8rem;font-weight:7
 .stat-summary{color:var(--muted);font-size:0.78rem;font-weight:500;}
 table{width:100%;border-collapse:collapse;font-size:0.85rem;}
 th,td{text-align:left;padding:12px 20px;border-bottom:1px solid var(--border);}
-th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.5px;background:rgba(255,255,255,0.02);}
+th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.5px;background:var(--panel-raised);}
 tbody tr:last-child td{border-bottom:none;}
 .section-footer{padding:16px 20px;text-align:right;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
 .empty{color:var(--muted);font-size:0.85rem;padding:16px 0;text-align:center;}

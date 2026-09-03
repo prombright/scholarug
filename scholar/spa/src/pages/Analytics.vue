@@ -46,10 +46,22 @@ async function pick(assignment) {
   }
 }
 
+// Chart.js needs literal color strings, not CSS custom properties -- read
+// the live token values so the charts still match whichever theme
+// (dark/light) is active when this page draws them.
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
 function drawCharts() {
   destroyCharts()
   const sa = subjectAnalytics.value
   if (!sa || !sa.students.length || !rankCanvas.value) return
+
+  const panel = cssVar('--panel')
+  const border = cssVar('--border')
+  const text = cssVar('--text')
+  const muted = cssVar('--muted')
 
   const classAvg = sa.class_average ?? 0
   const avgLinePlugin = {
@@ -73,7 +85,7 @@ function drawCharts() {
     }
   }
 
-  Chart.defaults.color = '#64748b'
+  Chart.defaults.color = muted
   Chart.defaults.font.family = "Inter, 'Segoe UI', sans-serif"
   Chart.defaults.font.size = 11
 
@@ -95,13 +107,13 @@ function drawCharts() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#182233', borderColor: '#2a3a52', borderWidth: 1,
-          titleColor: '#e2e8f0', bodyColor: '#e2e8f0', padding: 8,
+          backgroundColor: panel, borderColor: border, borderWidth: 1,
+          titleColor: text, bodyColor: text, padding: 8,
           callbacks: { label: (ctx) => `Average ${ctx.parsed.x.toFixed(1)}` }
         }
       },
       scales: {
-        x: { min: 0, max: 100, grid: { color: '#1c2942' }, ticks: { stepSize: 20 } },
+        x: { min: 0, max: 100, grid: { color: border }, ticks: { stepSize: 20 } },
         y: { grid: { display: false } }
       }
     },
@@ -125,7 +137,7 @@ function drawCharts() {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { min: 0, max: 100, grid: { color: '#1c2942' }, ticks: { stepSize: 25 } },
+          x: { min: 0, max: 100, grid: { color: border }, ticks: { stepSize: 25 } },
           y: { grid: { display: false } }
         }
       }
@@ -282,7 +294,7 @@ onBeforeUnmount(destroyCharts)
 .highlight-card .detail{font-size:0.78rem;color:var(--muted);margin-top:4px;}
 table{width:100%;border-collapse:collapse;font-size:0.85rem;}
 th,td{text-align:left;padding:11px 20px;border-bottom:1px solid var(--border);}
-th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;letter-spacing:0.5px;background:rgba(255,255,255,0.02);}
+th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;letter-spacing:0.5px;background:var(--panel-raised);}
 tbody tr:last-child td{border-bottom:none;}
 .rank{color:var(--muted);font-weight:700;}
 .trend-up{color:var(--green);}

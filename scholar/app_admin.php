@@ -25,6 +25,10 @@ $inject = '<base href="assets/spa-admin/">'
     . '<script>'
     . 'window.__SCHOLAR_BASE__ = ' . json_encode($scholarBase) . ';'
     . 'window.__SCHOLAR_API_BASE__ = ' . json_encode($scholarBase . 'api/') . ';'
+    // Same "scholar-theme" localStorage key preloader.php's site-wide
+    // toggle uses, applied before Vue mounts (and before the bundle's own
+    // stylesheet is even requested) so there's no flash of the wrong theme.
+    . 'if (localStorage.getItem("scholar-theme") === "light") { document.documentElement.setAttribute("data-theme", "light"); }'
     . '</script>';
 
 $html = file_get_contents($indexPath);

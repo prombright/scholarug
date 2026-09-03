@@ -170,7 +170,7 @@ const logoUploadAction = `${SB}settings.php`
 .header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;gap:20px;}
 .header-row h1{margin:0 0 5px;font-size:1.4rem;text-transform:uppercase;letter-spacing:0.5px;}
 .sub{color:var(--muted);margin:0;font-size:0.85rem;}
-.logo-preview{height:50px;border-radius:6px;border:1px solid var(--border);padding:4px;background:rgba(255,255,255,0.02);}
+.logo-preview{height:50px;border-radius:6px;border:1px solid var(--border);padding:4px;background:var(--panel-raised);}
 .empty{color:var(--muted);font-size:0.85rem;}
 .alert{padding:15px;border-radius:8px;font-size:0.85rem;margin-bottom:25px;font-family:monospace;line-height:1.4;}
 .alert.success{background:rgba(16,185,129,0.05);border:1px solid #10b981;color:#34d399;}

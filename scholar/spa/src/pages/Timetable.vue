@@ -70,7 +70,7 @@ table{width:100%;border-collapse:collapse;font-size:0.82rem;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);vertical-align:top;}
 th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
 .time-col{white-space:nowrap;color:var(--muted);font-size:0.72rem;}
-.brk-row td{background:rgba(255,255,255,0.02);color:var(--muted);font-style:italic;}
+.brk-row td{background:var(--panel-raised);color:var(--muted);font-style:italic;}
 .lesson-cell{background:rgba(0,168,168,0.06);border-radius:6px;padding:8px;}
 .lesson-cell .subj{font-weight:700;color:var(--text);}
 .lesson-cell .cls{color:var(--muted);font-size:0.72rem;margin-top:2px;}
