@@ -73,16 +73,18 @@ async function generate() {
 
         <div v-if="result.unplaced && result.unplaced.length" class="section">
           <h2 style="font-size:1rem;margin:0 0 14px;">Couldn't Fully Place</h2>
-          <table>
-            <tr><th>Teacher</th><th>Subject</th><th>Class</th><th>Needed</th><th>Placed</th></tr>
-            <tr v-for="(u, i) in result.unplaced" :key="i">
-              <td>{{ u.teacher_name }}</td>
-              <td>{{ u.subject_name }}</td>
-              <td>{{ u.class_name }}</td>
-              <td>{{ u.needed }}</td>
-              <td>{{ u.placed }}</td>
-            </tr>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <tr><th>Teacher</th><th>Subject</th><th>Class</th><th>Needed</th><th>Placed</th></tr>
+              <tr v-for="(u, i) in result.unplaced" :key="i">
+                <td>{{ u.teacher_name }}</td>
+                <td>{{ u.subject_name }}</td>
+                <td>{{ u.class_name }}</td>
+                <td>{{ u.needed }}</td>
+                <td>{{ u.placed }}</td>
+              </tr>
+            </table>
+          </div>
           <p class="empty" style="margin-top:12px;">Usually fixed by adding more teaching periods to the day structure, or lowering this assignment's periods/week.</p>
         </div>
       </template>
@@ -101,7 +103,8 @@ button:disabled{opacity:0.6;cursor:default;}
 .alert.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);}
 .alert.success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--green);}
 .alert.warn{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;}
-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.82rem;min-width:520px;}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
 .empty{color:var(--muted);font-size:0.85rem;}

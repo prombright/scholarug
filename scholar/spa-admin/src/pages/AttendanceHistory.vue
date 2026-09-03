@@ -48,14 +48,16 @@ onMounted(load)
     </div>
 
     <div v-if="!rows.length" class="empty-box">No attendance has been recorded for this student yet.</div>
-    <table v-else>
-      <tr><th>Date</th><th>Type</th><th>Status</th></tr>
-      <tr v-for="(r, i) in rows" :key="i">
-        <td>{{ r.attendance_date }}</td>
-        <td>{{ r.subject_id ? (r.subject_name || 'Subject') : 'Daily attendance' }}</td>
-        <td><span class="pill" :style="{ background: statusColors[r.status] || '#64748b' }">{{ r.status.charAt(0).toUpperCase() + r.status.slice(1) }}</span></td>
-      </tr>
-    </table>
+    <div v-else class="table-wrap">
+      <table>
+        <tr><th>Date</th><th>Type</th><th>Status</th></tr>
+        <tr v-for="(r, i) in rows" :key="i">
+          <td>{{ r.attendance_date }}</td>
+          <td>{{ r.subject_id ? (r.subject_name || 'Subject') : 'Daily attendance' }}</td>
+          <td><span class="pill" :style="{ background: statusColors[r.status] || '#64748b' }">{{ r.status.charAt(0).toUpperCase() + r.status.slice(1) }}</span></td>
+        </tr>
+      </table>
+    </div>
   </template>
 </template>
 
@@ -68,7 +70,8 @@ onMounted(load)
 .sub{color:var(--muted);font-size:0.85rem;margin:0;}
 a.back{color:var(--cyan);text-decoration:none;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border:1px solid rgba(0,168,168,0.3);padding:8px 16px;border-radius:6px;}
 a.back:hover{background:rgba(0,168,168,0.1);}
-table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:480px;}
 th,td{padding:10px 14px;text-align:left;font-size:0.85rem;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.72rem;letter-spacing:0.05em;}
 tr:last-child td{border-bottom:none;}

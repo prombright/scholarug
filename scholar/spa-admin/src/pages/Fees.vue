@@ -248,4 +248,5 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
 .checkbox-label{display:flex;align-items:center;gap:8px;font-weight:600;font-size:0.85rem;color:var(--text) !important;margin:0 !important;}
 .checkbox-label input{width:auto;}
 .hint{color:var(--muted);font-size:0.75rem;margin-top:4px;}
+@media(max-width:480px){.row{grid-template-columns:1fr;}}
 </style>

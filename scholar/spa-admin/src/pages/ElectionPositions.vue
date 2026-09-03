@@ -83,7 +83,7 @@ async function removePosition(p) {
       </form>
     </div>
 
-    <div class="section">
+    <div class="section table-wrap">
       <table>
         <thead><tr><th>Position</th><th></th></tr></thead>
         <tbody>
@@ -115,7 +115,8 @@ input{width:100%;background:var(--panel);border:1px solid var(--border);color:va
 button{background:var(--cyan);color:#04121a;font-weight:700;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;}
 button:disabled{opacity:0.6;cursor:default;}
 button.danger{background:transparent;color:var(--danger);border:1px solid rgba(239,68,68,0.4);padding:6px 12px;font-size:0.78rem;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:420px;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .act{color:var(--cyan);text-decoration:none;font-size:0.8rem;font-weight:600;}

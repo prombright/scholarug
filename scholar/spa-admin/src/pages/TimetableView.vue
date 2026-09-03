@@ -146,7 +146,7 @@ function caLabel(ca) {
         <p v-if="!classAssignments.length" class="empty" style="margin-top:10px;">This class has no teaching assignments yet — <router-link to="/assignments" style="color:var(--cyan);">add some first</router-link>.</p>
       </div>
 
-      <div class="section">
+      <div class="section table-wrap">
         <table>
           <tr>
             <th>Time</th>
@@ -180,8 +180,9 @@ function caLabel(ca) {
 <style>
 .page-title{font-size:1.4rem;margin:0 0 4px;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
+.table-wrap{overflow-x:auto;}
 select{padding:10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;max-width:300px;}
-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+table{width:100%;border-collapse:collapse;font-size:0.8rem;min-width:640px;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);vertical-align:top;}
 th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
 .time-col{white-space:nowrap;color:var(--muted);font-size:0.72rem;}

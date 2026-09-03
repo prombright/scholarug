@@ -43,14 +43,22 @@ $tokenHash = hash('sha256', $token);
 
 // Deliberately minimal payload (just enough to look the row up fresh on
 // the other side) -- see legacy_sso_tokens migration's comment.
-$stmt = $pdo->prepare(
-    "INSERT INTO legacy_sso_tokens (token_hash, payload, expires_at) VALUES (?, ?, ?)"
-);
-$stmt->execute([
-    $tokenHash,
-    json_encode(['kind' => $kind, 'id' => $id]),
-    time() + 120,
-]);
+try {
+    $stmt = $pdo->prepare(
+        "INSERT INTO legacy_sso_tokens (token_hash, payload, expires_at) VALUES (?, ?, ?)"
+    );
+    $stmt->execute([
+        $tokenHash,
+        json_encode(['kind' => $kind, 'id' => $id]),
+        time() + 120,
+    ]);
+} catch (Throwable $e) {
+    // legacy_sso_tokens doesn't exist on this environment (its migration
+    // lives in the separate scholar-app project, not this one) -- fail
+    // with a clear message instead of a raw fatal error/stack trace.
+    http_response_code(503);
+    exit('Performance Analytics is not set up on this environment yet.');
+}
 
 $to = $_GET['to'] ?? 'dashboard';
 $apiUrl = rtrim(SCHOLAR_APP_API_URL, '/');
