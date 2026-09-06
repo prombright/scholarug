@@ -741,7 +741,7 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
                             <?= $score !== null ? $score . '%' : '<span style="color:#cbd5e1;">-</span>' ?>
                         </td>
                         <td class="rc-grade-cell">
-                            <div class="rc-grade-letter"><?= htmlspecialchars($row['grade']) ?></div>
+                            <div class="rc-grade-badge"<?= !empty($row['color']) ? ' style="background-color:' . htmlspecialchars($row['color']) . ';"' : '' ?>><?= htmlspecialchars($row['grade']) ?></div>
                         </td>
                         <td class="rc-tr-cell"><?= htmlspecialchars($initials) ?></td>
                     </tr>
@@ -760,9 +760,10 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             $summary_eval = scholar_grade_for_score($classBatch['grading_scales'], $average);
             $overall_band = $summary_eval['grade'] ?? 'N/A';
             $overall_comm = $summary_eval['comment'] ?? 'Consistent effort and revision required across all units.';
+            $overall_color = $summary_eval['color'] ?? null;
         } else {
             $summary_stmt = $pdo->prepare("
-                SELECT grade, remark
+                SELECT grade, remark, color
                 FROM grading_scales
                 WHERE school_id = :school_id AND :avg BETWEEN min_mark AND max_mark
                 LIMIT 1
@@ -771,7 +772,13 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             $summary_eval = $summary_stmt->fetch(PDO::FETCH_ASSOC);
             $overall_band = $summary_eval['grade'] ?? 'N/A';
             $overall_comm = $summary_eval['remark'] ?? 'Consistent effort and revision required across all units.';
+            $overall_color = $summary_eval['color'] ?? null;
         }
+        // A readable dark text color on top of whatever pastel band color
+        // is configured -- these are all light backgrounds (grading_scales'
+        // color picker defaults skew pastel), so a fixed dark slate reads
+        // fine across the whole palette without per-color contrast math.
+        $overall_color = $overall_color ?: '#e2e8f0';
         // Verification payload -- the student's identifying details plus
         // this specific term's actual outcome (average + band), so scanning
         // confirms not just which student/term the card belongs to but
@@ -791,22 +798,22 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             . "Term Average: {$average}% (Grade {$overall_band})\n"
             . "School Contact: {$school_contacts}";
         ?>
+        <div class="rc-result-hero" style="background-color:<?= htmlspecialchars($overall_color) ?>;">
+            <div class="rc-result-topline">Term Result</div>
+            <div class="rc-result-band"><?= htmlspecialchars($overall_band) ?></div>
+            <div class="rc-result-average"><?= $average ?>% average this term</div>
+            <p class="rc-result-comment">&ldquo;<?= htmlspecialchars($overall_comm) ?>&rdquo;</p>
+        </div>
+
         <div class="summary-box">
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                    <td style="width: 40%; vertical-align: top; padding-right:15px;">
+                    <td style="width: 55%; vertical-align: top; padding-right:15px;">
                         <div style="font-size: 13.5px; margin-bottom: 6px;"><strong>Total Weighted Marks:</strong> <span style="font-family: monospace; font-weight: bold; background:#e2e8f0; padding:2px 6px; border-radius:4px;"><?= $total_score ?></span></div>
                         <div style="font-size: 13.5px; margin-bottom: 6px;"><strong>Class Terminal Average:</strong> <span style="font-family: monospace; font-weight: bold; color: #16a34a;"><?= $average ?>%</span></div>
-                        <div style="font-size: 13.5px; margin-bottom: 6px;"><strong>Overall Performance Band:</strong> <span style="font-weight: 900; color: #0284c7; font-size:14px;"><?= htmlspecialchars($overall_band) ?></span></div>
                         <div style="font-size: 13.5px;"><strong>Assessed Subjects:</strong> <span style="font-family: monospace; font-weight: bold;"><?= $subject_count ?> / <?= count($subject_evaluations) ?></span></div>
                     </td>
-                    <td style="width: 40%; border-left: 1px dashed #cbd5e1; padding-left: 20px; vertical-align: top;">
-                        <div style="font-weight: bold; font-size:11px; color:#64748b; text-transform:uppercase; margin-bottom:6px;">Class Teacher General Overview Recommendation:</div>
-                        <p style="margin: 0; font-style: italic; color: #334155; font-size: 12px; line-height: 1.5;">
-                            "The student achieved a term average rating of <?= $average ?>%. <?= htmlspecialchars($overall_comm) ?>"
-                        </p>
-                    </td>
-                    <td style="width: 20%; border-left: 1px dashed #cbd5e1; padding-left: 15px; vertical-align: top; text-align: center;">
+                    <td style="width: 45%; border-left: 1px dashed #cbd5e1; padding-left: 20px; vertical-align: top; text-align: center;">
                         <div class="rc-qr-target" data-qr="<?= htmlspecialchars($qr_payload) ?>"></div>
                         <div class="rc-qr-caption">Scan to verify<br>student record</div>
                     </td>
