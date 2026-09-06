@@ -110,8 +110,8 @@ async function removePosition(p) {
 .disclaimer{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:14px 16px;font-size:0.82rem;color:var(--amber);margin-bottom:20px;}
 label{display:block;font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
 input{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:6px;font-size:0.85rem;font-family:inherit;box-sizing:border-box;}
-.row{display:flex;gap:14px;align-items:end;margin-bottom:14px;}
-.row > div:first-child{flex:1;}
+.row{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:14px;}
+.row > div:first-child{flex:1;min-width:180px;}
 button{background:var(--cyan);color:#04121a;font-weight:700;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;}
 button:disabled{opacity:0.6;cursor:default;}
 button.danger{background:transparent;color:var(--danger);border:1px solid rgba(239,68,68,0.4);padding:6px 12px;font-size:0.78rem;}
