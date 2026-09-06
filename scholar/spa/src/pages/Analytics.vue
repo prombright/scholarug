@@ -208,7 +208,7 @@ onBeforeUnmount(destroyCharts)
       <div class="section">
         <div class="section-header">Full Ranking</div>
         <div class="table-wrap">
-          <table>
+          <table class="ranking-table">
             <thead><tr><th>#</th><th>Student</th><th>Average</th><th>Highest</th><th>Lowest</th><th>Consistency</th><th>Trend</th></tr></thead>
             <tbody>
               <tr v-for="(s, i) in subjectAnalytics.students" :key="s.student_id">
@@ -254,14 +254,16 @@ onBeforeUnmount(destroyCharts)
 
         <div class="section">
           <div class="section-header">Subjects Ranked (Class Average)</div>
-          <table>
-            <thead><tr><th>#</th><th>Subject</th><th>Class Average</th></tr></thead>
-            <tbody>
-              <tr v-for="(sub, i) in classAnalytics.subjects_ranked" :key="sub.subject_name">
-                <td class="rank">#{{ i + 1 }}</td><td>{{ sub.subject_name }}</td><td class="num">{{ sub.average }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Subject</th><th>Class Average</th></tr></thead>
+              <tbody>
+                <tr v-for="(sub, i) in classAnalytics.subjects_ranked" :key="sub.subject_name">
+                  <td class="rank">#{{ i + 1 }}</td><td>{{ sub.subject_name }}</td><td class="num">{{ sub.average }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </template>
     </template>
@@ -292,7 +294,8 @@ onBeforeUnmount(destroyCharts)
 .highlight-card .tag{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--cyan);font-weight:700;margin-bottom:8px;}
 .highlight-card .name{font-size:1.05rem;font-weight:700;}
 .highlight-card .detail{font-size:0.78rem;color:var(--muted);margin-top:4px;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:320px;}
+.ranking-table{min-width:640px;}
 th,td{text-align:left;padding:11px 20px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;letter-spacing:0.5px;background:var(--panel-raised);}
 tbody tr:last-child td{border-bottom:none;}

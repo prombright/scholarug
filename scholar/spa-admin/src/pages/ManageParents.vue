@@ -148,7 +148,7 @@ button:disabled{opacity:0.6;cursor:default;}
 .alert{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;}
 .alert.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);}
 .alert.success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--green);}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:480px;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .empty{color:var(--muted);font-size:0.85rem;}

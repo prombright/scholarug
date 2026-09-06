@@ -170,7 +170,7 @@ input:focus,select:focus{outline:none;border-color:var(--cyan);}
 .check-row label{margin:0;text-transform:none;font-size:0.82rem;color:var(--text);letter-spacing:0;}
 button{background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;white-space:nowrap;}
 button:disabled{opacity:0.6;cursor:default;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:640px;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.5px;}
 td select,td input[type=number]{padding:7px 8px;font-size:0.82rem;}

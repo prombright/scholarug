@@ -176,7 +176,7 @@ button:disabled{opacity:0.6;cursor:default;}
 .alert.success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--green);}
 .day-check{display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 0;font-size:0.85rem;margin:0;}
 .day-check input{width:auto;}
-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+table{width:100%;border-collapse:collapse;font-size:0.82rem;min-width:480px;}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
 .row{display:flex;gap:12px;flex-wrap:wrap;}

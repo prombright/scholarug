@@ -81,7 +81,7 @@ function pillFor(r) {
 label{display:block;font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
 select{width:100%;padding:9px 10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;box-sizing:border-box;}
 button{background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:600px;}
 th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .pill{font-size:0.72rem;padding:3px 9px;border-radius:20px;font-weight:700;}

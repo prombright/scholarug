@@ -100,7 +100,7 @@ function seedDefaultSkills() {
       <p class="sub">A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.</p>
 
       <div class="table-wrap">
-        <table>
+        <table class="bands-table">
           <tr><th>Grade / Descriptor</th><th>Min %</th><th>Max %</th><th>Remark</th><th>Points</th><th>Color</th><th></th><th></th></tr>
           <tr v-if="!bands.length"><td colspan="8" class="empty-cell">No grading bands configured yet.</td></tr>
           <tr v-for="b in bands" :key="b.id">
@@ -191,7 +191,8 @@ button:disabled{opacity:0.6;cursor:default;}
 .alert{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;}
 .alert.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);}
 .alert.success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--green);}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:360px;}
+.bands-table{min-width:760px;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .empty-cell{text-align:center;color:var(--muted);padding:20px;}

@@ -220,7 +220,7 @@ a.btn-link{color:var(--cyan);text-decoration:none;font-size:0.8rem;font-weight:7
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
 .section-header{padding:16px 20px;border-bottom:1px solid var(--border);font-size:0.9rem;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
 .stat-summary{color:var(--muted);font-size:0.78rem;font-weight:500;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:560px;}
 th,td{text-align:left;padding:12px 20px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.5px;background:var(--panel-raised);}
 tbody tr:last-child td{border-bottom:none;}

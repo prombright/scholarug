@@ -127,7 +127,7 @@ input{width:100%;background:var(--panel);border:1px solid var(--border);color:va
 button{background:var(--cyan);color:#04121a;font-weight:700;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;}
 button:disabled{opacity:0.6;cursor:default;}
 .publish-btn{padding:4px 10px;font-size:0.75rem;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:640px;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .pill{display:inline-block;font-size:0.7rem;padding:3px 10px;border-radius:20px;font-weight:700;text-transform:uppercase;}

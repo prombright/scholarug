@@ -143,7 +143,7 @@ select,input[type=date]{background:var(--panel);border:1px solid var(--border);c
 button{cursor:pointer;border:none;border-radius:6px;padding:8px 16px;font-weight:700;font-size:0.85rem;}
 button:disabled{opacity:0.6;cursor:default;}
 .btn-primary{background:var(--cyan);color:#04121a;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:320px;}
 th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);}
 .status-group{display:flex;gap:10px;flex-wrap:wrap;}
 .status-group label{display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--muted);cursor:pointer;}

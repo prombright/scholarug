@@ -51,7 +51,7 @@ h2{color:var(--text);margin:0 0 4px;}
 .sub{color:var(--muted);margin:0 0 20px;}
 .empty{color:var(--muted);font-size:0.85rem;}
 .lib-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:680px;}
 th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .empty-cell{color:var(--muted);}

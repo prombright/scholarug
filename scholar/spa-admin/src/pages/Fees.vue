@@ -218,7 +218,7 @@ const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
 input,select{padding:10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;box-sizing:border-box;width:100%;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
 .section-header{padding:16px 20px;border-bottom:1px solid var(--border);font-weight:700;}
-table{width:100%;border-collapse:collapse;font-size:0.86rem;}
+table{width:100%;border-collapse:collapse;font-size:0.86rem;min-width:760px;}
 th,td{text-align:left;padding:12px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
 .right{text-align:right;}

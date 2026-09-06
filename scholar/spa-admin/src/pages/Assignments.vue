@@ -229,7 +229,7 @@ button:disabled{opacity:0.6;cursor:default;}
 .alert.success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--green);}
 .dept-check{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:0.85rem;margin:0;}
 .dept-check input{width:auto;}
-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;min-width:600px;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .row{display:flex;gap:12px;flex-wrap:wrap;}
