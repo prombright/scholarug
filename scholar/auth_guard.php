@@ -101,6 +101,22 @@ function require_role(array $allowed_roles): void
     require_once __DIR__ . '/db.php';
     require_once __DIR__ . '/../payments/config.php';
     $_SESSION['subscription_locked'] = scholar_subscription_is_locked($pdo, (int) $_SESSION['school_id']);
+
+    // Guarantee the school's class ladder (S.1-S.6, or Primary's Baby/
+    // Middle/Top Class + P.1-P.7) already exists wherever classes get
+    // referenced -- a teacher's mark-entry dropdown, students.php's Add
+    // Student form, subject_catalog.php -- not just after a school_admin
+    // happens to visit classes.php first (classes.php's own auto-heal
+    // still runs too; this just means every OTHER page gets the same
+    // guarantee). Session-flagged so it's one extra query pair on the
+    // first protected page of a session, not every request.
+    if (($_SESSION['classes_seeded_for'] ?? null) !== $_SESSION['school_id']) {
+        $school_type_stmt = $pdo->prepare('SELECT school_type FROM schools WHERE id = ?');
+        $school_type_stmt->execute([$_SESSION['school_id']]);
+        $school_type = $school_type_stmt->fetchColumn() ?: 'Secondary';
+        scholar_provision_school_type_defaults($pdo, (int) $_SESSION['school_id'], $school_type);
+        $_SESSION['classes_seeded_for'] = $_SESSION['school_id'];
+    }
 }
 
 /**
