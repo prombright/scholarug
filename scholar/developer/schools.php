@@ -407,18 +407,27 @@ ScholarUg | Schools
 <style>
 
 
+
+:root {
+    --bg: #080b11;
+    --panel: #0d1118;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+}
+
 body{
 
 margin:0;
 
-background:#080b11;
+background:var(--bg);
 
 font-family:
 Inter,
 Segoe UI,
 sans-serif;
 
-color:#e2e8f0;
+color:var(--text);
 
 }
 
@@ -450,7 +459,7 @@ margin-bottom:30px;
 
 h1{
 
-color:white;
+color:var(--text);
 
 }
 
@@ -483,9 +492,9 @@ margin-bottom:30px;
 
 .card{
 
-background:#0d1118;
+background:var(--panel);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 padding:20px;
 
@@ -501,7 +510,7 @@ font-size:2rem;
 
 font-weight:bold;
 
-color:white;
+color:var(--text);
 
 }
 
@@ -509,7 +518,7 @@ color:white;
 
 .toolbar{
 
-background:#0d1118;
+background:var(--panel);
 
 padding:20px;
 
@@ -517,7 +526,7 @@ border-radius:12px;
 
 margin-bottom:20px;
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 }
 
@@ -527,11 +536,11 @@ input,select{
 
 padding:12px;
 
-background:#080b11;
+background:var(--bg);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
-color:white;
+color:var(--text);
 
 border-radius:7px;
 
@@ -565,7 +574,7 @@ width:100%;
 
 border-collapse:collapse;
 
-background:#0d1118;
+background:var(--panel);
 
 }
 
@@ -575,7 +584,7 @@ th{
 
 text-align:left;
 
-color:#64748b;
+color:var(--muted);
 
 font-size:.75rem;
 
@@ -589,7 +598,7 @@ td{
 
 padding:15px;
 
-border-top:1px solid #1e293b;
+border-top:1px solid var(--border);
 
 }
 
@@ -649,9 +658,9 @@ gap:5px;
 
 .action button{
 
-background:#111827;
+background:var(--panel);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 }
 
@@ -681,6 +690,7 @@ border-radius:8px;
 
 <body>
 
+<?php include __DIR__ . '/../preloader.php'; ?>
 
 <div class="container">
 

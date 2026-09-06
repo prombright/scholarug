@@ -360,18 +360,27 @@ ScholarUg | School Administrator
 <style>
 
 
+
+:root {
+    --bg: #080b11;
+    --panel: #0d1118;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+}
+
 body{
 
 margin:0;
 
-background:#080b11;
+background:var(--bg);
 
 font-family:
 Inter,
 Segoe UI,
 sans-serif;
 
-color:#e2e8f0;
+color:var(--text);
 
 }
 
@@ -390,9 +399,9 @@ padding:35px;
 
 .card{
 
-background:#0d1118;
+background:var(--panel);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 border-radius:15px;
 
@@ -406,7 +415,7 @@ margin-bottom:25px;
 
 h1,h2{
 
-color:white;
+color:var(--text);
 
 }
 
@@ -414,7 +423,7 @@ color:white;
 
 .subtitle{
 
-color:#64748b;
+color:var(--muted);
 
 }
 
@@ -426,7 +435,7 @@ display:block;
 
 font-size:.75rem;
 
-color:#64748b;
+color:var(--muted);
 
 text-transform:uppercase;
 
@@ -444,13 +453,13 @@ width:100%;
 
 padding:13px;
 
-background:#080b11;
+background:var(--bg);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 border-radius:8px;
 
-color:white;
+color:var(--text);
 
 margin-bottom:18px;
 
@@ -522,7 +531,7 @@ th{
 
 text-align:left;
 
-color:#64748b;
+color:var(--muted);
 
 padding:12px;
 
@@ -534,7 +543,7 @@ td{
 
 padding:12px;
 
-border-top:1px solid #1e293b;
+border-top:1px solid var(--border);
 
 }
 
@@ -557,6 +566,7 @@ text-decoration:none;
 
 <body>
 
+<?php include __DIR__ . '/../preloader.php'; ?>
 
 <div class="container">
 

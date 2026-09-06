@@ -710,6 +710,15 @@ function format_dashboard_date(
 
 <style>
 
+
+:root {
+    --bg: #080b11;
+    --panel: #0d1118;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -726,10 +735,10 @@ body {
         sans-serif;
 
     background:
-        #080b11;
+        var(--bg);
 
     color:
-        #e2e8f0;
+        var(--text);
 }
 
 a {
@@ -767,7 +776,7 @@ input {
     padding-bottom: 25px;
 
     border-bottom:
-        1px solid #1e293b;
+        1px solid var(--border);
 
     margin-bottom: 30px;
 }
@@ -823,14 +832,14 @@ input {
 
     font-size: 1rem;
 
-    color: white;
+    color: var(--text);
 }
 
 .brand-info p {
 
     margin: 4px 0 0;
 
-    color: #64748b;
+    color: var(--muted);
 
     font-size: .75rem;
 }
@@ -914,10 +923,10 @@ input {
 
 .stat-card {
 
-    background: #0d1118;
+    background: var(--panel);
 
     border:
-        1px solid #1e293b;
+        1px solid var(--border);
 
     border-radius: 12px;
 
@@ -926,7 +935,7 @@ input {
 
 .stat-label {
 
-    color: #64748b;
+    color: var(--muted);
 
     font-size: .7rem;
 
@@ -945,7 +954,7 @@ input {
 
     font-weight: 800;
 
-    color: white;
+    color: var(--text);
 }
 
 .stat-description {
@@ -954,7 +963,7 @@ input {
 
     font-size: .75rem;
 
-    color: #475569;
+    color: var(--muted);
 }
 
 /* MAIN GRID */
@@ -973,10 +982,10 @@ input {
 
 .card {
 
-    background: #0d1118;
+    background: var(--panel);
 
     border:
-        1px solid #1e293b;
+        1px solid var(--border);
 
     border-radius: 12px;
 
@@ -993,7 +1002,7 @@ input {
 
     letter-spacing: 1px;
 
-    color: #94a3b8;
+    color: var(--muted);
 }
 
 /* FORM */
@@ -1009,7 +1018,7 @@ input {
 
     margin-bottom: 7px;
 
-    color: #64748b;
+    color: var(--muted);
 
     font-size: .7rem;
 
@@ -1025,13 +1034,13 @@ input {
     padding: 12px 14px;
 
     border:
-        1px solid #1e293b;
+        1px solid var(--border);
 
     border-radius: 7px;
 
-    background: #080b11;
+    background: var(--bg);
 
-    color: white;
+    color: var(--text);
 
     outline: none;
 }
@@ -1098,10 +1107,10 @@ input {
 
     border-radius: 7px;
 
-    background: #080b11;
+    background: var(--bg);
 
     border:
-        1px solid #1e293b;
+        1px solid var(--border);
 
     font-size: .8rem;
 }
@@ -1128,10 +1137,10 @@ input {
 
 .table-card {
 
-    background: #0d1118;
+    background: var(--panel);
 
     border:
-        1px solid #1e293b;
+        1px solid var(--border);
 
     border-radius: 12px;
 
@@ -1161,9 +1170,9 @@ th {
     padding: 13px 10px;
 
     border-bottom:
-        1px solid #1e293b;
+        1px solid var(--border);
 
-    color: #64748b;
+    color: var(--muted);
 
     font-size: .65rem;
 
@@ -1177,7 +1186,7 @@ td {
     padding: 15px 10px;
 
     border-bottom:
-        1px solid #141b25;
+        1px solid var(--border);
 
     font-size: .8rem;
 }
@@ -1193,7 +1202,7 @@ td {
 
 .school-name {
 
-    color: white;
+    color: var(--text);
 
     font-weight: 700;
 
@@ -1263,11 +1272,11 @@ td {
     border-radius: 5px;
 
     border:
-        1px solid #1e293b;
+        1px solid var(--border);
 
-    background: #111722;
+    background: var(--panel);
 
-    color: #94a3b8;
+    color: var(--muted);
 
     cursor: pointer;
 
@@ -1281,7 +1290,7 @@ td {
     border-color:
         #a855f7;
 
-    color: white;
+    color: var(--text);
 }
 
 /* RESPONSIVE */
@@ -1339,6 +1348,8 @@ td {
 </head>
 
 <body>
+
+<?php include __DIR__ . '/../preloader.php'; ?>
 
 <div class="container">
 

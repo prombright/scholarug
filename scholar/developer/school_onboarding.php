@@ -317,18 +317,27 @@ ScholarUg | School Provisioning
 
 <style>
 
+
+:root {
+    --bg: #080b11;
+    --panel: #0d1118;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+}
+
 body{
 
 margin:0;
 
-background:#080b11;
+background:var(--bg);
 
 font-family:
 Inter,
 Segoe UI,
 sans-serif;
 
-color:#e2e8f0;
+color:var(--text);
 
 }
 
@@ -347,9 +356,9 @@ padding:30px;
 
 .card{
 
-background:#0d1118;
+background:var(--panel);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 border-radius:15px;
 
@@ -360,7 +369,7 @@ padding:30px;
 
 h1{
 
-color:white;
+color:var(--text);
 
 margin-bottom:10px;
 
@@ -369,7 +378,7 @@ margin-bottom:10px;
 
 p{
 
-color:#64748b;
+color:var(--muted);
 
 }
 
@@ -391,7 +400,7 @@ font-size:.75rem;
 
 text-transform:uppercase;
 
-color:#64748b;
+color:var(--muted);
 
 margin-bottom:8px;
 
@@ -407,13 +416,13 @@ width:100%;
 
 padding:14px;
 
-background:#080b11;
+background:var(--bg);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 border-radius:8px;
 
-color:white;
+color:var(--text);
 
 }
 
@@ -493,6 +502,7 @@ text-decoration:none;
 
 <body>
 
+<?php include __DIR__ . '/../preloader.php'; ?>
 
 <div class="container">
 

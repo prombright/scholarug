@@ -341,18 +341,27 @@ ScholarUg | School Profile
 <style>
 
 
+
+:root {
+    --bg: #080b11;
+    --panel: #0d1118;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+}
+
 body{
 
 margin:0;
 
-background:#080b11;
+background:var(--bg);
 
 font-family:
 Inter,
 Segoe UI,
 sans-serif;
 
-color:#e2e8f0;
+color:var(--text);
 
 }
 
@@ -386,7 +395,7 @@ margin-bottom:30px;
 
 h1{
 
-color:white;
+color:var(--text);
 
 margin:0;
 
@@ -407,9 +416,9 @@ color:#06b6d4;
 
 .profile-card{
 
-background:#0d1118;
+background:var(--panel);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 border-radius:15px;
 
@@ -428,7 +437,7 @@ font-size:2rem;
 
 font-weight:800;
 
-color:white;
+color:var(--text);
 
 }
 
@@ -468,9 +477,9 @@ margin-bottom:25px;
 
 .card{
 
-background:#0d1118;
+background:var(--panel);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 padding:20px;
 
@@ -486,7 +495,7 @@ font-size:.7rem;
 
 text-transform:uppercase;
 
-color:#64748b;
+color:var(--muted);
 
 font-weight:bold;
 
@@ -498,7 +507,7 @@ font-weight:bold;
 
 font-size:1.7rem;
 
-color:white;
+color:var(--text);
 
 font-weight:800;
 
@@ -524,9 +533,9 @@ gap:20px;
 
 .info{
 
-background:#080b11;
+background:var(--bg);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 padding:15px;
 
@@ -618,11 +627,11 @@ color:#fca5a5;
 
 padding:12px;
 
-background:#080b11;
+background:var(--bg);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
-color:white;
+color:var(--text);
 
 border-radius:7px;
 
@@ -668,7 +677,7 @@ text-align:left;
 
 padding:12px;
 
-color:#64748b;
+color:var(--muted);
 
 }
 
@@ -678,7 +687,7 @@ td{
 
 padding:12px;
 
-border-top:1px solid #1e293b;
+border-top:1px solid var(--border);
 
 }
 
@@ -724,7 +733,7 @@ grid-template-columns:1fr 1fr;
 
 <body>
 
-
+<?php include __DIR__ . '/../preloader.php'; ?>
 
 <div class="container">
 

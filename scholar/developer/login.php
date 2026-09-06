@@ -110,6 +110,15 @@ Developer Portal | ScholarUg
 
 <style>
 
+
+:root {
+    --bg: #080b11;
+    --panel: #0d1118;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+}
+
 *{
 margin:0;
 padding:0;
@@ -118,7 +127,7 @@ box-sizing:border-box;
 
 body{
 
-background:#05080f;
+background:var(--bg);
 
 font-family:
 Inter,
@@ -133,7 +142,7 @@ align-items:center;
 
 height:100vh;
 
-color:white;
+color:var(--text);
 
 }
 
@@ -141,9 +150,9 @@ color:white;
 
 width:420px;
 
-background:#0d1118;
+background:var(--panel);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 border-radius:16px;
 
@@ -166,7 +175,7 @@ letter-spacing:1.5px;
 
 text-transform:uppercase;
 
-color:#e2e8f0;
+color:var(--text);
 
 margin-bottom:6px;
 
@@ -192,7 +201,7 @@ font-size:1.5rem;
 
 text-align:center;
 
-color:#94a3b8;
+color:var(--muted);
 
 margin-bottom:30px;
 
@@ -208,7 +217,7 @@ margin-bottom:8px;
 
 font-size:.75rem;
 
-color:#94a3b8;
+color:var(--muted);
 
 text-transform:uppercase;
 
@@ -224,13 +233,13 @@ padding:14px;
 
 margin-bottom:20px;
 
-background:#080b11;
+background:var(--bg);
 
-border:1px solid #1e293b;
+border:1px solid var(--border);
 
 border-radius:8px;
 
-color:white;
+color:var(--text);
 
 font-size:.9rem;
 
@@ -300,7 +309,7 @@ margin-top:25px;
 
 text-align:center;
 
-color:#64748b;
+color:var(--muted);
 
 font-size:.75rem;
 
@@ -311,6 +320,8 @@ font-size:.75rem;
 </head>
 
 <body>
+
+<?php include __DIR__ . '/../preloader.php'; ?>
 
 <div class="card">
 

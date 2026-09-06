@@ -122,18 +122,20 @@ if ($conversation_id !== null) {
 <title>ScholarUg | Messages</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 <style>
+
 :root{ --bg:#080b11; --panel:#0d1118; --border:#1e293b; --text:#e2e8f0; --muted:#64748b; --cyan:#06b6d4; --green:#10b981; --danger:#ef4444; }
 *{box-sizing:border-box;}
 body{margin:0;background:var(--bg);font-family:Inter,"Segoe UI",sans-serif;color:var(--text);}
 .container{max-width:1100px;margin:auto;padding:30px;}
 .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
-h1{color:white;margin:0;font-size:1.3rem;}
+h1{color:var(--text);margin:0;font-size:1.3rem;}
 a.back{color:var(--cyan);text-decoration:none;font-size:0.85rem;}
 <?php require __DIR__ . '/../_chat_style.php'; ?>
 .chat-layout{height:min(640px,75vh);}
 </style>
 </head>
 <body>
+<?php include __DIR__ . '/../preloader.php'; ?>
 <div class="container">
 <div class="header">
     <h1>Messages</h1>
