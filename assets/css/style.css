@@ -317,11 +317,7 @@ header {
 
     align-items: center;
 
-    background:
-
-        linear-gradient(135deg,
-            #0A3D62,
-            #00A8A8);
+    background: var(--dark);
 
     color: white;
 
@@ -459,9 +455,7 @@ header {
 
     height: 5px;
 
-    background: linear-gradient(90deg,
-            var(--secondary),
-            var(--primary));
+    background: var(--secondary);
 
 }
 
@@ -603,7 +597,7 @@ header {
 
     padding: 90px 0;
 
-    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+    background: var(--light);
 
 }
 
@@ -691,7 +685,7 @@ header {
 
     overflow: hidden;
 
-    background: linear-gradient(135deg, #eaf4ff 0%, #f7f9fc 100%);
+    background: var(--light);
 
 }
 
@@ -728,7 +722,7 @@ header {
 
     justify-content: center;
 
-    background: linear-gradient(135deg, #f4f8ff 0%, #eef4ff 100%);
+    background: var(--light);
 
     position: relative;
 
@@ -1662,9 +1656,7 @@ footer hr {
 
     left: 0;
 
-    background: linear-gradient(90deg,
-            var(--secondary),
-            var(--primary));
+    background: var(--secondary);
 
 }
 
@@ -1869,11 +1861,7 @@ footer hr {
 
 .cta-box {
 
-    background:
-
-        linear-gradient(135deg,
-            var(--primary),
-            var(--secondary));
+    background: var(--primary);
 
     border-radius: 30px;
 
@@ -2299,11 +2287,7 @@ footer hr {
 
     padding: 120px 0;
 
-    background:
-
-        linear-gradient(135deg,
-            var(--primary),
-            var(--secondary));
+    background: var(--primary);
 
     color: white;
 
@@ -2847,11 +2831,7 @@ footer hr {
 
     padding: 100px 0;
 
-    background:
-
-        linear-gradient(135deg,
-            var(--primary),
-            var(--secondary));
+    background: var(--primary);
 
     color: white;
 

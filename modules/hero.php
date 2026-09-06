@@ -31,22 +31,17 @@ Talk To Us
 
 </div>
 
-<div class="hero-badges">
+<div class="hero-modules">
 
-<div class="hero-badge">
-<i class="bi bi-diagram-3"></i>
-<span>Portals for Admins, Teachers, Students &amp; HR</span>
-</div>
-
-<div class="hero-badge">
-<i class="bi bi-mortarboard"></i>
-<span>Built for Uganda's Competency-Based Curriculum</span>
-</div>
-
-<div class="hero-badge">
-<i class="bi bi-chat-dots"></i>
-<span>Bulk SMS to Parents, With Mobile Money Top-Up</span>
-</div>
+<span class="hero-module"><i class="bi bi-people"></i>Students</span>
+<span class="hero-module"><i class="bi bi-journal-bookmark"></i>Academics</span>
+<span class="hero-module"><i class="bi bi-file-earmark-text"></i>Report Cards</span>
+<span class="hero-module"><i class="bi bi-cash-coin"></i>Fees</span>
+<span class="hero-module"><i class="bi bi-calendar3"></i>Timetable</span>
+<span class="hero-module"><i class="bi bi-briefcase"></i>HR &amp; Payroll</span>
+<span class="hero-module"><i class="bi bi-chat-dots"></i>Bulk SMS</span>
+<span class="hero-module"><i class="bi bi-check2-square"></i>Elections</span>
+<span class="hero-module"><i class="bi bi-book"></i>Library</span>
 
 </div>
 
@@ -102,8 +97,7 @@ Talk To Us
 </section>
 
 <style>
-.hero { position: relative; overflow: hidden; padding: 100px 0 90px; background: var(--dark); color: #fff; }
-.hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 18% 20%, rgba(0,168,168,.22), transparent 45%), radial-gradient(circle at 85% 75%, rgba(10,61,98,.55), transparent 50%); pointer-events: none; }
+.hero { position: relative; padding: 100px 0 90px; background: var(--dark); color: #fff; }
 .hero .container { position: relative; z-index: 1; }
 .hero-content { display: grid; grid-template-columns: 1.05fr 0.95fr; align-items: center; gap: 56px; }
 
@@ -112,9 +106,11 @@ Talk To Us
 .hero-text p { font-size: 17px; line-height: 1.75; margin: 22px 0 30px; max-width: 540px; color: rgba(255,255,255,.82); }
 .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
 
-.hero-badges { display: flex; flex-direction: column; gap: 12px; margin-top: 36px; max-width: 480px; }
-.hero-badge { display: flex; align-items: center; gap: 12px; font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,.92); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); padding: 11px 16px; border-radius: 10px; }
-.hero-badge i { color: var(--secondary); font-size: 17px; flex-shrink: 0; }
+/* Modules inside Scholar, named plainly -- no stats, no marketing sentence
+   per item, just what's actually in the product. */
+.hero-modules { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 36px; max-width: 520px; }
+.hero-module { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--dark); background: #fff; padding: 9px 16px; border-radius: 30px; }
+.hero-module i { color: var(--secondary); font-size: 15px; }
 
 /* Right-hand visual: a stylized miniature of Scholar's own dashboard --
    real sidebar icons, real stat-card layout, real palette -- rather than
@@ -136,7 +132,7 @@ Talk To Us
 .mock-stat-accent { background: rgba(0,168,168,.12); border-color: rgba(0,168,168,.35); }
 .mock-stat-accent .mock-stat-n { color: var(--secondary); }
 .mock-bars { display: flex; align-items: flex-end; gap: 8px; height: 90px; background: #182233; border: 1px solid #2a3a52; border-radius: 10px; padding: 14px 16px; }
-.mock-bars span { flex: 1; background: linear-gradient(180deg, var(--secondary), rgba(0,168,168,.35)); border-radius: 4px 4px 0 0; }
+.mock-bars span { flex: 1; background: var(--secondary); border-radius: 4px 4px 0 0; }
 
 @media (max-width: 900px) {
     .hero { padding: 70px 0 60px; text-align: center; }
@@ -144,7 +140,7 @@ Talk To Us
     .hero-text h1 { font-size: 34px; }
     .hero-text p { margin-left: auto; margin-right: auto; }
     .hero-buttons { justify-content: center; }
-    .hero-badges { margin-left: auto; margin-right: auto; }
+    .hero-modules { justify-content: center; margin-left: auto; margin-right: auto; }
     .mock-window { max-width: 360px; }
 }
 </style>
