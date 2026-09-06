@@ -59,16 +59,28 @@ function admin_grading_delete_band(PDO $pdo, int $schoolId, int $id): void
     $pdo->prepare('DELETE FROM grading_scales WHERE id = ? AND school_id = ?')->execute([$id, $schoolId]);
 }
 
-/** Best-effort placeholder bands -- see grading_scales.php's header. Hard delete+insert. */
+/**
+ * Uganda's new lower-secondary competency-based curriculum grading scale --
+ * 5 bands, A to E, no F (confirmed by the school; unlike the traditional
+ * O-Level/UCE letter scale this replaces). Cutoffs are even 20-point bands
+ * since the school didn't specify exact percentage boundaries -- adjust
+ * per-band in the table above if your own guidance differs.
+ *
+ * Deliberately unrelated to A-Level UACE scoring (calculate_uace_points()
+ * in _report_card_render.php) -- that's a separate, older curriculum
+ * stream that still uses its own traditional grade set including F, and
+ * isn't affected by this reset.
+ */
 function admin_grading_seed_competency_defaults(PDO $pdo, int $schoolId): void
 {
     $pdo->beginTransaction();
     $pdo->prepare('DELETE FROM grading_scales WHERE school_id = ?')->execute([$schoolId]);
     $defaults = [
-        ['Outstanding', 80, 100, 'Consistently exceeds expectations across assessed competencies.', 4, '#dcfce7'],
-        ['Adequate',    60, 79.99, 'Meets expectations for this stage with solid understanding.', 3, '#dbeafe'],
-        ['Moderate',    40, 59.99, 'Partially meets expectations; more practice needed.', 2, '#fef3c7'],
-        ['Basic',       0,  39.99, 'Beginning to develop the expected competencies.', 1, '#fee2e2'],
+        ['A - Exceptional', 80, 100,   'Exceptional — consistently exceeds expectations across assessed competencies.', 5, '#dcfce7'],
+        ['B - Outstanding', 60, 79.99, 'Outstanding — meets expectations for this stage with strong understanding.',   4, '#dbeafe'],
+        ['C - Satisfactory', 40, 59.99, 'Satisfactory — meets expectations for this stage with adequate understanding.', 3, '#fef9c3'],
+        ['D - Basic',        20, 39.99, 'Basic — beginning to develop the expected competencies.',                       2, '#ffedd5'],
+        ['E - Elementary',   0,  19.99, 'Elementary — needs significant support to develop the expected competencies.', 1, '#fee2e2'],
     ];
     $ins = $pdo->prepare('INSERT INTO grading_scales (school_id, grade, min_mark, max_mark, remark, points, color) VALUES (?, ?, ?, ?, ?, ?, ?)');
     foreach ($defaults as $d) {

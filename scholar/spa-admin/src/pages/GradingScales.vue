@@ -88,9 +88,10 @@ function seedDefaultSkills() {
   <div v-if="message" class="alert" :class="message.type">{{ message.text }}</div>
 
   <div class="disclaimer">
-    <strong>Heads up:</strong> the "reset to competency-based defaults" bands and the default skills list below are
-    best-effort placeholders following the general shape of Uganda's competency-based curriculum, not a verified
-    official standard. Review the labels, cutoffs, and remarks before relying on them for real report cards.
+    <strong>Heads up:</strong> the "reset to competency-based defaults" band labels (A - Exceptional through
+    E - Elementary, no F) match Uganda's new lower-secondary curriculum. Their percentage cutoffs are even
+    20-point bands, not an official boundary — adjust them below if your school's guidance differs. The
+    default skills list is still a best-effort placeholder; review it before relying on it for real report cards.
   </div>
 
   <p v-if="loading" class="empty">Loading…</p>

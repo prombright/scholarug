@@ -13,11 +13,12 @@ declare(strict_types=1);
 | competency-based supplement to the percentage-driven grade, per the
 | 2026-08 report system overhaul).
 |
-| IMPORTANT: the "reset to competency-based defaults" band labels/cutoffs
-| and the default skills list below are best-effort placeholders, not a
-| verified official Uganda NCDC/UNEB standard -- review and adjust them
-| to match current guidance before relying on them. Nothing on this page
-| changes automatically; every action here is an explicit admin click.
+| IMPORTANT: the "reset to competency-based defaults" band labels (A -
+| Exceptional through E - Elementary, no F) match Uganda's new lower-
+| secondary curriculum. Their percentage cutoffs are even 20-point bands,
+| not an official boundary -- adjust per school guidance. The default
+| skills list below is still a best-effort placeholder. Nothing on this
+| page changes automatically; every action here is an explicit admin click.
 |--------------------------------------------------------------------------
 */
 
@@ -132,11 +133,11 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
     <?php if ($message): ?><div class="alert <?= $message_type ?>"><?= htmlspecialchars($message, ENT_QUOTES) ?></div><?php endif; ?>
 
     <div class="disclaimer">
-        <strong>Heads up:</strong> the "reset to competency-based defaults" bands and the
-        default skills list below are best-effort placeholders following the general shape of
-        Uganda's competency-based curriculum, not a verified official standard. Review the
-        labels, cutoffs, and remarks and adjust them to match your school's actual guidance
-        before relying on them for real report cards.
+        <strong>Heads up:</strong> the "reset to competency-based defaults" band labels
+        (A - Exceptional through E - Elementary, no F) match Uganda's new lower-secondary
+        curriculum. Their percentage cutoffs are even 20-point bands, not an official boundary —
+        adjust them below if your school's guidance differs. The default skills list is still a
+        best-effort placeholder; review it before relying on it for real report cards.
     </div>
 
     <div class="section">

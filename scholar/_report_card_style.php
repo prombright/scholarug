@@ -51,8 +51,8 @@ report-content rules that must look identical either way live here. */ ?>
 .rc-subject-name { font-weight: 700; color: #0f172a; }
 .rc-score-cell { font-weight: bold; font-family: monospace; }
 .rc-final-cell { font-weight: 900; font-family: monospace; font-size: 13px; }
-.rc-grade-cell { min-width: 64px; }
-.rc-grade-badge { display: inline-block; min-width: 34px; font-weight: 900; color: #0f172a; font-size: 12.5px; background: #e2e8f0; padding: 3px 10px; border-radius: 20px; }
+.rc-grade-cell { min-width: 96px; }
+.rc-grade-badge { display: inline-block; white-space: nowrap; font-weight: 800; color: #0f172a; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.2px; background: #e2e8f0; padding: 3px 10px; border-radius: 20px; }
 .rc-tr-cell { font-weight: bold; font-family: monospace; color: #6d28d9; }
 .assessment-breakdown { font-size: 10px; color: #64748b; font-style: italic; margin-top: 3px; }
 
