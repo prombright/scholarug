@@ -43,6 +43,11 @@ Everything you need to know to log in and get things done in Scholar — for Sch
 </button>
 
 
+<button type="button" class="manual-tab" data-target="manual-hr" role="tab" aria-selected="false">
+<i class="bi bi-briefcase"></i> HR
+</button>
+
+
 </div>
 
 
@@ -314,6 +319,93 @@ Everything you need to know to log in and get things done in Scholar — for Sch
 <i class="bi bi-chat-dots"></i>
 <h4>Messages</h4>
 <p>Chat with your teachers directly, WhatsApp-style, right inside Scholar.</p>
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+<!-- ================= HR ================= -->
+
+
+<div class="manual-panel" id="manual-hr">
+
+
+<div class="manual-login">
+<h3><i class="bi bi-box-arrow-in-right"></i> Logging In</h3>
+<ol>
+<li>Go to the Scholar login page and click <strong>Login</strong>.</li>
+<li>Enter the <strong>username, email or phone number</strong> your school admin registered for you.</li>
+<li>Enter your <strong>password</strong> (given to you by your school admin — you'll be asked to set a new one the first time you log in).</li>
+<li>Click <strong>Log In</strong>. You'll land on your HR Dashboard.</li>
+</ol>
+</div>
+
+
+<h3 class="manual-section-title">What You Can Do</h3>
+
+
+<div class="manual-grid">
+
+
+<div class="manual-card">
+<i class="bi bi-grid-1x2"></i>
+<h4>Dashboard</h4>
+<p>Active staff count, pending leave requests, and your Bulk SMS wallet balance, at a glance.</p>
+</div>
+
+
+<div class="manual-card">
+<i class="bi bi-people"></i>
+<h4>Staff</h4>
+<p>Register teaching and non-teaching staff, and generate their login codes, in Staff Manager.</p>
+</div>
+
+
+<div class="manual-card">
+<i class="bi bi-calendar2-week"></i>
+<h4>Leave Management</h4>
+<p>Review staff leave requests and approve or decline each one.</p>
+</div>
+
+
+<div class="manual-card">
+<i class="bi bi-cash-stack"></i>
+<h4>Payroll</h4>
+<p>Record each staff member's pay for a period, and mark payments as paid.</p>
+</div>
+
+
+<div class="manual-card">
+<i class="bi bi-wallet2"></i>
+<h4>Bulk SMS: Wallet</h4>
+<p>Top up your SMS wallet by mobile money and track the transaction history.</p>
+</div>
+
+
+<div class="manual-card">
+<i class="bi bi-person-lines-fill"></i>
+<h4>Bulk SMS: Contacts</h4>
+<p>Build named contact groups (e.g. "All Parents", "S.4 Parents") by importing a CSV or ticking students/staff directly.</p>
+</div>
+
+
+<div class="manual-card">
+<i class="bi bi-send"></i>
+<h4>Bulk SMS: Send</h4>
+<p>Write a message, pick a contact group, preview the cost, and send — with delivery tracked in History.</p>
+</div>
+
+
+<div class="manual-card">
+<i class="bi bi-whatsapp"></i>
+<h4>Bulk SMS: WhatsApp</h4>
+<p>Connect a WhatsApp Business number so messages can go out over WhatsApp as well as SMS.</p>
 </div>
 
 
