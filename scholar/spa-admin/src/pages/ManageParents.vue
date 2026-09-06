@@ -126,7 +126,7 @@ async function createParent() {
   </div>
 </template>
 
-<style>
+<style scoped>
 .container{max-width:900px;margin:auto;}
 .page-title{font-size:1.4rem;margin:0 0 20px;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}

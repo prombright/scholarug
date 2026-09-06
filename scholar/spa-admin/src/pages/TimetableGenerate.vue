@@ -92,7 +92,7 @@ async function generate() {
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.4rem;margin:0 0 4px;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
 .stat-row{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border);font-size:0.85rem;}

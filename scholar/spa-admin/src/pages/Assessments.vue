@@ -151,7 +151,7 @@ async function saveRow(a) {
   </div>
 </template>
 
-<style>
+<style scoped>
 .page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
 .page-head h1{font-size:1.4rem;margin:0;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}

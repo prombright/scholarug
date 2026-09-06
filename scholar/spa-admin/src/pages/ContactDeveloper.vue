@@ -82,7 +82,7 @@ onUnmounted(() => clearInterval(poll))
   </div>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.2rem;font-weight:700;margin:0 0 18px;}
 .empty{color:var(--muted);font-size:0.85rem;padding:16px;}
 .avatar{flex-shrink:0;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),#0a7d7d);color:#04222a;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;}

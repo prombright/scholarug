@@ -113,7 +113,7 @@ function fmt(n) {
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{margin:0 0 24px;font-size:1.4rem;}
 .empty{color:var(--muted);font-size:0.85rem;}
 .pr-alert{padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;}

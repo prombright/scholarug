@@ -32,7 +32,7 @@ onMounted(async () => {
   </div>
 </template>
 
-<style>
+<style scoped>
 .section-title{font-size:1.2rem;font-weight:700;margin:0 0 18px;}
 .empty{color:var(--muted);font-size:0.9rem;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:10px;}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;}

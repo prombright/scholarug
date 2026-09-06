@@ -43,7 +43,7 @@ onMounted(async () => {
   </div>
 </template>
 
-<style>
+<style scoped>
 .section-title{font-size:1.2rem;font-weight:700;margin:0 0 18px;}
 table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:0.9rem;min-width:480px;}
 th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);}

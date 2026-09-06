@@ -166,7 +166,7 @@ const logoUploadAction = `${SB}settings.php`
   </template>
 </template>
 
-<style>
+<style scoped>
 .header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;gap:20px;}
 .header-row h1{margin:0 0 5px;font-size:1.4rem;text-transform:uppercase;letter-spacing:0.5px;}
 .sub{color:var(--muted);margin:0;font-size:0.85rem;}

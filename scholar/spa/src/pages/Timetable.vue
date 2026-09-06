@@ -62,7 +62,7 @@ onMounted(async () => {
   </div>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.2rem;font-weight:700;margin:0 0 4px;}
 .page-sub{color:var(--muted);font-size:0.85rem;margin-bottom:18px;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;}

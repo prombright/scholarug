@@ -135,7 +135,7 @@ const uploadActionUrl = `${SB}library/manage.php`
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px;}
 .page-title-row h1{margin:0;font-size:1.2rem;font-weight:700;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}

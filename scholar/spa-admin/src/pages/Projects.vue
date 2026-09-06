@@ -168,7 +168,7 @@ function formatDate(dt) {
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.4rem;margin:0 0 4px;}
 .sub{color:var(--muted);font-size:0.85rem;margin:0 0 20px;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}

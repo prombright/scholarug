@@ -187,7 +187,7 @@ const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
   </div>
 </template>
 
-<style>
+<style scoped>
 .header-banner{background:var(--panel-raised);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px;}
 .header-banner h2{margin:0 0 4px;font-size:1.2rem;color:var(--text);}
 .header-banner p{margin:0;color:var(--muted);}

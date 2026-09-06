@@ -61,7 +61,7 @@ onMounted(load)
   </template>
 </template>
 
-<style>
+<style scoped>
 .empty{color:var(--muted);font-size:0.85rem;padding:16px 0;}
 .alert{padding:12px 16px;border-radius:8px;font-size:0.85rem;}
 .alert.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);}

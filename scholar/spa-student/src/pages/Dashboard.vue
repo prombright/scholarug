@@ -99,7 +99,7 @@ const cards = computed(() => [
   </template>
 </template>
 
-<style>
+<style scoped>
 .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
 .header h1{margin:0;font-size:1.3rem;}
 .header .sub{color:var(--muted);font-size:0.85rem;}

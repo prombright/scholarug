@@ -116,7 +116,7 @@ function groupActive(group) {
   </div>
 </template>
 
-<style>
+<style scoped>
 .app-shell{display:flex;min-height:100vh;gap:16px;padding:16px;}
 .sidebar{width:230px;background:var(--panel);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;position:sticky;top:16px;height:calc(100vh - 32px);overflow:hidden;}
 .sidebar-brand{padding:24px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;}

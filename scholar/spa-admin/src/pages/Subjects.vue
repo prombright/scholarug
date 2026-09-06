@@ -160,7 +160,7 @@ async function adoptCombinations() {
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.4rem;margin:0 0 20px;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
 .alert{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;}

@@ -132,7 +132,7 @@ async function save() {
   </section>
 </template>
 
-<style>
+<style scoped>
 .topbar{display:flex;justify-content:space-between;align-items:center;padding-bottom:25px;margin-bottom:30px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:15px;}
 .topbar h1{margin:0;font-size:1.7rem;color:var(--text);}
 .topbar p{color:var(--muted);margin:4px 0 0;}

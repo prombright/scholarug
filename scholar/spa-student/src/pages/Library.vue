@@ -53,7 +53,7 @@ const previewUrl = (doc) => `${SB}library/view.php?id=${doc.id}`
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
 .page-title-row h1{margin:0;font-size:1.2rem;font-weight:700;}
 .group-title{font-size:0.95rem;font-weight:700;margin:26px 0 12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}

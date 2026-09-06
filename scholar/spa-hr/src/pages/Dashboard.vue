@@ -68,7 +68,7 @@ onMounted(async () => {
   </template>
 </template>
 
-<style>
+<style scoped>
 .top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
 .top-row h1{margin:0;font-size:1.4rem;}
 .btn-link{color:var(--cyan);text-decoration:none;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border:1px solid rgba(0,168,168,0.3);padding:8px 16px;border-radius:6px;}

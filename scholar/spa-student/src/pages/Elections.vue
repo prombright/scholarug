@@ -92,7 +92,7 @@ function noticeFor(positionId) {
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.2rem;font-weight:700;margin:0 0 18px;}
 .links-row{margin-bottom:16px;}
 .links-row a{color:var(--cyan);font-size:0.8rem;margin-right:16px;text-decoration:none;}

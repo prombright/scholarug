@@ -169,7 +169,7 @@ function seedDefaultSkills() {
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.4rem;margin:0 0 20px;}
 .report-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
 .report-tabs a{padding:9px 18px;border-radius:8px;border:1px solid var(--border);color:var(--muted);text-decoration:none;font-size:0.85rem;font-weight:600;}

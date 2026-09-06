@@ -85,7 +85,7 @@ function statusPillClass(status) {
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{margin:0 0 16px;font-size:1.4rem;}
 .empty{color:var(--muted);font-size:0.85rem;}
 .sms-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}

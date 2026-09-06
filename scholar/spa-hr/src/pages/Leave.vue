@@ -63,7 +63,7 @@ function fmtRange(start, end) {
   </div>
 </template>
 
-<style>
+<style scoped>
 .page-title{margin:0 0 24px;font-size:1.4rem;}
 .empty{color:var(--muted);font-size:0.85rem;}
 .lr-section{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;}

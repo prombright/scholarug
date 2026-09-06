@@ -58,7 +58,7 @@ const phaseLabel = computed(() => phase.value.charAt(0).toUpperCase() + phase.va
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.4rem;margin:0 0 4px;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
 .disclaimer{background:rgba(0,168,168,0.08);border:1px solid rgba(0,168,168,0.35);border-radius:8px;padding:14px 16px;font-size:0.82rem;color:var(--cyan);margin-bottom:20px;line-height:1.5;}

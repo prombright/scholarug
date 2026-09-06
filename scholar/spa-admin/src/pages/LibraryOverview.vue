@@ -46,7 +46,7 @@ onMounted(async () => {
   </div>
 </template>
 
-<style>
+<style scoped>
 h2{color:var(--text);margin:0 0 4px;}
 .sub{color:var(--muted);margin:0 0 20px;}
 .empty{color:var(--muted);font-size:0.85rem;}

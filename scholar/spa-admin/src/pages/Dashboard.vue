@@ -107,7 +107,7 @@ const modules = [
   </template>
 </template>
 
-<style>
+<style scoped>
 h1{font-size:1.4rem;margin:0 0 4px;}
 .empty{color:var(--muted);font-size:0.85rem;padding:16px 0;}
 .welcome-sub{color:var(--muted);font-size:0.85rem;margin-bottom:28px;}

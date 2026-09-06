@@ -162,7 +162,7 @@ onUnmounted(() => { clearInterval(threadsPoll); clearInterval(openPoll) })
   </div>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.2rem;font-weight:700;margin:0 0 18px;}
 .alert{padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;background:rgba(239,68,68,0.12);color:var(--danger);}
 .empty{color:var(--muted);font-size:0.85rem;padding:16px;}

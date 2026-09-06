@@ -214,7 +214,7 @@ function changeRole() {
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.4rem;margin:0 0 20px;}
 .section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
 .section h2{font-size:1rem;margin:0 0 14px;}

@@ -122,7 +122,7 @@ async function save() {
   </template>
 </template>
 
-<style>
+<style scoped>
 .empty{color:var(--muted);font-size:0.85rem;padding:16px 0;}
 .page-title{font-size:1.4rem;margin:0 0 4px;}
 .sub{color:var(--muted);font-size:0.85rem;margin-top:-4px;margin-bottom:20px;}

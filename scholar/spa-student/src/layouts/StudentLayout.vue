@@ -53,7 +53,7 @@ const mobileOpen = ref(false)
   </div>
 </template>
 
-<style>
+<style scoped>
 .app-shell{display:flex;min-height:100vh;}
 .sidebar{width:230px;background:var(--panel);border-right:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
 .sidebar-brand{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid var(--border);}

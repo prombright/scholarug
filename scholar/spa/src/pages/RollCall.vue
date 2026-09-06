@@ -136,7 +136,7 @@ async function save() {
   <p v-else class="empty">Pick a class and date to take the register.</p>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.2rem;font-weight:700;margin:0 0 18px;}
 .filters{display:flex;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;}
 select,input[type=date]{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;}

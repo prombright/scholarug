@@ -217,7 +217,7 @@ const csvImportAction = `${SB}school_admin/students.php`
   </template>
 </template>
 
-<style>
+<style scoped>
 .page-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px;}
 .page-header h1{font-size:1.4rem;margin:0 0 4px;}
 .header-actions{display:flex;flex-wrap:wrap;gap:10px;}

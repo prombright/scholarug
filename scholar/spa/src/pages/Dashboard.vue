@@ -81,7 +81,7 @@ function tint(hex, alpha = 0.16) {
   </div>
 </template>
 
-<style>
+<style scoped>
 .page-title{font-size:1.2rem;font-weight:700;margin:0 0 18px;}
 .empty{color:var(--muted);font-size:0.85rem;padding:16px 0;text-align:center;}
 .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;}
