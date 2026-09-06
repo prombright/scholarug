@@ -1,16 +1,21 @@
 <script setup>
 import { ref, provide, onMounted } from 'vue'
-import { dashboardApi } from './services/api'
+import { brandApi } from './services/api'
 
 const brand = ref({ school_name: 'Scholar', badge_url: null })
 const bootLoading = ref(true)
 const bootError = ref(null)
 
+// dos/headteacher/bursar are let into this SPA too, scoped to one page
+// each (see app_admin.php) -- AdminLayout.vue reads this to show only
+// the nav items each role can actually reach.
+const role = window.__SCHOLAR_ROLE__ || 'school_admin'
 provide('brand', brand)
+provide('role', role)
 
 onMounted(async () => {
   try {
-    const { data } = await dashboardApi.get()
+    const { data } = await brandApi.get()
     brand.value = { school_name: data.school_name, badge_url: data.badge_url }
   } catch (e) {
     bootError.value = e.response?.data?.message || 'Could not load the admin panel.'

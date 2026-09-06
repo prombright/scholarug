@@ -3,11 +3,12 @@ import { ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
 
 const SB = window.__SCHOLAR_BASE__ || '/ScholarUg/scholar/'
+const role = inject('role', 'school_admin')
 
 // `route:` items are migrated pages inside this SPA (router-link, no
 // reload); `href:` items still go to the classic PHP app. Mirrors
 // _admin_shell.php's $nav_items grouping exactly.
-const NAV_GROUPS = [
+const ADMIN_NAV_GROUPS = [
   { key: 'home', label: 'Home', icon: 'bi-grid-1x2', route: '/' },
   { key: 'hr', label: 'Human Resources', icon: 'bi-briefcase', href: SB + 'app_hr.php' },
   {
@@ -35,6 +36,25 @@ const NAV_GROUPS = [
   { key: 'settings', label: 'School Settings', icon: 'bi-gear', route: '/settings' },
   { key: 'contact_dev', label: 'Contact Developer', icon: 'bi-headset', route: '/contact-developer' }
 ]
+
+// dos/headteacher/bursar only get scoped access to one page each (see
+// app_admin.php's require_role) -- they never see the full admin nav,
+// just their one feature plus a way back to their own classic dashboard.
+const ROLE_NAV_GROUPS = {
+  dos: [
+    { key: 'home', label: 'My Dashboard', icon: 'bi-grid-1x2', href: SB + 'dos_dashboard.php' },
+    { key: 'assessments', label: 'Assessments', icon: 'bi-clipboard-data', route: '/assessments' }
+  ],
+  headteacher: [
+    { key: 'home', label: 'My Dashboard', icon: 'bi-grid-1x2', href: SB + 'headteacher_dashboard.php' },
+    { key: 'library', label: 'Library', icon: 'bi-book', route: '/library' }
+  ],
+  bursar: [
+    { key: 'home', label: 'My Dashboard', icon: 'bi-grid-1x2', href: SB + 'bursar_dashboard.php' },
+    { key: 'fees', label: 'Fees', icon: 'bi-cash-coin', route: '/fees' }
+  ]
+}
+const NAV_GROUPS = ROLE_NAV_GROUPS[role] || ADMIN_NAV_GROUPS
 const logoutHref = SB + 'logout.php'
 
 const route = useRoute()

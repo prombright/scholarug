@@ -126,7 +126,7 @@ table{display:block;overflow-x:auto;}
             <div><h1 style="margin:0;font-size:1.4rem;">Director of Studies</h1><span class="badge">View Only</span></div>
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <a href="school_admin/assessments.php" class="logout" style="color:var(--cyan);border-color:rgba(0,168,168,0.3);">Manage Assessments</a>
+            <a href="app_admin.php#/assessments" class="logout" style="color:var(--cyan);border-color:rgba(0,168,168,0.3);">Manage Assessments</a>
             <a href="school_admin/bulk_report_print.php" class="logout" style="color:var(--cyan);border-color:rgba(0,168,168,0.3);">Bulk Print Reports</a>
             <a href="school_admin/remarks.php" class="logout" style="color:var(--cyan);border-color:rgba(0,168,168,0.3);">Report Remarks</a>
             <a href="leave_requests.php" class="logout" style="color:var(--cyan);border-color:rgba(0,168,168,0.3);">My Leave</a>

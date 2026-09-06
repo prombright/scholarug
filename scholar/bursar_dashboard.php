@@ -125,7 +125,7 @@ table{display:block;overflow-x:auto;}
         <?php endif; ?>
     </div>
 
-    <a class="cta" href="school_admin/fees.php" style="margin-top:24px;">Open Fees Ledger &rarr;</a>
+    <a class="cta" href="app_admin.php#/fees" style="margin-top:24px;">Open Fees Ledger &rarr;</a>
 </div>
 <script src="assets/js/dashboard-effects.js"></script>
 </body>

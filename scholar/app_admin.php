@@ -11,7 +11,12 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
-require_role(['school_admin']);
+// dos/headteacher/bursar don't get their own SPA -- they get scoped
+// access to specific pages already built for school_admin (Assessments,
+// Fees), same reasoning as reusing bulk_report_print.php/remarks.php
+// across roles instead of forking a copy per role. AdminLayout.vue reads
+// window.__SCHOLAR_ROLE__ below to show only what each role can reach.
+require_role(['school_admin', 'dos', 'headteacher', 'bursar']);
 
 $indexPath = __DIR__ . '/assets/spa-admin/index.html';
 if (!file_exists($indexPath)) {
@@ -25,6 +30,7 @@ $inject = '<base href="assets/spa-admin/">'
     . '<script>'
     . 'window.__SCHOLAR_BASE__ = ' . json_encode($scholarBase) . ';'
     . 'window.__SCHOLAR_API_BASE__ = ' . json_encode($scholarBase . 'api/') . ';'
+    . 'window.__SCHOLAR_ROLE__ = ' . json_encode($_SESSION['role'] ?? '') . ';'
     // Same "scholar-theme" localStorage key preloader.php's site-wide
     // toggle uses, applied before Vue mounts (and before the bundle's own
     // stylesheet is even requested) so there's no flash of the wrong theme.

@@ -67,4 +67,16 @@ const router = createRouter({
   ]
 })
 
+// dos/headteacher/bursar are scoped to one page each (see app_admin.php's
+// require_role and AdminLayout.vue's nav filtering) -- Dashboard.vue calls
+// the school_admin-only dashboard.php endpoint, so send these roles
+// straight to their one page instead of a 403 on the landing route.
+const ROLE_HOME = { dos: 'assessments', headteacher: 'library', bursar: 'fees' }
+router.beforeEach((to) => {
+  const home = ROLE_HOME[window.__SCHOLAR_ROLE__]
+  if (home && to.name === 'dashboard') {
+    return { name: home }
+  }
+})
+
 export default router
