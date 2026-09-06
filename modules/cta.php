@@ -12,15 +12,15 @@
 
 <h2>
 
-Ready To Transform Your Organization Through Technology?
+Ready To Put Scholar In Your School?
 
 </h2>
 
 
 <p>
 
-Whether you need a school management system, communication platform
-or custom software solution, ScholarUg is ready to help.
+Talk to us about setting your school up on Scholar, or ask about custom
+software built for how your organization actually works.
 
 </p>
 
@@ -31,7 +31,7 @@ or custom software solution, ScholarUg is ready to help.
 
 <a href="contact.php" class="btn btn-primary">
 
-Start A Project
+Talk To Us
 
 </a>
 
@@ -39,7 +39,7 @@ Start A Project
 
 <a href="products.php" class="btn btn-outline">
 
-Explore Solutions
+See Scholar in Action
 
 </a>
 

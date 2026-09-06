@@ -935,6 +935,156 @@ header {
 
 }
 
+/* Left column -- "Let's Talk" intro + Email/Phone/Location rows. Had no
+   styling at all before, so it rendered as plain stacked default text. */
+.contact-info {
+    padding: 10px 10px 10px 0;
+}
+
+.contact-info h2 {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 0 0 14px;
+}
+
+.contact-info > p {
+    font-size: 16px;
+    color: #556;
+    line-height: 1.7;
+    margin: 0 0 36px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.contact-item i {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--secondary);
+    color: #fff;
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.contact-item h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 4px 0 4px;
+}
+
+.contact-item p {
+    font-size: 14.5px;
+    color: #667;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Right column -- the actual message form. */
+.contact-card h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 0 0 22px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group input,
+.input-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 18px;
+    border: 2px solid #e4e9f0;
+    border-radius: 12px;
+    background: var(--light);
+    color: #1e2a33;
+    font-family: inherit;
+    font-size: 15px;
+    transition: var(--transition);
+}
+
+.input-group textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.input-group input::placeholder,
+.input-group textarea::placeholder {
+    color: #93a0ab;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary);
+    background: #fff;
+}
+
+.contact-card button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    cursor: pointer;
+    padding: 14px 32px;
+    border-radius: 50px;
+    background: var(--secondary);
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.contact-card button:hover {
+    background: var(--primary);
+    transform: translateY(-2px);
+}
+
+.form-alert {
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14.5px;
+    font-weight: 600;
+    margin-bottom: 22px;
+}
+
+.form-alert-success {
+    background: #e3f9ef;
+    color: #0d7a4c;
+    border: 1px solid #b9ecd4;
+}
+
+.form-alert-error {
+    background: #fdecec;
+    color: #b3271e;
+    border: 1px solid #f6c6c3;
+}
+
+/* Honeypot -- present in the DOM and tab-order-excluded so a bot filling
+   every field still fills it, but invisible/unreachable for a real
+   visitor. display:none is deliberately avoided since some spam bots
+   skip fields hidden that way. */
+.hp-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
 
 
 form input,

@@ -42,14 +42,15 @@ innovate and serve.
 
 
 <h3>
-Innovation
+Built Around Real Schools
 </h3>
 
 
 <p>
 
-Creating better solutions by continuously
-exploring new ideas and technologies.
+Uganda's Primary/Secondary structure, competency-based grading and
+mobile money fee payments are built in from the start, not bolted on
+after the fact.
 
 </p>
 
@@ -73,14 +74,14 @@ exploring new ideas and technologies.
 
 
 <h3>
-Integrity
+Student Data Stays Protected
 </h3>
 
 
 <p>
 
-Building trust through honesty,
-responsibility and transparency.
+Every role only sees what it needs to — a teacher can't read another
+class's records, a parent can't see another family's fees.
 
 </p>
 
@@ -104,14 +105,14 @@ responsibility and transparency.
 
 
 <h3>
-Excellence
+Built to Be Depended On
 </h3>
 
 
 <p>
 
-Delivering reliable, high-quality solutions
-that create meaningful results.
+Report cards, fee records and results are the kind of thing a school
+can't afford to lose — Scholar is built and tested around that.
 
 </p>
 
@@ -135,14 +136,14 @@ that create meaningful results.
 
 
 <h3>
-Collaboration
+Shaped by Real Schools
 </h3>
 
 
 <p>
 
-Working together with clients and partners
-to achieve greater outcomes.
+Features come from what school admins, teachers and parents actually
+run into day to day, not from guessing what a school might want.
 
 </p>
 
@@ -166,14 +167,14 @@ to achieve greater outcomes.
 
 
 <h3>
-Impact
+Less Paperwork, More Teaching
 </h3>
 
 
 <p>
 
-Using technology to improve organizations
-and communities.
+Every hour saved on spreadsheets and manual record-keeping is an hour
+back for the people actually running the school.
 
 </p>
 
@@ -197,14 +198,14 @@ and communities.
 
 
 <h3>
-Customer Focus
+Real Support, Not a Ticket Number
 </h3>
 
 
 <p>
 
-Understanding users and creating solutions
-that truly solve their needs.
+Reach the team directly when something needs fixing — you're talking
+to the people who build Scholar, not a queue.
 
 </p>
 

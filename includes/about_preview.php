@@ -8,21 +8,23 @@
             <div class="about-content">
 
                 <h2>
-                    Empowering Organizations Through Technology
+                    One School Management System, Built for Uganda
                 </h2>
 
 
                 <p>
-                    ScholarUg develops a reliable and innovative school
-                    management platform that helps schools automate
-                    processes, improve efficiency and make better decisions.
+                    ScholarUg builds Scholar, a school management platform
+                    used day to day by school admins, teachers, students and
+                    support staff — not a generic system retrofitted for
+                    schools.
                 </p>
 
 
                 <p>
-                    We're focused on education technology — building
-                    tools that help schools run smarter and communicate
-                    better with parents and students.
+                    Report cards follow Uganda's competency-based curriculum,
+                    fees can be paid by mobile money, and every screen loads
+                    once and updates instantly after that — no reload between
+                    pages.
                 </p>
 
 
@@ -41,11 +43,12 @@
                 <div class="feature">
 
                     <h3>
-                        ✓ Innovative Solutions
+                        A Portal for Every Role
                     </h3>
 
                     <p>
-                        Modern systems designed around your needs.
+                        Admins, teachers, students and HR staff each get a
+                        dashboard built for what they actually do.
                     </p>
 
                 </div>
@@ -55,11 +58,12 @@
                 <div class="feature">
 
                     <h3>
-                        ✓ Reliable Technology
+                        Built for Uganda's Curriculum
                     </h3>
 
                     <p>
-                        Secure, scalable and user-friendly platforms.
+                        Competency-based grading, UCE/UACE report cards and
+                        Uganda-specific class structures, out of the box.
                     </p>
 
                 </div>
@@ -69,11 +73,12 @@
                 <div class="feature">
 
                     <h3>
-                        ✓ Customer Focused
+                        Fast By Design
                     </h3>
 
                     <p>
-                        We work closely with organizations to deliver value.
+                        Pages load once — moving between screens doesn't
+                        reload the browser.
                     </p>
 
                 </div>

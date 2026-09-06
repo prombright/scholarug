@@ -59,7 +59,7 @@ schools manage students, academics, finance and communication.
 
 
 
-<a href="#" class="product-link">
+<a href="products.php" class="product-link">
 Learn More →
 </a>
 

@@ -73,15 +73,23 @@ Our team is ready to help.
 Send Us A Message
 </h2>
 
+<?php if (!empty($contact_message)): ?>
+<div class="form-alert form-alert-<?= htmlspecialchars($contact_message_type, ENT_QUOTES, 'UTF-8') ?>">
+<?= htmlspecialchars($contact_message, ENT_QUOTES, 'UTF-8') ?>
+</div>
+<?php endif; ?>
 
-<form>
+<form method="post" action="contact.php#contact-form" id="contact-form">
 
+<input type="text" name="website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
 
 <div class="input-group">
 
-<input 
+<input
 type="text"
+name="name"
 placeholder="Your Name"
+value="<?= htmlspecialchars($contact_values['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
 required>
 
 </div>
@@ -90,9 +98,11 @@ required>
 
 <div class="input-group">
 
-<input 
+<input
 type="email"
+name="email"
 placeholder="Your Email"
+value="<?= htmlspecialchars($contact_values['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
 required>
 
 </div>
@@ -101,9 +111,11 @@ required>
 
 <div class="input-group">
 
-<input 
+<input
 type="text"
-placeholder="Subject">
+name="subject"
+placeholder="Subject"
+value="<?= htmlspecialchars($contact_values['subject'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 
 </div>
 
@@ -112,16 +124,18 @@ placeholder="Subject">
 <div class="input-group">
 
 <textarea
+name="message"
 rows="5"
-placeholder="Your Message"></textarea>
+placeholder="Your Message"
+required><?= htmlspecialchars($contact_values['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
 
 </div>
 
 
 
-<button>
+<button type="submit">
 
-Send Message 
+Send Message
 <i class="bi bi-send-fill"></i>
 
 </button>

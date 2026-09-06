@@ -28,9 +28,9 @@ Our Vision
 
 <p>
 
-To become a leading technology company creating
-innovative digital solutions that transform organizations,
-empower communities and shape a smarter future.
+For Scholar to be the everyday system every school in Uganda runs
+on — the place a school admin, teacher, student or parent goes first,
+not a fallback to spreadsheets and paper files.
 
 </p>
 
@@ -61,9 +61,9 @@ Our Mission
 
 <p>
 
-To design, develop and deliver reliable software solutions
-that simplify operations, improve efficiency and enable
-organizations to achieve sustainable growth.
+To build software that fits how Ugandan schools actually work — their
+curriculum, their terms, their fee structures — instead of asking
+schools to adapt to software built for somewhere else.
 
 </p>
 
@@ -94,9 +94,10 @@ Our Purpose
 
 <p>
 
-To use technology as a tool for solving real-world
-problems and creating meaningful impact across
-different sectors.
+School admins were running enrolment, fees, results and parent
+communication across scattered spreadsheets and paper files. Scholar
+puts all of it in one place, built for the way Ugandan schools
+actually operate.
 
 </p>
 
