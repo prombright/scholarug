@@ -78,7 +78,10 @@ $skills = $pdo->prepare("SELECT id, skill_name FROM generic_skills WHERE school_
 $skills->execute([$school_id]);
 $skills = $skills->fetchAll(PDO::FETCH_ASSOC);
 
-$grade_options = $pdo->prepare("SELECT DISTINCT grade FROM grading_scales WHERE school_id = ? ORDER BY min_mark DESC");
+// Generic skills are a lower-secondary (O-Level/CBC) feature -- A-Level's
+// UACE letter scale (A-F, with a real fail grade) isn't a sensible rating
+// vocabulary for a "Cooperation" or "Creativity" skill.
+$grade_options = $pdo->prepare("SELECT DISTINCT grade FROM grading_scales WHERE school_id = ? AND level_type = 'O-Level' ORDER BY min_mark DESC");
 $grade_options->execute([$school_id]);
 $grade_options = array_column($grade_options->fetchAll(PDO::FETCH_ASSOC), 'grade');
 

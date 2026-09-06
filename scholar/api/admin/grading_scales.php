@@ -30,7 +30,10 @@ function admin_grading_snapshot(PDO $pdo, int $schoolId): array
 {
     return [
         'success' => true,
-        'bands' => admin_grading_fetch_bands($pdo, $schoolId),
+        'bands' => [
+            'O-Level' => admin_grading_fetch_bands($pdo, $schoolId, 'O-Level'),
+            'A-Level' => admin_grading_fetch_bands($pdo, $schoolId, 'A-Level'),
+        ],
         'skills' => admin_grading_fetch_skills($pdo, $schoolId),
     ];
 }
@@ -60,7 +63,11 @@ if ($method === 'POST') {
             break;
         case 'seed_competency_defaults':
             admin_grading_seed_competency_defaults($pdo, $school_id);
-            $result = ['ok' => true, 'message' => 'Grading scale reset to the competency-based default bands. Review the labels and cutoffs below.'];
+            $result = ['ok' => true, 'message' => 'O-Level scale reset to the competency-based default bands. Review the labels and cutoffs below.'];
+            break;
+        case 'seed_uace_defaults':
+            admin_grading_seed_uace_defaults($pdo, $school_id);
+            $result = ['ok' => true, 'message' => 'A-Level scale reset to the UACE standard bands. Review the labels and cutoffs below.'];
             break;
         case 'create_skill':
             $result = admin_grading_create_skill($pdo, $school_id, trim((string) ($body['skill_name'] ?? '')));

@@ -8,17 +8,46 @@ const loading = ref(true)
 const busy = ref(false)
 const message = ref(null)
 
-const bands = ref([])
+const LEVELS = [
+  {
+    level: 'O-Level',
+    title: 'O-Level Grading Bands',
+    desc: "A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.",
+    resetAction: 'seed_competency_defaults',
+    resetLabel: 'Reset to Competency-Based Defaults',
+    resetPrompt: 'This replaces ALL current O-Level grading bands with the competency-based defaults. Continue?',
+  },
+  {
+    level: 'A-Level',
+    title: 'A-Level Grading Bands',
+    desc: 'Used for UACE points on A-Level report cards (principal subjects, General Paper, and the assigned Subsidiary). Needs a real F band so a fail is actually detected.',
+    resetAction: 'seed_uace_defaults',
+    resetLabel: 'Reset to UACE Standard Scale',
+    resetPrompt: 'This replaces ALL current A-Level grading bands with the UACE standard defaults. Continue?',
+  },
+]
+
+const bands = ref({ 'O-Level': [], 'A-Level': [] })
 const skills = ref([])
 
-const newBand = ref({ grade: '', min_mark: '', max_mark: '', remark: '', points: '', use_color: false, color: '#ffffff' })
+function blankBand() {
+  return { grade: '', min_mark: '', max_mark: '', remark: '', points: '', use_color: false, color: '#ffffff' }
+}
+const newBand = ref({ 'O-Level': blankBand(), 'A-Level': blankBand() })
 const newSkillName = ref('')
+
+function decorateBands(raw) {
+  return {
+    'O-Level': (raw?.['O-Level'] || []).map((b) => ({ ...b, use_color: !!b.color, color: b.color || '#ffffff' })),
+    'A-Level': (raw?.['A-Level'] || []).map((b) => ({ ...b, use_color: !!b.color, color: b.color || '#ffffff' })),
+  }
+}
 
 async function load() {
   loading.value = true
   try {
     const { data } = await gradingScalesApi.get()
-    bands.value = data.bands.map((b) => ({ ...b, use_color: !!b.color, color: b.color || '#ffffff' }))
+    bands.value = decorateBands(data.bands)
     skills.value = data.skills
   } catch (e) {
     message.value = { type: 'error', text: e.response?.data?.message || 'Could not load grading scale settings.' }
@@ -33,7 +62,7 @@ async function runAction(payload, successOverride) {
   message.value = null
   try {
     const { data } = await gradingScalesApi.action(payload)
-    bands.value = data.bands.map((b) => ({ ...b, use_color: !!b.color, color: b.color || '#ffffff' }))
+    bands.value = decorateBands(data.bands)
     skills.value = data.skills
     message.value = { type: 'success', text: successOverride || data.message }
   } catch (e) {
@@ -43,9 +72,9 @@ async function runAction(payload, successOverride) {
   }
 }
 
-function createBand() {
-  runAction({ action: 'create_band', ...newBand.value })
-  newBand.value = { grade: '', min_mark: '', max_mark: '', remark: '', points: '', use_color: false, color: '#ffffff' }
+function createBand(level) {
+  runAction({ action: 'create_band', level_type: level, ...newBand.value[level] })
+  newBand.value[level] = blankBand()
 }
 function saveBand(b) {
   runAction({ action: 'update_band', id: b.id, grade: b.grade, min_mark: b.min_mark, max_mark: b.max_mark, remark: b.remark, points: b.points, use_color: b.use_color, color: b.color })
@@ -54,9 +83,9 @@ function deleteBand(b) {
   if (!confirm('Delete this grading band?')) return
   runAction({ action: 'delete_band', id: b.id })
 }
-function resetDefaults() {
-  if (!confirm('This replaces ALL current grading bands with the competency-based defaults. Continue?')) return
-  runAction({ action: 'seed_competency_defaults' })
+function resetDefaults(sec) {
+  if (!confirm(sec.resetPrompt)) return
+  runAction({ action: sec.resetAction })
 }
 function createSkill() {
   if (!newSkillName.value.trim()) return
@@ -88,23 +117,24 @@ function seedDefaultSkills() {
   <div v-if="message" class="alert" :class="message.type">{{ message.text }}</div>
 
   <div class="disclaimer">
-    <strong>Heads up:</strong> the "reset to competency-based defaults" band labels (A - Exceptional through
-    E - Elementary, no F) match Uganda's new lower-secondary curriculum. Their percentage cutoffs are even
-    20-point bands, not an official boundary — adjust them below if your school's guidance differs. The
-    default skills list is still a best-effort placeholder; review it before relying on it for real report cards.
+    <strong>Heads up:</strong> O-Level and A-Level keep independent grading scales. The "reset to
+    competency-based defaults" O-Level band labels (A - Exceptional through E - Elementary, no F) match
+    Uganda's new lower-secondary curriculum; the A-Level "UACE Standard Scale" is the traditional A-F
+    letter scale used for UACE points. Percentage cutoffs on both are starting points, not an official
+    boundary — adjust them below if your school's guidance differs.
   </div>
 
   <p v-if="loading" class="empty">Loading…</p>
   <template v-else>
-    <div class="section">
-      <h2>Grading Bands</h2>
-      <p class="sub">A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.</p>
+    <div class="section" v-for="sec in LEVELS" :key="sec.level">
+      <h2>{{ sec.title }}</h2>
+      <p class="sub">{{ sec.desc }}</p>
 
       <div class="table-wrap">
         <table class="bands-table">
           <tr><th>Grade / Descriptor</th><th>Min %</th><th>Max %</th><th>Remark</th><th>Points</th><th>Color</th><th></th><th></th></tr>
-          <tr v-if="!bands.length"><td colspan="8" class="empty-cell">No grading bands configured yet.</td></tr>
-          <tr v-for="b in bands" :key="b.id">
+          <tr v-if="!bands[sec.level].length"><td colspan="8" class="empty-cell">No {{ sec.level }} bands configured yet.</td></tr>
+          <tr v-for="b in bands[sec.level]" :key="b.id">
             <td style="min-width:130px;"><input type="text" v-model="b.grade"></td>
             <td style="max-width:90px;"><input type="number" step="0.01" v-model.number="b.min_mark"></td>
             <td style="max-width:90px;"><input type="number" step="0.01" v-model.number="b.max_mark"></td>
@@ -122,21 +152,21 @@ function seedDefaultSkills() {
         </table>
       </div>
 
-      <form class="row" style="margin-top:20px;" @submit.prevent="createBand">
-        <div><label>Grade / Descriptor</label><input type="text" v-model="newBand.grade" placeholder="e.g. A or Outstanding" required></div>
-        <div><label>Min %</label><input type="number" step="0.01" v-model.number="newBand.min_mark" required></div>
-        <div><label>Max %</label><input type="number" step="0.01" v-model.number="newBand.max_mark" required></div>
-        <div><label>Remark</label><input type="text" v-model="newBand.remark" placeholder="Shown on the report card"></div>
-        <div><label>Points (optional)</label><input type="number" step="0.01" v-model.number="newBand.points"></div>
+      <form class="row" style="margin-top:20px;" @submit.prevent="createBand(sec.level)">
+        <div><label>Grade / Descriptor</label><input type="text" v-model="newBand[sec.level].grade" placeholder="e.g. A or Outstanding" required></div>
+        <div><label>Min %</label><input type="number" step="0.01" v-model.number="newBand[sec.level].min_mark" required></div>
+        <div><label>Max %</label><input type="number" step="0.01" v-model.number="newBand[sec.level].max_mark" required></div>
+        <div><label>Remark</label><input type="text" v-model="newBand[sec.level].remark" placeholder="Shown on the report card"></div>
+        <div><label>Points (optional)</label><input type="number" step="0.01" v-model.number="newBand[sec.level].points"></div>
         <div style="flex:0 0 auto;">
-          <label class="color-check"><input type="checkbox" v-model="newBand.use_color"> Color</label>
-          <input type="color" v-model="newBand.color" style="width:60px;height:38px;padding:2px;">
+          <label class="color-check"><input type="checkbox" v-model="newBand[sec.level].use_color"> Color</label>
+          <input type="color" v-model="newBand[sec.level].color" style="width:60px;height:38px;padding:2px;">
         </div>
-        <div style="flex:0 0 auto;align-self:flex-end;"><button type="submit" :disabled="busy">Add Band</button></div>
+        <div style="flex:0 0 auto;align-self:flex-end;"><button type="submit" :disabled="busy">Add {{ sec.level }} Band</button></div>
       </form>
 
       <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
-        <button type="button" class="ghost-btn" :disabled="busy" @click="resetDefaults">Reset to Competency-Based Defaults</button>
+        <button type="button" class="ghost-btn" :disabled="busy" @click="resetDefaults(sec)">{{ sec.resetLabel }}</button>
       </div>
     </div>
 

@@ -57,7 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_band'])) {
 // Never runs without this exact POST + the confirm() dialog on the button.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_competency_defaults'])) {
     admin_grading_seed_competency_defaults($pdo, $school_id);
-    $message = 'Grading scale reset to the competency-based default bands. Review the labels and cutoffs below.';
+    $message = 'O-Level scale reset to the competency-based default bands. Review the labels and cutoffs below.';
+    $message_type = 'success';
+}
+
+// ---- Grading bands: explicit opt-in reset to the UACE standard scale ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_uace_defaults'])) {
+    admin_grading_seed_uace_defaults($pdo, $school_id);
+    $message = 'A-Level scale reset to the UACE standard bands. Review the labels and cutoffs below.';
     $message_type = 'success';
 }
 
@@ -89,7 +96,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_default_skills']
     $message_type = 'success';
 }
 
-$bands = admin_grading_fetch_bands($pdo, $school_id);
+$levelSections = [
+    [
+        'level'        => 'O-Level',
+        'title'        => 'O-Level Grading Bands',
+        'desc'         => "A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.",
+        'bands'        => admin_grading_fetch_bands($pdo, $school_id, 'O-Level'),
+        'reset_field'  => 'seed_competency_defaults',
+        'reset_label'  => 'Reset to Competency-Based Defaults',
+        'reset_prompt' => 'This replaces ALL current O-Level grading bands with the competency-based defaults. Continue?',
+    ],
+    [
+        'level'        => 'A-Level',
+        'title'        => 'A-Level Grading Bands',
+        'desc'         => "Used for UACE points on A-Level report cards (principal subjects, General Paper, and the assigned Subsidiary). Needs a real F band so a fail is actually detected.",
+        'bands'        => admin_grading_fetch_bands($pdo, $school_id, 'A-Level'),
+        'reset_field'  => 'seed_uace_defaults',
+        'reset_label'  => 'Reset to UACE Standard Scale',
+        'reset_prompt' => 'This replaces ALL current A-Level grading bands with the UACE standard defaults. Continue?',
+    ],
+];
 $skills = admin_grading_fetch_skills($pdo, $school_id);
 
 $SCHOLAR_BASE = '../';
@@ -140,15 +166,16 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
         best-effort placeholder; review it before relying on it for real report cards.
     </div>
 
+    <?php foreach ($levelSections as $sec): ?>
     <div class="section">
-        <h2 style="font-size:1rem;margin:0;">Grading Bands</h2>
-        <p class="muted" style="color:var(--muted);font-size:0.85rem;">A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.</p>
+        <h2 style="font-size:1rem;margin:0;"><?= htmlspecialchars($sec['title'], ENT_QUOTES) ?></h2>
+        <p class="muted" style="color:var(--muted);font-size:0.85rem;"><?= htmlspecialchars($sec['desc'], ENT_QUOTES) ?></p>
 
         <table>
             <tr><th>Grade / Descriptor</th><th>Min %</th><th>Max %</th><th>Remark</th><th>Points</th><th>Color</th><th></th></tr>
-            <?php if (empty($bands)): ?>
-                <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No grading bands configured yet.</td></tr>
-            <?php else: foreach ($bands as $b): ?>
+            <?php if (empty($sec['bands'])): ?>
+                <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No <?= htmlspecialchars($sec['level'], ENT_QUOTES) ?> bands configured yet.</td></tr>
+            <?php else: foreach ($sec['bands'] as $b): ?>
                 <tr>
                     <form method="post" class="inline-form">
                     <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
@@ -179,6 +206,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 
         <div class="row" style="margin-top:20px;">
             <form method="post" class="row" style="flex:3;">
+                <input type="hidden" name="level_type" value="<?= htmlspecialchars($sec['level'], ENT_QUOTES) ?>">
                 <div>
                     <label>Grade / Descriptor</label>
                     <input type="text" name="grade" placeholder="e.g. A or Outstanding" required>
@@ -206,15 +234,16 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                     <input type="color" name="color" value="#ffffff" style="width:60px;height:38px;padding:2px;">
                 </div>
                 <div style="flex:0 0 auto;align-self:flex-end;">
-                    <button type="submit" name="create_band" value="1">Add Band</button>
+                    <button type="submit" name="create_band" value="1">Add <?= htmlspecialchars($sec['level'], ENT_QUOTES) ?> Band</button>
                 </div>
             </form>
         </div>
 
-        <form method="post" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;" onsubmit="return confirm('This replaces ALL current grading bands with the competency-based defaults. Continue?');">
-            <button type="submit" name="seed_competency_defaults" value="1" class="ghost-btn">Reset to Competency-Based Defaults</button>
+        <form method="post" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;" onsubmit="return confirm('<?= htmlspecialchars($sec['reset_prompt'], ENT_QUOTES) ?>');">
+            <button type="submit" name="<?= htmlspecialchars($sec['reset_field'], ENT_QUOTES) ?>" value="1" class="ghost-btn"><?= htmlspecialchars($sec['reset_label'], ENT_QUOTES) ?></button>
         </form>
     </div>
+    <?php endforeach; ?>
 
     <div class="section">
         <h2 style="font-size:1rem;margin:0;">Generic Skills (optional)</h2>

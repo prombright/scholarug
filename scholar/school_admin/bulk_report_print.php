@@ -20,6 +20,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/../_report_card_render.php';
+require_once __DIR__ . '/_students_helpers.php';
 
 // The one page in the app that renders a real loop of work in a single
 // request. Shared hosting commonly caps max_execution_time at 30s -- fine
@@ -65,11 +66,18 @@ if ($sel_class !== null) {
         $error = 'You do not have access to print reports for that class.';
         $sel_class = null;
     } else {
+        $sel_class_name = '';
         foreach ($classes as $c) {
             if ((int) $c['id'] === $sel_class) {
                 $class_label = $c['class_name'] . ($c['stream_name'] ? ' - ' . $c['stream_name'] : '');
+                $sel_class_name = $c['class_name'];
             }
         }
+        // A class is level-homogeneous (S.1-S.4 vs S.5-S.6), so the whole
+        // batch fetches ONE grading scale, same as admin_student_level_type()
+        // decides at student-creation time -- keeps this in lockstep with
+        // whichever scale render_report_card_html() picks per student.
+        $class_level_type = admin_student_level_type($sel_class_name) === 'A-Level' ? 'A-Level' : 'O-Level';
 
         $school_stmt = $pdo->prepare("SELECT school_name, school_badge, phone_contact, email_contact, address FROM schools WHERE id = ?");
         $school_stmt->execute([$school_id]);
@@ -90,7 +98,7 @@ if ($sel_class !== null) {
         // touched -- $classBatch is a new optional parameter there too,
         // left unused, so nothing about it changes.
         $classBatch = [
-            'grading_scales'  => scholar_fetch_grading_scales($pdo, $school_id),
+            'grading_scales'  => scholar_fetch_grading_scales($pdo, $school_id, $class_level_type),
             'weighted_scores' => scholar_fetch_class_weighted_scores($pdo, $school_id, $student_ids, $term, $year),
             'draft_subjects'  => scholar_fetch_class_draft_subjects($pdo, $school_id, $student_ids, $term, $year),
             'remarks'         => scholar_fetch_class_report_remarks($pdo, $school_id, $student_ids, $term, $year),

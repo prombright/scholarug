@@ -35,14 +35,18 @@ function scholar_grade_for_score(array $gradingScales, float $score): array
 
 /**
  * Fetches one school's grading_scales table once, ordered to match the
- * original per-call SQL's implicit first-match behavior.
+ * original per-call SQL's implicit first-match behavior. O-Level and
+ * A-Level keep independent band sets (grading_scales.level_type) -- a
+ * report card must grade every subject against the scale matching that
+ * student's own level_type, never the other one.
  *
  * @return array<int,array{grade:string,points:mixed,remark:?string,min_mark:mixed,max_mark:mixed,color:?string}>
  */
-function scholar_fetch_grading_scales(PDO $pdo, int $school_id): array
+function scholar_fetch_grading_scales(PDO $pdo, int $school_id, string $level_type = 'O-Level'): array
 {
-    $stmt = $pdo->prepare("SELECT grade, points, remark, min_mark, max_mark, color FROM grading_scales WHERE school_id = ? ORDER BY min_mark ASC");
-    $stmt->execute([$school_id]);
+    $level_type = $level_type === 'A-Level' ? 'A-Level' : 'O-Level';
+    $stmt = $pdo->prepare("SELECT grade, points, remark, min_mark, max_mark, color FROM grading_scales WHERE school_id = ? AND level_type = ? ORDER BY min_mark ASC");
+    $stmt->execute([$school_id, $level_type]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -223,8 +227,9 @@ function scholar_fetch_class_report_remarks(PDO $pdo, int $school_id, array $stu
  * Left null (every existing call site), behavior is 100% unchanged from
  * before batching existed.
  */
-function getCalculatedGradeAndComment(PDO $pdo, int $school_id, int $student_id, int $subject_id, string $term, int $year, ?array $classBatch = null): array
+function getCalculatedGradeAndComment(PDO $pdo, int $school_id, int $student_id, int $subject_id, string $term, int $year, ?array $classBatch = null, string $level_type = 'O-Level'): array
 {
+    $level_type = $level_type === 'A-Level' ? 'A-Level' : 'O-Level';
     if ($classBatch !== null) {
         $entry = $classBatch['weighted_scores'][$student_id][$subject_id] ?? null;
 
@@ -348,17 +353,21 @@ function getCalculatedGradeAndComment(PDO $pdo, int $school_id, int $student_id,
 
     $final_score = round($final_score, 1);
 
-    // Look up grade and comment from school's database grading scale.
+    // Look up grade and comment from school's database grading scale --
+    // scoped to this call's level_type, since O-Level and A-Level keep
+    // independent band sets.
     $grade_stmt = $pdo->prepare("
         SELECT grade, points, remark, color
         FROM grading_scales
         WHERE school_id = :school_id
+          AND level_type = :level_type
           AND :score BETWEEN min_mark AND max_mark
         LIMIT 1
     ");
     $grade_stmt->execute([
-        ':school_id' => $school_id,
-        ':score'     => $final_score
+        ':school_id'  => $school_id,
+        ':level_type' => $level_type,
+        ':score'      => $final_score
     ]);
 
     $grade_rule = $grade_stmt->fetch(PDO::FETCH_ASSOC);
@@ -443,7 +452,7 @@ function calculate_uace_points(PDO $pdo, int $school_id, array $student, string 
             $breakdown[] = ['label' => $code, 'code' => $code, 'grade' => '-', 'points' => 0];
             continue;
         }
-        $eval = getCalculatedGradeAndComment($pdo, $school_id, $student_id, $subject_id, $term, $year, $classBatch);
+        $eval = getCalculatedGradeAndComment($pdo, $school_id, $student_id, $subject_id, $term, $year, $classBatch, 'A-Level');
         $points = is_numeric($eval['points']) ? (float) $eval['points'] : 0.0;
         $total += $points;
         $breakdown[] = ['label' => $code, 'code' => $code, 'grade' => $eval['grade'], 'points' => $points];
@@ -452,7 +461,7 @@ function calculate_uace_points(PDO $pdo, int $school_id, array $student, string 
     // General Paper -- flat 1 point for a pass (any grade but F), 0 otherwise.
     $gp_id = scholar_resolve_catalog_subject_id($pdo, $school_id, $class_name, 'GP');
     if ($gp_id !== null) {
-        $eval = getCalculatedGradeAndComment($pdo, $school_id, $student_id, $gp_id, $term, $year, $classBatch);
+        $eval = getCalculatedGradeAndComment($pdo, $school_id, $student_id, $gp_id, $term, $year, $classBatch, 'A-Level');
         $gp_point = ($eval['grade'] !== '-' && $eval['grade'] !== 'F') ? 1.0 : 0.0;
         $total += $gp_point;
         $breakdown[] = ['label' => 'General Paper', 'code' => 'GP', 'grade' => $eval['grade'], 'points' => $gp_point];
@@ -472,7 +481,7 @@ function calculate_uace_points(PDO $pdo, int $school_id, array $student, string 
         if (!$registered->fetchColumn()) {
             continue;
         }
-        $eval = getCalculatedGradeAndComment($pdo, $school_id, $student_id, $subject_id, $term, $year, $classBatch);
+        $eval = getCalculatedGradeAndComment($pdo, $school_id, $student_id, $subject_id, $term, $year, $classBatch, 'A-Level');
         $point = ($eval['grade'] !== '-' && $eval['grade'] !== 'F') ? 1.0 : 0.0;
         $total += $point;
         $breakdown[] = ['label' => $label, 'code' => $code, 'grade' => $eval['grade'], 'points' => $point];
@@ -576,6 +585,8 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             ]);
             $subjects = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            $student_level = ($student['level_type'] ?? '') === 'A-Level' ? 'A-Level' : 'O-Level';
+
             foreach ($subjects as $sub) {
                 $eval = getCalculatedGradeAndComment(
                     $pdo,
@@ -584,7 +595,8 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
                     (int) $sub['subject_id'],
                     $term,
                     $year,
-                    $classBatch
+                    $classBatch,
+                    $student_level
                 );
                 $subject_evaluations[] = array_merge($sub, $eval);
             }
@@ -596,6 +608,11 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
     if (!$student) {
         return ['found' => false, 'html' => '', 'error' => $error_msg, 'student_name' => null];
     }
+
+    // O-Level and A-Level keep independent grading_scales -- every lookup
+    // below (subject cells, the legend, the overall summary band) must use
+    // whichever one matches this student, never the other.
+    $student_level = ($student['level_type'] ?? '') === 'A-Level' ? 'A-Level' : 'O-Level';
 
     $student_name = $student['full_name'] ?? $student['student_name'] ?? 'Student';
 
@@ -612,7 +629,7 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
     // each individual assessment cell (both are 0-100 percentages), so the
     // whole table -- not just the Final column -- speaks one consistent
     // color language instead of introducing a second, hardcoded palette.
-    $gradingScales = $classBatch['grading_scales'] ?? scholar_fetch_grading_scales($pdo, $school_id);
+    $gradingScales = $classBatch['grading_scales'] ?? scholar_fetch_grading_scales($pdo, $school_id, $student_level);
 
     $remark = $classBatch['remarks'][$student_id]
         ?? (isset($classBatch['remarks']) ? ['class_teacher_remark' => null, 'head_teacher_remark' => null] : scholar_fetch_report_remark($pdo, $school_id, $student_id, $term, $year));
@@ -765,10 +782,10 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             $summary_stmt = $pdo->prepare("
                 SELECT grade, remark, color
                 FROM grading_scales
-                WHERE school_id = :school_id AND :avg BETWEEN min_mark AND max_mark
+                WHERE school_id = :school_id AND level_type = :level_type AND :avg BETWEEN min_mark AND max_mark
                 LIMIT 1
             ");
-            $summary_stmt->execute([':school_id' => $school_id, ':avg' => $average]);
+            $summary_stmt->execute([':school_id' => $school_id, ':level_type' => $student_level, ':avg' => $average]);
             $summary_eval = $summary_stmt->fetch(PDO::FETCH_ASSOC);
             $overall_band = $summary_eval['grade'] ?? 'N/A';
             $overall_comm = $summary_eval['remark'] ?? 'Consistent effort and revision required across all units.';
