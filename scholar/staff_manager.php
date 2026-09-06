@@ -21,10 +21,29 @@ if (session_status() === PHP_SESSION_NONE) {
 require_role(['school_admin', 'hr']);
 
 $school_id = current_school_id();
+
+// CSV template download for Bulk CSV Import below -- must run before any
+// HTML output, same convention students.php's own template download uses.
+// No "Assign Stream" guidance beyond a blank example -- streams are school-
+// specific and optional (see classes.php), so there's nothing generic to
+// suggest there.
+if (isset($_GET['download_template']) && $_GET['download_template'] === 'csv') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=staff_import_template.csv');
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['First Name', 'Last Name', 'Email', 'Phone', 'NIN', 'Staff Category', 'Role', 'Assign Class', 'Assign Stream']);
+    fputcsv($output, ['John', 'Byaruhanga', 'john.byaruhanga@example.com', '0772000000', '', 'Teaching', 'Regular Teacher', 'S.1', '']);
+    fputcsv($output, ['Grace', 'Namuli', '', '0782000000', '', 'Non-Teaching', 'Bursar', '', '']);
+    fclose($output);
+    exit();
+}
+
 $msg = '';
 $msg_type = 'info';
 $invite_link = null;
 $generated_credentials = null;
+$bulk_credentials = [];
+$skipped_staff_rows = [];
 
 if (!is_dir('uploads/staff')) {
     mkdir('uploads/staff', 0755, true);
@@ -125,18 +144,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_staff_record'
             }
 
             if ($action === 'add') {
-                $currentYear = date("Y");
-                $prefix = "STF-" . $currentYear . "-";
-                // Was previously looking this up against staff_id itself (the
-                // real AUTO_INCREMENT int PK) -- an int column can never match
-                // a LIKE 'STF-...' pattern, so this always came back empty and
-                // every registration this year got told it was STF-2026-0001.
-                // staff_code is a real VARCHAR made exactly for this.
-                $seq = $pdo->prepare("SELECT staff_code FROM staff WHERE staff_code LIKE ? ORDER BY staff_code DESC LIMIT 1");
-                $seq->execute([$prefix . '%']);
-                $last_code = $seq->fetchColumn();
-                $nextNum = $last_code ? str_pad((int)substr($last_code, -4) + 1, 4, "0", STR_PAD_LEFT) : "0001";
-                $generated_id = $prefix . $nextNum;
+                // scholar_generate_staff_code() lives in auth_guard.php (already
+                // required above) -- shared with the Bulk CSV Import handler
+                // below, so a single add and a bulk row can never race each
+                // other into the same code within one request.
+                $generated_id = scholar_generate_staff_code($pdo);
 
                 // staff_id is left off this column list entirely now -- let
                 // AUTO_INCREMENT assign it, instead of trying to force a
@@ -223,6 +235,125 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_staff_record'
             $msg = "DATABASE ERROR: " . $e->getMessage();
             $msg_type = 'error';
         }
+    }
+}
+
+// --- 2.5 Bulk CSV Import ---
+// Mirrors school_admin/students.php's own Bulk CSV Import: same
+// normalize-and-lookup convention for matching a typed class name against
+// this school's real classes, same additive/skip-bad-rows tolerance.
+//
+// Deliberately does NOT auto-email an activation invite per row the way a
+// single "Register Staff Member" submission does for Teaching staff -- N
+// synchronous mail() calls in one request is exactly what times out a
+// large CSV (see bulk_report_print.php's own set_time_limit() note for the
+// same concern on the report-printing side). Every successfully imported
+// row gets a temporary password instead, all shown together in one
+// results table below -- same "hand out printed/copied credentials to a
+// fresh cohort" pattern already used for newly bulk-imported students.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'import_csv' && isset($_FILES['csv_file'])) {
+    @set_time_limit(120);
+
+    $file = $_FILES['csv_file']['tmp_name'];
+
+    if (empty($file) || !is_uploaded_file($file)) {
+        $msg = "Please select a valid CSV file to upload.";
+        $msg_type = 'error';
+    } else {
+        $handle = fopen($file, "r");
+        fgetcsv($handle, 1000, ","); // header row
+
+        $classes_lookup_stmt = $pdo->prepare("SELECT DISTINCT class_name FROM classes WHERE school_id = ?");
+        $classes_lookup_stmt->execute([$school_id]);
+        $class_lookup = [];
+        foreach ($classes_lookup_stmt->fetchAll(PDO::FETCH_COLUMN) as $cn) {
+            $class_lookup[scholar_normalize_class_name($cn)] = $cn;
+        }
+
+        $ins = $pdo->prepare("
+            INSERT INTO staff (school_id, first_name, last_name, email, phone, nin, photo, staff_category, role, staff_type, assign_class, assign_stream, staff_code, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, 'uploads/staff/default_avatar.png', ?, ?, ?, ?, ?, ?, 'active', NOW())
+        ");
+
+        $imported_count = 0;
+        $row_num = 1; // header already consumed
+
+        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            $row_num++;
+            $csv_first    = trim($data[0] ?? '');
+            $csv_last     = trim($data[1] ?? '');
+            $csv_email    = trim($data[2] ?? '') ?: null;
+            $csv_phone    = trim($data[3] ?? '') ?: null;
+            $csv_nin      = strtoupper(trim($data[4] ?? ''));
+            $csv_category = trim($data[5] ?? '') ?: 'Teaching';
+            $csv_role     = trim($data[6] ?? '') ?: 'Regular Teacher';
+            $csv_class    = trim($data[7] ?? '');
+            $csv_stream   = trim($data[8] ?? '');
+
+            if ($csv_first === '' || $csv_last === '') {
+                $skipped_staff_rows[] = "Row {$row_num}: First Name and Last Name are both required.";
+                continue;
+            }
+
+            if (!in_array($csv_category, ['Teaching', 'Non-Teaching'], true)) {
+                $csv_category = 'Teaching';
+            }
+
+            // Same 14-character CM/CF format the single "Register Staff
+            // Member" form validates -- a bad NIN drops just that one field
+            // instead of skipping the whole row over a typo.
+            if ($csv_nin !== '' && !preg_match('/^(CM|CF)[A-Z0-9]{12}$/', $csv_nin)) {
+                $skipped_staff_rows[] = "Row {$row_num}: NIN \"{$csv_nin}\" for {$csv_first} {$csv_last} doesn't match the standard format -- imported without it.";
+                $csv_nin = null;
+            } else {
+                $csv_nin = $csv_nin ?: null;
+            }
+
+            // Empty string, not null -- matches what the single "Register
+            // Staff Member" form's own unselected dropdowns already send
+            // (assign_class/assign_stream have no NOT NULL concern either
+            // way, but staying on the exact value that path already proves
+            // out avoids introducing a new one here).
+            $matched_class = '';
+            $matched_stream = '';
+            if ($csv_class !== '') {
+                $found = $class_lookup[scholar_normalize_class_name($csv_class)] ?? null;
+                if ($found === null) {
+                    $skipped_staff_rows[] = "Row {$row_num}: class \"{$csv_class}\" not found for {$csv_first} {$csv_last} — add it via Classes first, or check the spelling. Imported without a class assignment.";
+                } else {
+                    $matched_class = $found;
+                    $matched_stream = $csv_stream;
+                }
+            }
+
+            $staff_code = scholar_generate_staff_code($pdo);
+
+            $ins->execute([
+                $school_id, $csv_first, $csv_last, $csv_email, $csv_phone, $csv_nin,
+                $csv_category, $csv_role, strtolower($csv_category),
+                $matched_class, $matched_stream, $staff_code,
+            ]);
+            $imported_count++;
+            $new_staff_id = (int) $pdo->lastInsertId();
+
+            $temp_password = (string) random_int(10000, 99999);
+            $hashed = password_hash($temp_password, PASSWORD_BCRYPT);
+            $staff_for_login = ['email' => $csv_email, 'phone' => $csv_phone, 'role' => $csv_role, 'first_name' => $csv_first];
+            $new_user_id = find_or_create_staff_user($pdo, $staff_for_login, $new_staff_id, $school_id, $hashed);
+            $username_stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+            $username_stmt->execute([$new_user_id]);
+
+            $bulk_credentials[] = [
+                'name'     => trim("{$csv_first} {$csv_last}"),
+                'code'     => $staff_code,
+                'username' => $username_stmt->fetchColumn(),
+                'password' => $temp_password,
+            ];
+        }
+        fclose($handle);
+
+        $msg = "Successfully imported {$imported_count} staff member(s). Copy their login credentials from the table below now — passwords are shown only this once." . (!empty($skipped_staff_rows) ? ' ' . count($skipped_staff_rows) . ' row(s) had warnings, see below.' : '');
+        $msg_type = 'info';
     }
 }
 
@@ -585,7 +716,47 @@ if ($is_hr_role) {
             </div>
         <?php endif; ?>
 
-        <div style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center;">
+        <?php if (!empty($skipped_staff_rows)): ?>
+            <div style="background: rgba(245,158,11,0.06); border-left: 4px solid #f59e0b; padding: 16px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 24px; color: var(--text);">
+                <strong>Some rows had warnings:</strong>
+                <ul style="margin:8px 0 0; padding-left:20px;">
+                    <?php foreach ($skipped_staff_rows as $row_msg): ?>
+                        <li><?= htmlspecialchars($row_msg, ENT_QUOTES, 'UTF-8') ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($bulk_credentials)): ?>
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; margin-bottom: 24px;">
+                <div style="padding:14px 16px; border-bottom:1px solid var(--border); background:var(--panel);">
+                    <strong style="font-size:0.85rem; color:var(--text);">Bulk-Imported Login Credentials</strong>
+                    <span style="display:block; font-size:0.75rem; color:var(--muted); margin-top:2px;">Copy these now and hand them out directly — passwords are shown only this once. Each person can change theirs after first login.</span>
+                </div>
+                <table style="width:100%; border-collapse:collapse; text-align:left; min-width:600px; font-size:0.85rem;">
+                    <thead>
+                        <tr style="background: var(--panel); border-bottom:1px solid var(--border);">
+                            <th style="padding:10px 16px; color:var(--muted); font-size:0.7rem; text-transform:uppercase;">Name</th>
+                            <th style="padding:10px 16px; color:var(--muted); font-size:0.7rem; text-transform:uppercase;">Staff Code</th>
+                            <th style="padding:10px 16px; color:var(--muted); font-size:0.7rem; text-transform:uppercase;">Username</th>
+                            <th style="padding:10px 16px; color:var(--muted); font-size:0.7rem; text-transform:uppercase;">Temporary Password</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($bulk_credentials as $cred): ?>
+                            <tr style="border-bottom:1px solid var(--border);">
+                                <td style="padding:10px 16px; color:var(--text); font-weight:500;"><?= htmlspecialchars($cred['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td style="padding:10px 16px; font-family:monospace; color:#3b82f6;"><?= htmlspecialchars($cred['code'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td style="padding:10px 16px; font-family:monospace; color:#00A8A8;"><?= htmlspecialchars($cred['username'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td style="padding:10px 16px; font-family:monospace; color:#f59e0b;"><?= htmlspecialchars($cred['password'], ENT_QUOTES, 'UTF-8') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+
+        <div style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
                 <h3 style="margin: 0 0 6px 0; font-size: 1.35rem; color:var(--text); font-weight: 700; letter-spacing: -0.5px;">Staff Management Portal</h3>
                 <p style="color:var(--muted); font-size:0.85rem; margin:0;">Organize school human resource records, system access tracking tags, and academic class distribution tables.</p>
@@ -594,6 +765,21 @@ if ($is_hr_role) {
                 <span style="font-size: 1.1rem; line-height: 0;">+</span> Register Staff Member
            </button>
         </div>
+
+        <details style="background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin-bottom:24px;">
+            <summary style="cursor:pointer; font-weight:700; font-size:0.85rem; color:var(--text); text-transform:uppercase; letter-spacing:0.5px;">Bulk CSV Import</summary>
+            <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
+                <p style="margin:0; font-size:0.82rem; color:var(--muted); line-height:1.5;">Upload a CSV to register multiple staff at once. Columns: <strong>First Name, Last Name, Email, Phone, NIN, Staff Category, Role, Assign Class, Assign Stream</strong> — Email, Phone, NIN, Assign Class and Assign Stream may be left blank. Staff Category must be "Teaching" or "Non-Teaching" (defaults to Teaching if blank/invalid). Assign Class must match a class name exactly as it appears in Manage Classes (e.g. "S.1"), or that row imports without a class assignment. Every imported row gets a temporary login password, shown once in a table above after import.</p>
+                <div>
+                    <a href="staff_manager.php?download_template=csv" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:6px; background:var(--bg); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:0.8rem; font-weight:600;"><i class="bi bi-download"></i> Download CSV Template</a>
+                </div>
+                <form method="POST" action="staff_manager.php" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <input type="hidden" name="action" value="import_csv">
+                    <input type="file" name="csv_file" accept=".csv" required class="form-control" style="max-width:320px;">
+                    <button type="submit" style="background:#10b981; color:#fff; border:none; padding:10px 18px; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer;">Upload &amp; Import</button>
+                </form>
+            </div>
+        </details>
 
         <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);">
             <table style="width:100%; border-collapse:collapse; text-align:left; min-width:950px; font-size: 0.9rem;">

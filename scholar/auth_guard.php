@@ -267,6 +267,23 @@ function scholar_generate_student_no(PDO $pdo): string
 }
 
 /**
+ * STF-{year}-{4-digit sequence} -- same convention as
+ * scholar_generate_student_no() above, extracted out of staff_manager.php's
+ * "add" handler so its bulk CSV import can generate collision-free codes
+ * the same way a single "Register Staff Member" submission does, instead of
+ * two copies of this sequence lookup silently drifting apart.
+ */
+function scholar_generate_staff_code(PDO $pdo): string
+{
+    $prefix = 'STF-' . date('Y') . '-';
+    $seq = $pdo->prepare("SELECT staff_code FROM staff WHERE staff_code LIKE ? ORDER BY staff_code DESC LIMIT 1");
+    $seq->execute([$prefix . '%']);
+    $last = $seq->fetchColumn();
+    $next = $last ? str_pad((string) ((int) substr($last, -4) + 1), 4, '0', STR_PAD_LEFT) : '0001';
+    return $prefix . $next;
+}
+
+/**
  * Single source of truth for "which page does this role land on after
  * login or a forced password reset". Previously duplicated (with
  * different, drifted contents) in login.php in two places and again in
