@@ -25,7 +25,7 @@ Our team is ready to help.
 
 <div>
 <h4>Email</h4>
-<p>info@abnsystems.com</p>
+<p>info@scholarug.com</p>
 </div>
 
 </div>

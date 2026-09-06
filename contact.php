@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $contact_message = 'Please enter a valid email address.';
         $contact_message_type = 'error';
     } else {
-        $to = 'info@abnsystems.com';
+        $to = 'info@scholarug.com';
         $subject = 'ScholarUg Contact Form: ' . ($contact_values['subject'] !== '' ? $contact_values['subject'] : 'New message');
         $body = "Name: {$contact_values['name']}\n"
             . "Email: {$contact_values['email']}\n\n"
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $contact_message_type = 'success';
             $contact_values = ['name' => '', 'email' => '', 'subject' => '', 'message' => ''];
         } else {
-            $contact_message = "Something went wrong sending your message — please email us directly at info@abnsystems.com.";
+            $contact_message = "Something went wrong sending your message — please email us directly at info@scholarug.com.";
             $contact_message_type = 'error';
         }
     }
