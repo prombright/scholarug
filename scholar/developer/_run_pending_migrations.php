@@ -121,4 +121,17 @@ run_statements($pdo, 'developer_messages_migration', [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
 ]);
 
+// grading_scales_level_type_migration -- O-Level and A-Level need
+// independent grading bands (see that .sql file's own header). The ALTER
+// throws 1060 (duplicate column) and gets SKIPped by run_statements() if
+// a prior run already added it; the UPDATE is naturally idempotent on its
+// own (a second run just matches zero rows), so it's not wrapped in the
+// same try/catch skip logic -- it's always safe to run again.
+run_statements($pdo, 'grading_scales_level_type_migration', [
+    "ALTER TABLE grading_scales ADD COLUMN level_type ENUM('O-Level','A-Level') NULL DEFAULT NULL AFTER school_id",
+]);
+echo "== grading_scales_level_type_migration: backfill ==\n";
+$backfilled = $pdo->exec("UPDATE grading_scales SET level_type = 'O-Level' WHERE level_type IS NULL");
+echo "OK: backfilled {$backfilled} row(s) to O-Level\n\n";
+
 echo "DONE. Verify the output above, then delete this file from the server.\n";
