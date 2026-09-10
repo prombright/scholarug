@@ -1381,6 +1381,14 @@ td {
     </div>
 
     <a
+        href="migrations_status.php"
+        class="logout"
+        style="color:#a855f7;border-color:rgba(168,85,247,.25);margin-right:10px;"
+    >
+        Migrations
+    </a>
+
+    <a
         href="messages.php"
         class="logout"
         style="color:#06b6d4;border-color:rgba(6,182,212,.25);margin-right:10px;"

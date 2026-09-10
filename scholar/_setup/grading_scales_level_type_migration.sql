@@ -38,3 +38,19 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 UPDATE grading_scales SET level_type = 'O-Level' WHERE level_type IS NULL;
+
+-- Self-registers in schema_migrations (see schema_migrations_tracking.sql)
+-- so developer/migrations_status.php shows this as applied without a
+-- separate manual step -- guarded so running this file BEFORE
+-- schema_migrations_tracking.sql still succeeds, it just skips recording.
+SET @tracking_table_exists = (
+    SELECT COUNT(*) FROM information_schema.TABLES
+    WHERE TABLE_SCHEMA = 'scholar' AND TABLE_NAME = 'schema_migrations'
+);
+SET @sql = IF(@tracking_table_exists = 1,
+    'INSERT IGNORE INTO schema_migrations (filename) VALUES (''grading_scales_level_type_migration.sql'')',
+    'SELECT ''schema_migrations table not present yet, skipping self-registration'''
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

@@ -5,8 +5,9 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 | ONE-TIME MIGRATION RUNNER -- deploy helper, delete after use
 |--------------------------------------------------------------------------
-| Applies library_migration.sql, multi_school_login_migration.sql and
-| developer_messages_migration.sql against the live database via the same
+| Applies library_migration.sql, multi_school_login_migration.sql,
+| developer_messages_migration.sql and grading_scales_level_type_migration.sql
+| against the live database via the same
 | db.php connection every other page uses (no direct DB CLI/phpMyAdmin
 | access needed from the deploying machine). Gated behind an active
 | developer session, same as every other scholar/developer/* page. Lives
@@ -36,7 +37,14 @@ if (
 
 header('Content-Type: text/plain');
 
-function run_statements(PDO $pdo, string $label, array $statements): void
+// $sourceFile records this migration into schema_migrations once every
+// statement has run (or been safely skipped as already-applied) -- so
+// visiting this page also keeps developer/migrations_status.php honest,
+// instead of that page only ever being updated by hand. Best-effort: a
+// database that hasn't applied _setup/schema_migrations_tracking.sql yet
+// (table doesn't exist, error 1146) still gets the real migration applied
+// above, it just can't be recorded yet.
+function run_statements(PDO $pdo, string $label, array $statements, ?string $sourceFile = null): void
 {
     echo "== {$label} ==\n";
     foreach ($statements as $sql) {
@@ -52,6 +60,13 @@ function run_statements(PDO $pdo, string $label, array $statements): void
             } else {
                 echo "FAIL: " . $e->getMessage() . "\n";
             }
+        }
+    }
+    if ($sourceFile !== null) {
+        try {
+            $pdo->prepare('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)')->execute([$sourceFile]);
+        } catch (\PDOException $e) {
+            echo "(not recorded in schema_migrations -- run schema_migrations_tracking.sql first)\n";
         }
     }
     echo "\n";
@@ -80,7 +95,7 @@ run_statements($pdo, 'library_migration', [
         CONSTRAINT fk_library_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
         CONSTRAINT fk_library_teacher FOREIGN KEY (teacher_id) REFERENCES staff(staff_id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
-]);
+], 'library_migration.sql');
 
 echo "== multi_school_login_migration: pre-check ==\n";
 $emailConflicts = $pdo->query("SELECT school_id, email, COUNT(*) c FROM users WHERE email IS NOT NULL GROUP BY school_id, email HAVING c > 1")->fetchAll();
@@ -98,7 +113,7 @@ if ($emailConflicts || $phoneConflicts) {
         "ALTER TABLE users ADD UNIQUE KEY `uniq_school_email` (`school_id`, `email`)",
         "ALTER TABLE staff DROP INDEX `username`",
         "ALTER TABLE staff ADD UNIQUE KEY `uniq_school_phone` (`school_id`, `phone`)",
-    ]);
+    ], 'multi_school_login_migration.sql');
 }
 
 run_statements($pdo, 'developer_messages_migration', [
@@ -119,7 +134,7 @@ run_statements($pdo, 'developer_messages_migration', [
         KEY idx_dev_msg_conversation (conversation_id),
         CONSTRAINT fk_dev_msg_conversation FOREIGN KEY (conversation_id) REFERENCES developer_conversations(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
-]);
+], 'developer_messages_migration.sql');
 
 // grading_scales_level_type_migration -- O-Level and A-Level need
 // independent grading bands (see that .sql file's own header). The ALTER
@@ -129,7 +144,7 @@ run_statements($pdo, 'developer_messages_migration', [
 // same try/catch skip logic -- it's always safe to run again.
 run_statements($pdo, 'grading_scales_level_type_migration', [
     "ALTER TABLE grading_scales ADD COLUMN level_type ENUM('O-Level','A-Level') NULL DEFAULT NULL AFTER school_id",
-]);
+], 'grading_scales_level_type_migration.sql');
 echo "== grading_scales_level_type_migration: backfill ==\n";
 $backfilled = $pdo->exec("UPDATE grading_scales SET level_type = 'O-Level' WHERE level_type IS NULL");
 echo "OK: backfilled {$backfilled} row(s) to O-Level\n\n";
