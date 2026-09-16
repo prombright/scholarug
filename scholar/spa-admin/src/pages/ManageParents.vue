@@ -14,6 +14,64 @@ const selectedIds = ref(new Set())
 
 const form = ref({ full_name: '', username: '', phone: '', email: '' })
 
+// Editing an EXISTING parent's linked children -- createParent() below
+// only sets the initial set; this is what makes "a parent can have more
+// than one student" actually usable once a second child enrolls later,
+// not just at the moment the account is made.
+const editingParent = ref(null)
+const editSelectedIds = ref(new Set())
+const editSearch = ref('')
+
+const editGrouped = computed(() => {
+  const q = editSearch.value.trim().toLowerCase()
+  const groups = []
+  let current = null
+  for (const s of students.value) {
+    const label = s.class_name || 'No Class'
+    const hay = `${s.full_name} ${label}`.toLowerCase()
+    if (q && !hay.includes(q)) continue
+    if (label !== current) {
+      current = label
+      groups.push({ label, students: [] })
+    }
+    groups[groups.length - 1].students.push(s)
+  }
+  return groups
+})
+
+function openEdit(parent) {
+  editingParent.value = parent
+  editSelectedIds.value = new Set(parent.child_ids || [])
+  editSearch.value = ''
+}
+function closeEdit() {
+  editingParent.value = null
+}
+function toggleEdit(id) {
+  const s = new Set(editSelectedIds.value)
+  if (s.has(id)) s.delete(id); else s.add(id)
+  editSelectedIds.value = s
+}
+async function saveEdit() {
+  busy.value = true
+  error.value = null
+  success.value = null
+  try {
+    const { data } = await manageParentsApi.updateLinks({
+      parent_user_id: editingParent.value.id,
+      student_ids: Array.from(editSelectedIds.value)
+    })
+    parents.value = data.parents
+    students.value = data.students
+    success.value = data.message
+    editingParent.value = null
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Could not update linked children.'
+  } finally {
+    busy.value = false
+  }
+}
+
 async function load() {
   loading.value = true
   try {
@@ -114,13 +172,42 @@ async function createParent() {
       <p v-if="loading" class="empty">Loading…</p>
       <div v-else class="table-wrap">
         <table>
-          <tr><th>Username</th><th>Phone</th><th>Linked Children</th></tr>
+          <tr><th>Username</th><th>Phone</th><th>Linked Children</th><th></th></tr>
           <tr v-for="p in parents" :key="p.id">
             <td>{{ p.username }}</td>
             <td>{{ p.phone_number || '—' }}</td>
             <td>{{ p.children || '—' }}</td>
+            <td><button type="button" class="ghost-btn small-btn" @click="openEdit(p)">Edit Children</button></td>
           </tr>
         </table>
+      </div>
+    </div>
+
+    <div v-if="editingParent" class="modal-backdrop" @click.self="closeEdit">
+      <div class="modal">
+        <div class="modal-head">
+          <h4>Edit Linked Children — {{ editingParent.username }}</h4>
+          <button type="button" class="modal-close" @click="closeEdit">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="picker-head">
+            <label style="margin:0;">Linked Child(ren)</label>
+            <span class="count">{{ editSelectedIds.size }} selected</span>
+          </div>
+          <input type="text" v-model="editSearch" placeholder="Search by student name or class...">
+          <div class="student-picker">
+            <template v-for="g in editGrouped" :key="g.label">
+              <div class="class-group-label">{{ g.label }}</div>
+              <label v-for="s in g.students" :key="s.id" class="student-row">
+                <input type="checkbox" :checked="editSelectedIds.has(s.id)" @change="toggleEdit(s.id)">
+                <span>{{ s.full_name }}</span>
+                <span class="cls">{{ g.label }}</span>
+              </label>
+            </template>
+            <div v-if="!editGrouped.length" class="no-match">{{ students.length ? 'No students match your search.' : 'No students enrolled yet.' }}</div>
+          </div>
+          <button type="button" :disabled="busy" @click="saveEdit">Save Changes</button>
+        </div>
       </div>
     </div>
   </div>
@@ -153,4 +240,12 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .empty{color:var(--muted);font-size:0.85rem;}
 .table-wrap{overflow-x:auto;}
+.ghost-btn{background:transparent;color:var(--text);border:1px solid var(--border);}
+.small-btn{margin:0;padding:6px 14px;font-size:0.78rem;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(3,4,6,0.8);backdrop-filter:blur(4px);z-index:9999;display:flex;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;}
+.modal{background:var(--bg);border:1px solid var(--border);width:100%;max-width:520px;border-radius:12px;overflow:hidden;}
+.modal-head{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--panel);}
+.modal-head h4{margin:0;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.5px;}
+.modal-close{background:transparent;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;margin:0;padding:0;}
+.modal-body{padding:24px;}
 </style>

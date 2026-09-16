@@ -64,10 +64,10 @@ const modules = [
     <div class="welcome-sub">{{ isPrimary ? 'Primary School' : 'Secondary School' }} Admin Panel ({{ isPrimary ? 'Baby Class – P.7' : 'S.1 – S.6' }})</div>
 
     <div class="stat-grid">
-      <div class="stat-card students"><div class="stat-icon"><i class="bi bi-people"></i></div><div><div class="n">{{ studentCount }}</div><div class="label">Students</div></div></div>
-      <div class="stat-card staff"><div class="stat-icon"><i class="bi bi-person-badge"></i></div><div><div class="n">{{ staffCount }}</div><div class="label">Staff</div></div></div>
-      <div class="stat-card classes"><div class="stat-icon"><i class="bi bi-diagram-3"></i></div><div><div class="n">{{ classCount }}</div><div class="label">Classes</div></div></div>
-      <div class="stat-card messages" :class="{ alert: pendingFeedback > 0 }"><div class="stat-icon"><i class="bi bi-chat-dots"></i></div><div><div class="n">{{ pendingFeedback }}</div><div class="label">New Parent Messages</div></div></div>
+      <router-link to="/students" class="stat-card students"><div class="stat-icon"><i class="bi bi-people"></i></div><div><div class="n">{{ studentCount }}</div><div class="label">Students</div></div></router-link>
+      <a :href="SB + 'staff_manager.php'" class="stat-card staff"><div class="stat-icon"><i class="bi bi-person-badge"></i></div><div><div class="n">{{ staffCount }}</div><div class="label">Staff</div></div></a>
+      <router-link to="/classes" class="stat-card classes"><div class="stat-icon"><i class="bi bi-diagram-3"></i></div><div><div class="n">{{ classCount }}</div><div class="label">Classes</div></div></router-link>
+      <router-link to="/parent-feedback" class="stat-card messages" :class="{ alert: pendingFeedback > 0 }"><div class="stat-icon"><i class="bi bi-chat-dots"></i></div><div><div class="n">{{ pendingFeedback }}</div><div class="label">New Parent Messages</div></div></router-link>
     </div>
 
     <div class="section-label">Functionalities</div>
@@ -112,7 +112,8 @@ h1{font-size:1.4rem;margin:0 0 4px;}
 .empty{color:var(--muted);font-size:0.85rem;padding:16px 0;}
 .welcome-sub{color:var(--muted);font-size:0.85rem;margin-bottom:28px;}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;}
-.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;align-items:center;gap:14px;}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--text);transition:border-color .15s,transform .15s;}
+.stat-card:hover{border-color:var(--cyan);transform:translateY(-1px);}
 .stat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;}
 .stat-card.students .stat-icon{background:rgba(0,168,168,.15);color:var(--cyan);}
 .stat-card.staff .stat-icon{background:rgba(16,185,129,.15);color:var(--green);}

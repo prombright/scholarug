@@ -27,6 +27,7 @@ import ElectionPositions from '../pages/ElectionPositions.vue'
 import ElectionCandidates from '../pages/ElectionCandidates.vue'
 import ElectionResults from '../pages/ElectionResults.vue'
 import Projects from '../pages/Projects.vue'
+import ParentFeedback from '../pages/ParentFeedback.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -61,7 +62,8 @@ const router = createRouter({
         { path: 'elections/:id/positions', name: 'election-positions', component: ElectionPositions },
         { path: 'elections/:id/candidates', name: 'election-candidates', component: ElectionCandidates },
         { path: 'elections/:id/results', name: 'election-results', component: ElectionResults },
-        { path: 'projects', name: 'projects', component: Projects }
+        { path: 'projects', name: 'projects', component: Projects },
+        { path: 'parent-feedback', name: 'parent-feedback', component: ParentFeedback }
       ]
     }
   ]

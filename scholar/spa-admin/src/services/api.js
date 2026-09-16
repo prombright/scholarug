@@ -65,7 +65,12 @@ export const assignTeacherApi = {
 export const libraryOverviewApi = { get: () => api.get('admin/library.php') }
 export const manageParentsApi = {
   get: () => api.get('admin/manage_parents.php'),
-  create: (payload) => api.post('admin/manage_parents.php', payload)
+  create: (payload) => api.post('admin/manage_parents.php', { action: 'create', ...payload }),
+  updateLinks: (payload) => api.post('admin/manage_parents.php', { action: 'update_links', ...payload })
+}
+export const parentFeedbackApi = {
+  get: () => api.get('admin/parent_feedback.php'),
+  action: (payload) => api.post('admin/parent_feedback.php', payload)
 }
 export const timetableSetupApi = {
   get: () => api.get('admin/timetable_setup.php'),

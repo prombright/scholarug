@@ -32,6 +32,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_parent'])) {
     if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_links'])) {
+    $result = admin_parents_update_links(
+        $pdo, $school_id,
+        (int) ($_POST['parent_user_id'] ?? 0),
+        array_map('intval', $_POST['student_ids'] ?? [])
+    );
+    if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
+}
+
 $students = admin_parents_fetch_students($pdo, $school_id);
 $parents = admin_parents_fetch_list($pdo, $school_id);
 $ACTIVE_NAV = 'parents';
@@ -46,6 +55,7 @@ require_once __DIR__ . '/../_admin_shell.php';
 label{display:block;font-size:0.8rem;color:var(--muted);margin:12px 0 4px;}
 input,select{width:100%;padding:10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;}
 button{margin-top:16px;background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:12px 22px;border-radius:8px;cursor:pointer;}
+.ghost-btn{background:transparent;color:var(--text);border:1px solid var(--border);}
 .picker-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .picker-head .count{font-size:0.75rem;color:var(--cyan);white-space:nowrap;}
 .student-picker{margin-top:8px;max-height:280px;overflow-y:auto;background:var(--panel);border:1px solid var(--border);border-radius:6px;}
@@ -143,17 +153,111 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
     <div class="section">
         <h2 style="font-size:1rem;margin:0 0 14px;">Existing Parent Accounts</h2>
         <table>
-            <tr><th>Username</th><th>Phone</th><th>Linked Children</th></tr>
+            <tr><th>Username</th><th>Phone</th><th>Linked Children</th><th></th></tr>
             <?php foreach ($parents as $p): ?>
             <tr>
                 <td><?= htmlspecialchars($p['username'], ENT_QUOTES) ?></td>
                 <td><?= htmlspecialchars($p['phone_number'] ?? '—', ENT_QUOTES) ?></td>
                 <td><?= htmlspecialchars($p['children'] ?? '—', ENT_QUOTES) ?></td>
+                <td>
+                    <button type="button" class="ghost-btn" style="margin-top:0;padding:6px 14px;font-size:0.78rem;"
+                            onclick="openEditParentModal(<?= (int) $p['id'] ?>, <?= htmlspecialchars(json_encode($p['username']), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($p['child_ids']), ENT_QUOTES) ?>)">
+                        Edit Children
+                    </button>
+                </td>
             </tr>
             <?php endforeach; ?>
         </table>
     </div>
 </div>
+
+<!-- Add/remove which children an EXISTING parent is linked to -- the
+     create form above only sets the initial set; this is what makes "a
+     parent can have more than one student" actually usable once a second
+     child enrolls later, not just at the moment the account is made. -->
+<div id="editParentModal" style="display:none; position:fixed; inset:0; background:rgba(3,4,6,0.8); backdrop-filter:blur(4px); z-index:9999; justify-content:center; align-items:center; padding:20px; box-sizing:border-box;">
+    <div style="background:var(--bg); border:1px solid var(--border); width:100%; max-width:520px; border-radius:12px; overflow:hidden;">
+        <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--panel);">
+            <h4 style="margin:0; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Edit Linked Children — <span id="editParentUsername"></span></h4>
+            <button type="button" onclick="closeEditParentModal()" style="background:transparent; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer;">✕</button>
+        </div>
+        <form method="post" style="padding:24px;">
+            <input type="hidden" name="parent_user_id" id="editParentUserId" value="">
+            <div class="picker-head">
+                <label style="margin:0;">Linked Child(ren)</label>
+                <span class="count" id="editPickerCount">0 selected</span>
+            </div>
+            <input type="text" id="editStudentSearch" placeholder="Search by student name or class...">
+            <div class="student-picker" id="editStudentPicker">
+                <?php
+                $current_class = null;
+                foreach ($students as $s):
+                    $class_label = $s['class_name'] ?: 'No Class';
+                    if ($class_label !== $current_class):
+                        $current_class = $class_label;
+                ?>
+                    <div class="class-group-label"><?= htmlspecialchars($class_label, ENT_QUOTES) ?></div>
+                <?php endif; ?>
+                    <label class="student-row" data-search="<?= htmlspecialchars(strtolower($s['full_name'] . ' ' . $class_label), ENT_QUOTES) ?>">
+                        <input type="checkbox" name="student_ids[]" class="edit-student-checkbox" value="<?= (int) $s['id'] ?>">
+                        <span><?= htmlspecialchars($s['full_name'], ENT_QUOTES) ?></span>
+                        <span class="cls"><?= htmlspecialchars($class_label, ENT_QUOTES) ?></span>
+                    </label>
+                <?php endforeach; ?>
+                <?php if (!$students): ?>
+                    <div class="no-match">No students enrolled yet.</div>
+                <?php endif; ?>
+            </div>
+            <button type="submit" name="update_links" value="1">Save Changes</button>
+        </form>
+    </div>
+</div>
+<script>
+(function () {
+    var picker = document.getElementById('editStudentPicker');
+    var rows = picker.querySelectorAll('.student-row');
+    var groups = picker.querySelectorAll('.class-group-label');
+    var count = document.getElementById('editPickerCount');
+    var search = document.getElementById('editStudentSearch');
+
+    function updateCount() {
+        count.textContent = picker.querySelectorAll('input[type="checkbox"]:checked').length + ' selected';
+    }
+    picker.addEventListener('change', updateCount);
+
+    search.addEventListener('input', function () {
+        var q = search.value.trim().toLowerCase();
+        rows.forEach(function (row) {
+            row.classList.toggle('hidden', q !== '' && row.dataset.search.indexOf(q) === -1);
+        });
+        groups.forEach(function (g) {
+            var next = g.nextElementSibling;
+            var anyVisible = false;
+            while (next && next.classList && next.classList.contains('student-row')) {
+                if (!next.classList.contains('hidden')) { anyVisible = true; }
+                next = next.nextElementSibling;
+            }
+            g.classList.toggle('hidden', !anyVisible);
+        });
+    });
+
+    window.openEditParentModal = function (parentUserId, username, childIds) {
+        document.getElementById('editParentUserId').value = parentUserId;
+        document.getElementById('editParentUsername').textContent = username;
+        search.value = '';
+        rows.forEach(function (row) { row.classList.remove('hidden'); });
+        groups.forEach(function (g) { g.classList.remove('hidden'); });
+        picker.querySelectorAll('.edit-student-checkbox').forEach(function (cb) {
+            cb.checked = childIds.includes(parseInt(cb.value, 10));
+        });
+        updateCount();
+        document.getElementById('editParentModal').style.display = 'flex';
+    };
+    window.closeEditParentModal = function () {
+        document.getElementById('editParentModal').style.display = 'none';
+    };
+})();
+</script>
     </div><!-- /.page-inner -->
     </main>
 </div><!-- /.app-shell -->

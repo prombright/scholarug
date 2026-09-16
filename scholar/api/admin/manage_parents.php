@@ -39,14 +39,25 @@ if ($method === 'GET') {
 
 if ($method === 'POST') {
     $body = json_decode(file_get_contents('php://input'), true) ?: [];
-    $result = admin_parents_create(
-        $pdo, $school_id,
-        trim((string) ($body['full_name'] ?? '')),
-        trim((string) ($body['username'] ?? '')),
-        trim((string) ($body['phone'] ?? '')),
-        trim((string) ($body['email'] ?? '')) ?: null,
-        array_map('intval', $body['student_ids'] ?? [])
-    );
+    $action = $body['action'] ?? 'create';
+
+    if ($action === 'update_links') {
+        $result = admin_parents_update_links(
+            $pdo, $school_id,
+            (int) ($body['parent_user_id'] ?? 0),
+            array_map('intval', $body['student_ids'] ?? [])
+        );
+    } else {
+        $result = admin_parents_create(
+            $pdo, $school_id,
+            trim((string) ($body['full_name'] ?? '')),
+            trim((string) ($body['username'] ?? '')),
+            trim((string) ($body['phone'] ?? '')),
+            trim((string) ($body['email'] ?? '')) ?: null,
+            array_map('intval', $body['student_ids'] ?? [])
+        );
+    }
+
     if (!$result['ok']) {
         admin_parents_json_error($result['message']);
     }
