@@ -18,6 +18,16 @@ require_role(['teacher', 'student']);
 header('Content-Type: application/json');
 
 $school_id = current_school_id();
+
+// See live_attendance.php's comment on the same check -- a session's own
+// AJAX endpoints previously never re-verified the Live Classes add-on is
+// still active, only the page shell did.
+if (!scholar_ilearning_addon_is_active($pdo, $school_id)) {
+    http_response_code(402);
+    echo json_encode(['status' => 'error', 'message' => 'The Live Classes add-on is not active for this school.']);
+    exit;
+}
+
 $session_id = (int) ($_GET['session_id'] ?? 0);
 
 $stmt = $pdo->prepare('SELECT * FROM ilearning_live_sessions WHERE id = ? AND school_id = ?');

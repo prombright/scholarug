@@ -36,5 +36,13 @@ function hr_leave_review(PDO $pdo, int $school_id, int $reviewer_id, int $reques
         WHERE id = ? AND school_id = ? AND status = 'pending'
     ");
     $upd->execute([$new_status, $reviewer_id, $request_id, $school_id]);
+
+    // Used to always report success even when this matched zero rows --
+    // a stale page, a request another reviewer already actioned, or one
+    // from a different school all silently "succeeded" with nothing
+    // actually changed.
+    if ($upd->rowCount() === 0) {
+        return ['ok' => false, 'message' => 'That request is no longer pending -- someone may have already reviewed it, or the page was stale. Refresh and try again.'];
+    }
     return ['ok' => true, 'message' => 'Leave request ' . $new_status . '.'];
 }

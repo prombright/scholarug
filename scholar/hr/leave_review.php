@@ -5,10 +5,13 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 | SCHOLAR — HR: LEAVE REVIEW QUEUE
 |--------------------------------------------------------------------------
-| Approve/reject staff leave requests school-wide. current_staff_id() here
-| is the REVIEWER's own staff record (for reviewed_by), not the applicant's
-| -- ownership scoping on the actual request rows is by school_id, since
-| any HR/admin at this school can review any staff member's request here.
+| Approve/reject staff leave requests school-wide. reviewed_by stores the
+| reviewer's own users.id (not a staff_id) -- a school_admin account has
+| no linked staff record at all, so staff_id would be empty for half the
+| roles allowed to review here; users.id is the one identifier that's
+| always populated for both 'school_admin' and 'hr' reviewers. Ownership
+| scoping on the actual request rows is by school_id, since any HR/admin
+| at this school can review any staff member's request here.
 |--------------------------------------------------------------------------
 */
 
@@ -22,12 +25,15 @@ $school_id = current_school_id();
 $reviewer_id = (int) ($_SESSION['user_id'] ?? 0);
 
 $message = '';
+$message_type = 'success';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $result = hr_leave_review($pdo, $school_id, $reviewer_id, (int) ($_POST['request_id'] ?? 0), $_POST['action']);
-    if ($result['ok']) {
-        $message = $result['message'];
-    }
+    // Used to only ever set $message on success -- a failed review (e.g.
+    // someone else already actioned the same request) showed nothing at
+    // all, silently looking identical to a successful one.
+    $message = $result['message'];
+    $message_type = $result['ok'] ? 'success' : 'error';
 }
 
 $requests = hr_leave_requests_list($pdo, $school_id);
@@ -66,11 +72,12 @@ if ($is_hr_role) {
 .lr-btn-reject{background:transparent;border:1px solid rgba(239,68,68,0.4);color:var(--danger, #ef4444);}
 .lr-empty{color:var(--muted);font-size:0.85rem;padding:20px;text-align:center;}
 .lr-alert{padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;background:rgba(16,185,129,0.12);color:var(--green, #10b981);}
+.lr-alert.error{background:rgba(239,68,68,0.12);color:var(--danger, #ef4444);}
 </style>
 
 <h1 style="margin:0 0 24px;font-size:1.4rem;">Leave Requests</h1>
 
-<?php if ($message): ?><div class="lr-alert"><?= htmlspecialchars($message) ?></div><?php endif; ?>
+<?php if ($message): ?><div class="lr-alert <?= $message_type === 'error' ? 'error' : '' ?>"><?= htmlspecialchars($message) ?></div><?php endif; ?>
 
 <div class="lr-section">
     <table>

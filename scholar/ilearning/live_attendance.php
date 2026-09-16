@@ -18,6 +18,19 @@ require_role(['teacher', 'student']);
 header('Content-Type: application/json');
 
 $school_id = current_school_id();
+
+// require_ilearning_addon() does an HTML redirect, wrong for a JSON
+// endpoint -- this checks the same underlying flag directly. Previously
+// missing here entirely: live_session_room.php (the page shell) checks
+// the addon, but a session's own AJAX endpoints didn't re-check, so a
+// school whose add-on expired mid-lifetime of an existing session could
+// keep POSTing straight here indefinitely.
+if (!scholar_ilearning_addon_is_active($pdo, $school_id)) {
+    http_response_code(402);
+    echo json_encode(['status' => 'error', 'message' => 'The Live Classes add-on is not active for this school.']);
+    exit;
+}
+
 $input = json_decode(file_get_contents('php://input') ?: '{}', true);
 $session_id = (int) ($input['session_id'] ?? 0);
 $event = in_array($input['event'] ?? '', ['joined', 'left'], true) ? $input['event'] : null;
