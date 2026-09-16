@@ -283,6 +283,73 @@ function scholar_fetch_class_attendance_rates(PDO $pdo, int $school_id, array $s
 }
 
 /**
+ * Competition-style class ranking from an already-fetched weighted-scores
+ * batch (scholar_fetch_class_weighted_scores()'s own return shape) --
+ * ranking the whole class costs zero extra queries when that batch is
+ * already on hand (bulk printing); the single-student path fetches that
+ * same batch for just the student's own class roster instead of querying
+ * per student.
+ *
+ * Tied averages share a position, and the next distinct average skips
+ * ahead by however many are tied above it -- e.g. two students tied for
+ * 2nd, the next student is 4th, not 3rd. The convention a printed report
+ * card uses, not a database RANK() window function.
+ *
+ * Only students with at least one assessed (submitted) subject count
+ * toward the pool -- a student with nothing recorded yet isn't
+ * meaningfully "last", they're simply not yet assessed.
+ *
+ * @param array<int,array<int,array{final:float}>> $weightedScores
+ * @return array<int,array{position:int,out_of:int}>
+ */
+function scholar_compute_class_ranks(array $weightedScores): array
+{
+    $averages = [];
+    foreach ($weightedScores as $sid => $subjects) {
+        if (empty($subjects)) {
+            continue;
+        }
+        $total = 0.0;
+        foreach ($subjects as $entry) {
+            $total += $entry['final'];
+        }
+        $averages[$sid] = round($total / count($subjects), 1);
+    }
+    if (empty($averages)) {
+        return [];
+    }
+
+    arsort($averages);
+    $ranks = [];
+    $position = 0;
+    $seen = 0;
+    $lastAverage = null;
+    foreach ($averages as $sid => $avg) {
+        $seen++;
+        if ($avg !== $lastAverage) {
+            $position = $seen;
+            $lastAverage = $avg;
+        }
+        $ranks[$sid] = ['position' => $position, 'out_of' => count($averages)];
+    }
+    return $ranks;
+}
+
+/** 1 -> "1st", 2 -> "2nd", 11 -> "11th", 21 -> "21st", etc. */
+function scholar_ordinal(int $n): string
+{
+    if ($n % 100 >= 11 && $n % 100 <= 13) {
+        return $n . 'th';
+    }
+    return $n . match ($n % 10) {
+        1 => 'st',
+        2 => 'nd',
+        3 => 'rd',
+        default => 'th',
+    };
+}
+
+/**
  * Calculates a student's final weighted assessment score and maps it
  * against the school's admin-configured grading scale database table.
  *
@@ -838,6 +905,28 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
         $attendance = $classBatch['attendance'][$student_id]
             ?? scholar_fetch_student_attendance_rate($pdo, $school_id, $student_id, $year);
 
+        // Rank is inherently whole-class, even for a single-student print
+        // -- there's no per-student shortcut, so the non-classBatch path
+        // fetches the student's own class roster's weighted scores just
+        // for this. Only shown when there's someone to actually rank
+        // against (out_of >= 2) -- "1st out of 1" isn't a real position.
+        if ($classBatch !== null) {
+            $rank = $classBatch['ranks'][$student_id] ?? null;
+        } else {
+            $rank = null;
+            $rank_class_id = (int) ($student['class_id'] ?? 0);
+            if ($rank_class_id > 0) {
+                $classmates_stmt = $pdo->prepare('SELECT id FROM students WHERE school_id = ? AND class_id = ?');
+                $classmates_stmt->execute([$school_id, $rank_class_id]);
+                $classmate_ids = array_map('intval', $classmates_stmt->fetchAll(PDO::FETCH_COLUMN));
+                $classmate_scores = scholar_fetch_class_weighted_scores($pdo, $school_id, $classmate_ids, $term, $year);
+                $rank = scholar_compute_class_ranks($classmate_scores)[$student_id] ?? null;
+            }
+        }
+        if ($rank !== null && $rank['out_of'] < 2) {
+            $rank = null;
+        }
+
         // Verification payload -- the student's identifying details plus
         // this specific term's actual outcome (average), so scanning
         // confirms not just which student/term the card belongs to but
@@ -855,6 +944,7 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             . "School: {$school_name}\n"
             . "Term: {$term} {$year}\n"
             . "Term Average: {$average}%\n"
+            . ($rank ? "Position: " . scholar_ordinal($rank['position']) . " out of {$rank['out_of']}\n" : '')
             . ($attendance ? "Attendance This Year: {$attendance['rate']}% ({$attendance['present']}/{$attendance['total']} days)\n" : '')
             . "School Contact: {$school_contacts}";
         ?>
@@ -870,7 +960,10 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
                     <td style="width: 55%; vertical-align: top; padding-right:15px;">
                         <div style="font-size: 13.5px; margin-bottom: 6px;"><strong>Total Weighted Marks:</strong> <span style="font-family: monospace; font-weight: bold; background:#e2e8f0; padding:2px 6px; border-radius:4px;"><?= $total_score ?></span></div>
                         <div style="font-size: 13.5px; margin-bottom: 6px;"><strong>Class Terminal Average:</strong> <span style="font-family: monospace; font-weight: bold; color: #16a34a;"><?= $average ?>%</span></div>
-                        <div style="font-size: 13.5px;<?= $attendance ? ' margin-bottom: 6px;' : '' ?>"><strong>Assessed Subjects:</strong> <span style="font-family: monospace; font-weight: bold;"><?= $subject_count ?> / <?= count($subject_evaluations) ?></span></div>
+                        <div style="font-size: 13.5px;<?= ($rank || $attendance) ? ' margin-bottom: 6px;' : '' ?>"><strong>Assessed Subjects:</strong> <span style="font-family: monospace; font-weight: bold;"><?= $subject_count ?> / <?= count($subject_evaluations) ?></span></div>
+                        <?php if ($rank): ?>
+                        <div style="font-size: 13.5px;<?= $attendance ? ' margin-bottom: 6px;' : '' ?>"><strong>Position in Class:</strong> <span style="font-family: monospace; font-weight: bold; color: #6d28d9;"><?= scholar_ordinal($rank['position']) ?></span> <span style="color:#64748b; font-size:11.5px;">out of <?= $rank['out_of'] ?></span></div>
+                        <?php endif; ?>
                         <?php if ($attendance): ?>
                         <div style="font-size: 13.5px;"><strong>Attendance This Year:</strong> <span style="font-family: monospace; font-weight: bold; color: #0284c7;"><?= $attendance['rate'] ?>%</span> <span style="color:#64748b; font-size:11.5px;">(<?= $attendance['present'] ?>/<?= $attendance['total'] ?> days present)</span></div>
                         <?php endif; ?>

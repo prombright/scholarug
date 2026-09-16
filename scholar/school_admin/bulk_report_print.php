@@ -97,12 +97,16 @@ if ($sel_class !== null) {
         // student. generate_report.php (single-student printing) isn't
         // touched -- $classBatch is a new optional parameter there too,
         // left unused, so nothing about it changes.
+        $weighted_scores = scholar_fetch_class_weighted_scores($pdo, $school_id, $student_ids, $term, $year);
         $classBatch = [
             'grading_scales'  => scholar_fetch_grading_scales($pdo, $school_id, $class_level_type),
-            'weighted_scores' => scholar_fetch_class_weighted_scores($pdo, $school_id, $student_ids, $term, $year),
+            'weighted_scores' => $weighted_scores,
             'draft_subjects'  => scholar_fetch_class_draft_subjects($pdo, $school_id, $student_ids, $term, $year),
             'remarks'         => scholar_fetch_class_report_remarks($pdo, $school_id, $student_ids, $term, $year),
             'attendance'      => scholar_fetch_class_attendance_rates($pdo, $school_id, $student_ids, $year),
+            // Reuses weighted_scores above -- zero extra queries to rank
+            // the whole class printed here (already the full roster).
+            'ranks'           => scholar_compute_class_ranks($weighted_scores),
         ];
         $reportSettings = scholar_fetch_report_settings($pdo, $school_id);
 
