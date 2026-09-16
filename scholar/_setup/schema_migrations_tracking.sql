@@ -23,12 +23,18 @@
 --     (exactly the direct-schema-inspection check already done once for
 --     every pre-existing _setup/*.sql file on the local database).
 --
--- Apply with:
+-- Apply with (replace "scholar" with your actual database name -- on cPanel
+-- hosting that's usually yourcpanelusername_scholar, NOT the bare word
+-- "scholar"):
 --   mysql -u root scholar < schema_migrations_tracking.sql
 -- Safe to re-run: CREATE TABLE IF NOT EXISTS.
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
     filename VARCHAR(255) NOT NULL PRIMARY KEY,

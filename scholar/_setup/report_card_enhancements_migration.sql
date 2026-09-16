@@ -12,16 +12,22 @@
 --    a theme_color column as precedent) but had zero rows and zero
 --    references anywhere in the codebase until this change.
 --
--- Apply with:
+-- Apply with (replace "scholar" with your actual database name -- on cPanel
+-- hosting that's usually yourcpanelusername_scholar, NOT the bare word
+-- "scholar"):
 --   mysql -u root scholar < report_card_enhancements_migration.sql
 -- Safe to re-run: guarded ALTERs below.
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 SET @col_exists = (
     SELECT COUNT(*) FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = 'scholar' AND TABLE_NAME = 'grading_scales' AND COLUMN_NAME = 'color'
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'grading_scales' AND COLUMN_NAME = 'color'
 );
 SET @sql = IF(@col_exists = 0,
     'ALTER TABLE grading_scales ADD COLUMN color VARCHAR(7) NULL DEFAULT NULL AFTER points',
@@ -33,7 +39,7 @@ DEALLOCATE PREPARE stmt;
 
 SET @col_exists = (
     SELECT COUNT(*) FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = 'scholar' AND TABLE_NAME = 'school_settings' AND COLUMN_NAME = 'show_student_photos'
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'school_settings' AND COLUMN_NAME = 'show_student_photos'
 );
 SET @sql = IF(@col_exists = 0,
     'ALTER TABLE school_settings

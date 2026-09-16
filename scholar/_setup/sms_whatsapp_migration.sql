@@ -12,7 +12,11 @@
 -- Apply with: mysql -u root scholar < sms_whatsapp_migration.sql
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 CREATE TABLE IF NOT EXISTS sms_whatsapp_settings (
     school_id INT PRIMARY KEY,
@@ -27,6 +31,6 @@ CREATE TABLE IF NOT EXISTS sms_whatsapp_settings (
 -- Records which channel a recipient actually got the message on --
 -- defaults to 'sms' so existing rows from before this migration stay
 -- correctly labeled (they were all SMS-only sends).
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='sms_campaign_recipients' AND COLUMN_NAME='channel');
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sms_campaign_recipients' AND COLUMN_NAME='channel');
 SET @sql = IF(@col_exists = 0, "ALTER TABLE sms_campaign_recipients ADD COLUMN channel ENUM('sms','whatsapp') NOT NULL DEFAULT 'sms' AFTER phone", 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

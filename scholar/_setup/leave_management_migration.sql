@@ -9,7 +9,11 @@
 -- Apply with: mysql -u root scholar < leave_management_migration.sql
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 CREATE TABLE IF NOT EXISTS leave_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,

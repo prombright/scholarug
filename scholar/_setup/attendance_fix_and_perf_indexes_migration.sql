@@ -29,7 +29,11 @@
 --   mysql -u root scholar < attendance_fix_and_perf_indexes_migration.sql
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 ALTER TABLE attendance
   ADD COLUMN school_id INT NULL AFTER id,

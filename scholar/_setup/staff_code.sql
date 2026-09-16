@@ -18,12 +18,16 @@
 -- Safe to re-run: every ALTER is guarded.
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='staff' AND COLUMN_NAME='staff_code');
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='staff' AND COLUMN_NAME='staff_code');
 SET @sql = IF(@col_exists = 0, 'ALTER TABLE staff ADD COLUMN staff_code VARCHAR(20) NULL AFTER staff_id', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @key_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='staff' AND INDEX_NAME='uniq_staff_code');
+SET @key_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='staff' AND INDEX_NAME='uniq_staff_code');
 SET @sql = IF(@key_exists = 0, 'ALTER TABLE staff ADD UNIQUE KEY uniq_staff_code (staff_code)', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

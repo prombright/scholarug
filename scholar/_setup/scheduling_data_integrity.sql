@@ -22,7 +22,11 @@
 -- 0-row no-op once already clean), every ALTER is guarded.
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 -- ---- 1. teacher_assignments: remove orphans, then add FKs ----
 DELETE ta FROM teacher_assignments ta LEFT JOIN classes c ON c.id = ta.class_id WHERE c.id IS NULL;
@@ -31,11 +35,11 @@ SELECT ROW_COUNT() AS orphan_teacher_assignments_class_rows_removed;
 DELETE ta FROM teacher_assignments ta LEFT JOIN subjects s ON s.id = ta.subject_id WHERE s.id IS NULL;
 SELECT ROW_COUNT() AS orphan_teacher_assignments_subject_rows_removed;
 
-SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='teacher_assignments' AND CONSTRAINT_NAME='fk_ta_class');
+SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='teacher_assignments' AND CONSTRAINT_NAME='fk_ta_class');
 SET @sql = IF(@fk_exists = 0, 'ALTER TABLE teacher_assignments ADD CONSTRAINT fk_ta_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='teacher_assignments' AND CONSTRAINT_NAME='fk_ta_subject');
+SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='teacher_assignments' AND CONSTRAINT_NAME='fk_ta_subject');
 SET @sql = IF(@fk_exists = 0, 'ALTER TABLE teacher_assignments ADD CONSTRAINT fk_ta_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -43,12 +47,12 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 DELETE st FROM streams st LEFT JOIN schools sc ON sc.id = st.school_id WHERE sc.id IS NULL;
 SELECT ROW_COUNT() AS orphan_streams_school_rows_removed;
 
-SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='streams' AND CONSTRAINT_NAME='fk_streams_school');
+SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='streams' AND CONSTRAINT_NAME='fk_streams_school');
 SET @sql = IF(@fk_exists = 0, 'ALTER TABLE streams ADD CONSTRAINT fk_streams_school FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ---- 3. streams.class_id: nullable link to classes.id, backfilled ----
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='streams' AND COLUMN_NAME='class_id');
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='streams' AND COLUMN_NAME='class_id');
 SET @sql = IF(@col_exists = 0, 'ALTER TABLE streams ADD COLUMN class_id INT NULL AFTER class_name', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -66,6 +70,6 @@ JOIN classes c
 SET st.class_id = c.id
 WHERE st.class_id IS NULL;
 
-SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='streams' AND CONSTRAINT_NAME='fk_streams_class');
+SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='streams' AND CONSTRAINT_NAME='fk_streams_class');
 SET @sql = IF(@fk_exists = 0, 'ALTER TABLE streams ADD CONSTRAINT fk_streams_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

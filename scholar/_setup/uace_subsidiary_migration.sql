@@ -19,7 +19,11 @@
 -- Apply with: mysql -u root scholar < uace_subsidiary_migration.sql
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 INSERT IGNORE INTO subject_catalog (level_type, subject_name, subject_code, papers_count, is_compulsory, display_order) VALUES
 ('A-Level', 'Subsidiary Mathematics', 'SUBMATH', 1, 0, 19),

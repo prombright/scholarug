@@ -27,17 +27,21 @@
 -- Safe to re-run: every ALTER is guarded, CREATE TABLE uses IF NOT EXISTS.
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='ilearning_topics' AND COLUMN_NAME='content_type');
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ilearning_topics' AND COLUMN_NAME='content_type');
 SET @sql = IF(@col_exists = 0, "ALTER TABLE ilearning_topics ADD COLUMN content_type ENUM('written','pdf_notes','pdf_activity') NOT NULL DEFAULT 'written'", 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='ilearning_topics' AND COLUMN_NAME='primary_pdf_attachment_id');
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ilearning_topics' AND COLUMN_NAME='primary_pdf_attachment_id');
 SET @sql = IF(@col_exists = 0, 'ALTER TABLE ilearning_topics ADD COLUMN primary_pdf_attachment_id INT NULL', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='ilearning_topics' AND CONSTRAINT_NAME='fk_topic_primary_pdf');
+SET @fk_exists = (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ilearning_topics' AND CONSTRAINT_NAME='fk_topic_primary_pdf');
 SET @sql = IF(@fk_exists = 0, 'ALTER TABLE ilearning_topics ADD CONSTRAINT fk_topic_primary_pdf FOREIGN KEY (primary_pdf_attachment_id) REFERENCES ilearning_attachments(id) ON DELETE SET NULL', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -49,7 +53,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- auth-gated stream -- used for both pdf_notes and pdf_activity PDFs, so
 -- there's exactly one gate to reason about regardless of whether download
 -- ends up allowed (pdf_notes) or blocked (pdf_activity).
-SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='scholar' AND TABLE_NAME='ilearning_attachments' AND COLUMN_NAME='storage');
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ilearning_attachments' AND COLUMN_NAME='storage');
 SET @sql = IF(@col_exists = 0, "ALTER TABLE ilearning_attachments ADD COLUMN storage ENUM('public','private') NOT NULL DEFAULT 'public'", 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 

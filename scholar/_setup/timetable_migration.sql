@@ -22,7 +22,11 @@
 --      backstop against a bug ever double-booking someone.
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 ALTER TABLE teacher_assignments
     ADD COLUMN IF NOT EXISTS periods_per_week TINYINT UNSIGNED NOT NULL DEFAULT 5 AFTER paper_number;

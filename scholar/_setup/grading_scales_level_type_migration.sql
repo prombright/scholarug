@@ -17,17 +17,23 @@
 -- its own A-Level scale afterward (school_admin/grading_scales.php gets a
 -- second "Reset to UACE Standard Scale" seed for exactly this).
 --
--- Apply with:
+-- Apply with (replace "scholar" with your actual database name -- on cPanel
+-- hosting that's usually yourcpanelusername_scholar, NOT the bare word
+-- "scholar"):
 --   mysql -u root scholar < grading_scales_level_type_migration.sql
 -- Safe to re-run: guarded ALTER + idempotent backfill (only touches rows
 -- still NULL).
 -- ============================================================
 
-USE scholar;
+-- No hardcoded USE here on purpose -- this ran against a stray unrelated
+-- "scholar" database on live (cPanel names it something like
+-- yourcpanelusername_scholar) instead of the real one, while phpMyAdmin
+-- reported success because THAT database really was created. Import/run
+-- this against whichever database is already selected/specified.
 
 SET @col_exists = (
     SELECT COUNT(*) FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = 'scholar' AND TABLE_NAME = 'grading_scales' AND COLUMN_NAME = 'level_type'
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'grading_scales' AND COLUMN_NAME = 'level_type'
 );
 SET @sql = IF(@col_exists = 0,
     'ALTER TABLE grading_scales ADD COLUMN level_type ENUM(''O-Level'',''A-Level'') NULL DEFAULT NULL AFTER school_id',
@@ -45,7 +51,7 @@ UPDATE grading_scales SET level_type = 'O-Level' WHERE level_type IS NULL;
 -- schema_migrations_tracking.sql still succeeds, it just skips recording.
 SET @tracking_table_exists = (
     SELECT COUNT(*) FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = 'scholar' AND TABLE_NAME = 'schema_migrations'
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'schema_migrations'
 );
 SET @sql = IF(@tracking_table_exists = 1,
     'INSERT IGNORE INTO schema_migrations (filename) VALUES (''grading_scales_level_type_migration.sql'')',
