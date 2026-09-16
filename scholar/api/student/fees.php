@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
+require_once __DIR__ . '/../../school_admin/_fees_helpers.php';
 require_role(['student']);
 
 header('Content-Type: application/json; charset=utf-8');
@@ -34,18 +35,21 @@ if (!$student) {
     exit;
 }
 
-$fee_stmt = $pdo->prepare('SELECT fs.day_tuition, fs.boarding_tuition, fs.entry_fee FROM fee_structures fs WHERE fs.school_id = ? AND fs.class_id = ? LIMIT 1');
-$fee_stmt->execute([$school_id, $student['class_id']]);
-$fee_structure = $fee_stmt->fetch(PDO::FETCH_ASSOC);
-$expected = $fee_structure ? (float) $fee_structure['day_tuition'] + (float) $fee_structure['entry_fee'] : 0.0;
-
-$paid_stmt = $pdo->prepare('SELECT COALESCE(SUM(amount_paid),0) FROM fee_payments WHERE school_id = ? AND student_id = ?');
-$paid_stmt->execute([$school_id, $student_id]);
-$paid = (float) $paid_stmt->fetchColumn();
+// Same ledger computation the bursar's office actually uses
+// (admin_fees_annotate_ledger()) -- see the comment on
+// admin_fees_fetch_ledger_for_student() for why the old flat
+// day_tuition + entry_fee formula here didn't match the real ledger for
+// boarders, bursary recipients, or returning (non-new) students.
+$fee_row = admin_fees_fetch_ledger_for_student($pdo, $school_id, $student_id);
+$expected = (float) ($fee_row['net_due'] ?? 0.0);
+$paid = (float) ($fee_row['total_paid'] ?? 0.0);
 
 echo json_encode([
     'success' => true,
     'expected' => $expected,
     'paid' => $paid,
+    // Signed, not the ledger's own clamped 'balance' field -- the student
+    // Fees page shows "Overpaid / Credit" for a negative difference, which
+    // a max(0, ...) balance would hide behind a flat 0.
     'balance' => $expected - $paid,
 ], JSON_UNESCAPED_SLASHES);

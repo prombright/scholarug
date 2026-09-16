@@ -285,14 +285,7 @@ $total_collected = $__annotated['metrics']['total_collected'];
                     </thead>
                     <tbody>
                         <?php if (!empty($student_ledger)): ?>
-                            <?php foreach ($student_ledger as $s): 
-                                $is_boarder = ($s['active_residence'] === 'Boarding');
-                                $tuition = $is_boarder ? $s['base_boarding'] : $s['base_day'];
-                                $entry = ($s['is_new'] == 1) ? $s['base_entry'] : 0;
-                                $gross_due = $tuition + $entry;
-                                $net_due = max(0, $gross_due - $s['total_bursary']);
-                                $balance = $net_due - $s['total_paid'];
-                            ?>
+                            <?php foreach ($student_ledger as $s): ?>
                                 <tr>
                                     <td class="ps-3"><strong><?= safe_text($s['full_name']); ?></strong></td>
                                     <td><?= safe_text($s['class_name'] ?? 'Unassigned'); ?></td>
@@ -302,22 +295,25 @@ $total_collected = $__annotated['metrics']['total_collected'];
                                             <?= ($s['is_new'] == 1) ? ' (Entry)' : ''; ?>
                                         </span>
                                     </td>
-                                    <td class="text-end">UGX <?= number_format($gross_due); ?></td>
+                                    <td class="text-end">UGX <?= number_format($s['gross_due']); ?></td>
                                     <td class="text-end text-success">
                                         <?= $s['total_bursary'] > 0 ? '- UGX ' . number_format($s['total_bursary']) : '—'; ?>
                                     </td>
                                     <td class="text-end fw-bold text-primary">UGX <?= number_format($s['total_paid']); ?></td>
-                                    <td class="text-end fw-bold <?= $balance > 0 ? 'text-danger' : 'text-muted'; ?>">
-                                        UGX <?= number_format(max(0, $balance)); ?>
+                                    <td class="text-end fw-bold <?= $s['balance'] > 0 ? 'text-danger' : 'text-muted'; ?>">
+                                        UGX <?= number_format($s['balance']); ?>
                                     </td>
                                     <td class="text-center pe-3">
-                                        <?php if ($s['total_paid'] >= $net_due && $net_due > 0): ?>
-                                            <span class="badge badge-abn-full">Cleared</span>
-                                        <?php elseif ($s['total_paid'] > 0): ?>
-                                            <span class="badge badge-abn-partial">Partial</span>
-                                        <?php else: ?>
-                                            <span class="badge badge-abn-unpaid">Unpaid</span>
-                                        <?php endif; ?>
+                                        <?php
+                                        // Same $s['status'] admin_fees_annotate_ledger() already
+                                        // computed for the summary cards above -- this used to
+                                        // recompute its own looser check here (missing the
+                                        // balance > 0 condition the summary cards required),
+                                        // which could show a row badge that disagreed with the
+                                        // counts just above it.
+                                        $__badge = ['cleared' => 'Cleared', 'partial' => 'Partial', 'unpaid' => 'Unpaid'][$s['status']] ?? 'Unpaid';
+                                        ?>
+                                        <span class="badge badge-abn-<?= $s['status'] === 'cleared' ? 'full' : $s['status'] ?>"><?= $__badge ?></span>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

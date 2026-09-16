@@ -142,6 +142,53 @@ function admin_fees_fetch_ledger(PDO $pdo, int $schoolId, string $search, string
 }
 
 /**
+ * Single-student equivalent of admin_fees_fetch_ledger() -- same query
+ * shape, filtered to one student_id instead of search/class. Exists so
+ * student_portal.php/student_fees.php can run their balance through
+ * admin_fees_annotate_ledger() too, instead of maintaining their own
+ * separate formula: those pages used to compute "expected" as flat
+ * day_tuition + entry_fee unconditionally, ignoring boarding_tuition
+ * entirely, always charging the entry fee even for a returning student,
+ * and never subtracting bursary_discount -- a different, uncorrelated
+ * number from what the bursar's office actually tracks for the same
+ * student. A boarder, a bursary recipient, or a returning (non-new)
+ * student would all see a balance that simply didn't match the real
+ * ledger.
+ *
+ * @return array|null null if the student doesn't belong to this school
+ */
+function admin_fees_fetch_ledger_for_student(PDO $pdo, int $schoolId, int $studentId): ?array
+{
+    $stmt = $pdo->prepare("
+        SELECT
+            s.id AS student_id,
+            s.full_name,
+            s.class_id,
+            c.class_name,
+            COALESCE(fs.day_tuition, 0) AS base_day,
+            COALESCE(fs.boarding_tuition, 0) AS base_boarding,
+            COALESCE(fs.entry_fee, 0) AS base_entry,
+            COALESCE(SUM(fp.amount_paid), 0) AS total_paid,
+            COALESCE(SUM(fp.bursary_discount), 0) AS total_bursary,
+            MAX(fp.residence_type) AS active_residence,
+            MAX(fp.is_new_student) AS is_new
+        FROM students s
+        LEFT JOIN classes c ON s.class_id = c.id
+        LEFT JOIN fee_structures fs ON s.class_id = fs.class_id AND fs.school_id = s.school_id
+        LEFT JOIN fee_payments fp ON s.id = fp.student_id AND fp.school_id = s.school_id
+        WHERE s.school_id = ? AND s.id = ?
+        GROUP BY s.id
+    ");
+    $stmt->execute([$schoolId, $studentId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return null;
+    }
+    $annotated = admin_fees_annotate_ledger([$row]);
+    return $annotated['ledger'][0];
+}
+
+/**
  * Per-row due/balance figures, folded onto each ledger row, plus the
  * whole-ledger summary metrics (fully paid/partial/unpaid counts, total
  * collected). Same "boarding vs day tuition + entry fee if new, minus
