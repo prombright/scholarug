@@ -49,6 +49,14 @@ report-content rules that must look identical either way live here. */ ?>
 .matrix-table td { padding: 9px 8px; border: 1px solid #cbd5e1; font-size: 12px; text-align: center; }
 .matrix-table td.rc-subject-cell { text-align: left; }
 .rc-subject-name { font-weight: 700; color: #0f172a; }
+/* Quick-scan bar under each subject name -- length reads at a glance
+   down the whole column, so a parent flipping straight to this table
+   doesn't have to read every percentage to spot the weak subjects. Fixed
+   teal fill (the report's own brand accent) rather than the grading
+   band's pastel colors -- those are tuned for cell-background tinting
+   with text on top, not a thin solid fill, and wash out unreadably thin. */
+.rc-score-bar-track { margin-top: 5px; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.rc-score-bar-fill { height: 100%; background: #00A8A8; border-radius: 3px; }
 .rc-score-cell { font-weight: bold; font-family: monospace; }
 .rc-final-cell { font-weight: 900; font-family: monospace; font-size: 13px; }
 .rc-grade-cell { min-width: 96px; }
@@ -152,6 +160,7 @@ report-content rules that must look identical either way live here. */ ?>
     .matrix-table th { font-size: 9px; padding: 6px 6px; }
     .matrix-table td { font-size: 10.5px; padding: 5px 6px; }
     .rc-grade-badge { font-size: 10px; padding: 2px 8px; }
+    .rc-score-bar-track { margin-top: 3px; height: 4px; }
     .assessment-breakdown { font-size: 8.5px; margin-top: 1px; }
     .rc-result-hero { padding: 12px 14px 14px; margin-top: 14px; }
     .rc-result-topline { font-size: 8.5px; margin-bottom: 2px; }

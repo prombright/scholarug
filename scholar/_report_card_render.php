@@ -877,6 +877,9 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
                     <tr>
                         <td class="rc-subject-cell">
                             <span class="rc-subject-name"><?= htmlspecialchars($row['subject_name']) ?></span>
+                            <?php if ($score !== null): ?>
+                            <div class="rc-score-bar-track"><div class="rc-score-bar-fill" style="width:<?= min(100, max(0, $score)) ?>%;"></div></div>
+                            <?php endif; ?>
                         </td>
                         <?php foreach ($assessment_titles as $t):
                             $raw = $by_title[$t] ?? null;
