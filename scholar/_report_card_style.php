@@ -57,18 +57,17 @@ report-content rules that must look identical either way live here. */ ?>
 .assessment-breakdown { font-size: 10px; color: #64748b; font-style: italic; margin-top: 3px; }
 
 /* Term-result hero -- the single biggest, first thing a parent's eye
-   should land on after the subject table: this term's overall
-   descriptor (whatever word the school's grading scale configures for
-   that band -- "Exceptional", "A", etc.), tinted with that band's own
-   configured color so a glance at the color alone already says how the
-   term went, same color language the subject table and grade legend
-   already use. The full narrative comment sits right underneath it,
-   instead of buried in a side column next to a QR code. */
+   should land on after the subject table: just this term's numeric
+   average, plain and unambiguous. Deliberately no letter-grade badge, no
+   band-derived color, no narrative comment -- those all came from a
+   school-configured grading scale, which parents found more confusing
+   than clarifying next to the actual number. Per-subject grades/colors in
+   the table above are untouched; this hero is the one summary that's
+   average-only now. */
 .rc-result-hero { text-align: center; border: 2px solid #0f172a; border-radius: 8px; padding: 18px 20px 20px; margin-top: 25px; }
 .rc-result-topline { font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #334155; opacity: 0.75; margin-bottom: 4px; }
-.rc-result-band { font-size: 30px; font-weight: 900; color: #0f172a; line-height: 1.15; text-transform: uppercase; letter-spacing: 0.5px; }
-.rc-result-average { font-size: 12.5px; font-weight: 700; color: #1e293b; opacity: 0.8; margin-top: 2px; }
-.rc-result-comment { margin: 10px auto 0; max-width: 560px; font-style: italic; color: #1e293b; font-size: 12.5px; line-height: 1.5; }
+.rc-result-average { font-size: 30px; font-weight: 900; color: #0f172a; line-height: 1.15; letter-spacing: 0.3px; }
+.rc-result-average-caption { font-size: 12.5px; font-weight: 700; color: #1e293b; opacity: 0.8; margin-top: 2px; }
 
 /* Summary Blocks */
 .summary-box { border: 1px solid #0f172a; padding: 18px; border-radius: 6px; margin-top: 18px; background: #fafafa; }
@@ -156,9 +155,8 @@ report-content rules that must look identical either way live here. */ ?>
     .assessment-breakdown { font-size: 8.5px; margin-top: 1px; }
     .rc-result-hero { padding: 12px 14px 14px; margin-top: 14px; }
     .rc-result-topline { font-size: 8.5px; margin-bottom: 2px; }
-    .rc-result-band { font-size: 22px; }
-    .rc-result-average { font-size: 10.5px; }
-    .rc-result-comment { font-size: 10.5px; margin-top: 6px; }
+    .rc-result-average { font-size: 22px; }
+    .rc-result-average-caption { font-size: 10.5px; }
     .summary-box { padding: 12px; margin-top: 10px; }
     .grade-legend { margin-top: 12px; }
     .grade-legend-title { font-size: 9.5px; margin-bottom: 5px; }

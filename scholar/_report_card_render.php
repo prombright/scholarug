@@ -770,40 +770,14 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
         <?php
         $average = $subject_count > 0 ? round($total_score / $subject_count, 1) : 0;
 
-        if ($classBatch !== null) {
-            // Matches the SQL branch's unconditional lookup below -- even
-            // an average of 0 (no marks at all) still gets looked up, in
-            // case a school's lowest band happens to start at 0.
-            $summary_eval = scholar_grade_for_score($classBatch['grading_scales'], $average);
-            $overall_band = $summary_eval['grade'] ?? 'N/A';
-            $overall_comm = $summary_eval['comment'] ?? 'Consistent effort and revision required across all units.';
-            $overall_color = $summary_eval['color'] ?? null;
-        } else {
-            $summary_stmt = $pdo->prepare("
-                SELECT grade, remark, color
-                FROM grading_scales
-                WHERE school_id = :school_id AND level_type = :level_type AND :avg BETWEEN min_mark AND max_mark
-                LIMIT 1
-            ");
-            $summary_stmt->execute([':school_id' => $school_id, ':level_type' => $student_level, ':avg' => $average]);
-            $summary_eval = $summary_stmt->fetch(PDO::FETCH_ASSOC);
-            $overall_band = $summary_eval['grade'] ?? 'N/A';
-            $overall_comm = $summary_eval['remark'] ?? 'Consistent effort and revision required across all units.';
-            $overall_color = $summary_eval['color'] ?? null;
-        }
-        // A readable dark text color on top of whatever pastel band color
-        // is configured -- these are all light backgrounds (grading_scales'
-        // color picker defaults skew pastel), so a fixed dark slate reads
-        // fine across the whole palette without per-color contrast math.
-        $overall_color = $overall_color ?: '#e2e8f0';
         // Verification payload -- the student's identifying details plus
-        // this specific term's actual outcome (average + band), so scanning
+        // this specific term's actual outcome (average), so scanning
         // confirms not just which student/term the card belongs to but
         // whether its printed result matches what the system has on record
         // -- catching a card whose marks were altered after printing, not
         // just a card with no matching student at all. School contact is
         // included so anyone verifying can follow up directly. Built fresh
-        // per report (term/year/average/band all vary call to call), so a
+        // per report (term/year/average all vary call to call), so a
         // Term 1 and Term 3 card for the same student never carry the same
         // code. Nothing that isn't already printed elsewhere on this same
         // card; it isn't a link and contacts no server.
@@ -812,14 +786,13 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             . "Class: " . ($student['class_name'] ?? 'N/A') . "\n"
             . "School: {$school_name}\n"
             . "Term: {$term} {$year}\n"
-            . "Term Average: {$average}% (Grade {$overall_band})\n"
+            . "Term Average: {$average}%\n"
             . "School Contact: {$school_contacts}";
         ?>
-        <div class="rc-result-hero" style="background-color:<?= htmlspecialchars($overall_color) ?>;">
+        <div class="rc-result-hero">
             <div class="rc-result-topline">Term Result</div>
-            <div class="rc-result-band"><?= htmlspecialchars($overall_band) ?></div>
-            <div class="rc-result-average"><?= $average ?>% average this term</div>
-            <p class="rc-result-comment">&ldquo;<?= htmlspecialchars($overall_comm) ?>&rdquo;</p>
+            <div class="rc-result-average"><?= $average ?>%</div>
+            <div class="rc-result-average-caption">average this term</div>
         </div>
 
         <div class="summary-box">
