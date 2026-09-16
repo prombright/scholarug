@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_topic'])) {
         if ($isPdfType && $hasNewPdf) {
             $saved = ilearning_save_pdf_attachment($_FILES['pdf_file'], $topic_id);
             if ($saved === null) {
-                $error = 'That file was not a valid PDF -- it was not saved. The rest of the topic was.';
+                $error = 'That file was not a valid PDF (or was over the 15MB limit) -- it was not saved. The rest of the topic was.';
             } else {
                 $insAtt = $pdo->prepare(
                     'INSERT INTO ilearning_attachments (topic_id, file_path, original_name, file_ext, storage) VALUES (?, ?, ?, ?, ?)'

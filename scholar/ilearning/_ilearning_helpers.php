@@ -105,6 +105,8 @@ function ilearning_student_in_class(PDO $pdo, int $schoolId, int $studentId, int
     return (bool) $stmt->fetchColumn();
 }
 
+const ILEARNING_MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
+
 /**
  * Saves an uploaded note/document attachment. Same convention as
  * staff_manager.php's photo upload (self-healing mkdir, prefixed
@@ -117,6 +119,12 @@ function ilearning_student_in_class(PDO $pdo, int $schoolId, int $studentId, int
 function ilearning_save_attachment(array $file, int $topicId): ?array
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return null;
+    }
+
+    // Only PHP's global upload_max_filesize/post_max_size ini limits
+    // applied before this -- no app-level cap on a single attachment.
+    if (($file['size'] ?? 0) > ILEARNING_MAX_UPLOAD_BYTES) {
         return null;
     }
 
@@ -162,6 +170,10 @@ function ilearning_save_attachment(array $file, int $topicId): ?array
 function ilearning_save_pdf_attachment(array $file, int $topicId): ?array
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return null;
+    }
+
+    if (($file['size'] ?? 0) > ILEARNING_MAX_UPLOAD_BYTES) {
         return null;
     }
 

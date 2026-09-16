@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $saved = library_save_pdf($_FILES['pdf'] ?? []);
             if ($saved === null) {
-                $error = 'Please upload a valid PDF file.';
+                $error = 'Please upload a valid PDF file, 15MB or smaller.';
             } else {
                 $pdo->prepare("
                     INSERT INTO library_documents (school_id, class_id, subject_id, teacher_id, category, title, term, year, file_path, original_name)

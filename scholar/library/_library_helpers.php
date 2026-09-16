@@ -46,9 +46,19 @@ function library_can_access_document(PDO $pdo, array $doc, string $role, int $sc
  * @return array{path:string,original_name:string}|null null on any
  *         validation failure (caller decides how to surface the error)
  */
+// Only PHP's global upload_max_filesize/post_max_size ini limits applied
+// before this -- a host configured generously (or a school on a plan
+// with no meaningful cap) had no app-level ceiling at all on how large a
+// single library PDF could be, or how many a teacher could upload.
+const LIBRARY_MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
+
 function library_save_pdf(array $file): ?array
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return null;
+    }
+
+    if (($file['size'] ?? 0) > LIBRARY_MAX_UPLOAD_BYTES) {
         return null;
     }
 

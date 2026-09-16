@@ -262,7 +262,7 @@ require_once __DIR__ . '/_admin_shell.php';
 
         <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 30px;">
             <h4 style="margin: 0 0 5px 0; font-size: 0.95rem; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px;">Register New Curriculum Subject Vector</h4>
-            <p style="margin: 0 0 20px 0; font-size: 0.8rem; color: var(--muted);">Append standalone custom course offerings mapping directly to localized institutional standards. A matching department is created (or renamed) automatically — no separate step needed.</p>
+            <p style="margin: 0 0 20px 0; font-size: 0.8rem; color: var(--muted);">Append standalone custom course offerings mapping directly to localized institutional standards. Departments are managed separately under <a href="departments.php" style="color:#00A8A8; font-weight:600;">Departments</a> -- adding a subject here doesn't create or rename one.</p>
             <?php if (empty($class_names)): ?>
                 <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; padding:10px 12px; font-size:0.8rem; color:#fbbf24; margin-bottom:16px;">
                     No classes set up yet, so there's nothing to attach a subject to.
