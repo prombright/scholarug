@@ -34,7 +34,7 @@ async function loadStudents() {
     students.value = data.students
     todaySummary.value = data.today_summary
     const map = {}
-    students.value.forEach((s) => { map[s.id] = 'Present' })
+    students.value.forEach((s) => { map[s.id] = 'present' })
     statusByStudent.value = map
   } finally {
     loading.value = false
@@ -88,9 +88,9 @@ async function save() {
   </section>
 
   <section class="stats">
-    <div class="stat-card"><h3>Present</h3><strong>{{ todaySummary.Present || 0 }}</strong></div>
-    <div class="stat-card"><h3>Absent</h3><strong>{{ todaySummary.Absent || 0 }}</strong></div>
-    <div class="stat-card"><h3>Late</h3><strong>{{ todaySummary.Late || 0 }}</strong></div>
+    <div class="stat-card"><h3>Present</h3><strong>{{ todaySummary.present || 0 }}</strong></div>
+    <div class="stat-card"><h3>Absent</h3><strong>{{ todaySummary.absent || 0 }}</strong></div>
+    <div class="stat-card"><h3>Late</h3><strong>{{ todaySummary.late || 0 }}</strong></div>
   </section>
 
   <section class="panel">
@@ -110,10 +110,10 @@ async function save() {
               <td>{{ s.gender }}</td>
               <td>
                 <select v-model="statusByStudent[s.id]" class="attendance-select">
-                  <option value="Present">Present</option>
-                  <option value="Absent">Absent</option>
-                  <option value="Late">Late</option>
-                  <option value="Excused">Excused</option>
+                  <option value="present">Present</option>
+                  <option value="absent">Absent</option>
+                  <option value="late">Late</option>
+                  <option value="permission">Excused</option>
                 </select>
               </td>
             </tr>

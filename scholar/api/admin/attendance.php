@@ -6,9 +6,9 @@ declare(strict_types=1);
 | SCHOLAR API — SCHOOL ADMIN: ATTENDANCE (JSON)
 |--------------------------------------------------------------------------
 | JSON twin of school_admin/attendance.php, built on
-| school_admin/_attendance_helpers.php. Same Present/Absent/Late/Excused
-| vocabulary as the classic page (distinct from the teacher Roll Call
-| tool's own vocabulary -- see that helper file's header comment).
+| school_admin/_attendance_helpers.php. Same present/absent/sick/
+| permission/late vocabulary as the classic page and the teacher Roll Call
+| tool -- see that helper file's header comment.
 |--------------------------------------------------------------------------
 */
 

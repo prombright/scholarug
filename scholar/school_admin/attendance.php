@@ -1154,7 +1154,7 @@ Present
 
 <?=
 
-$today_summary['Present']
+$today_summary['present']
 
 ??
 
@@ -1185,7 +1185,7 @@ Absent
 
 <?=
 
-$today_summary['Absent']
+$today_summary['absent']
 
 ??
 
@@ -1216,7 +1216,7 @@ Late
 
 <?=
 
-$today_summary['Late']
+$today_summary['late']
 
 ??
 
@@ -1428,7 +1428,7 @@ class="attendance-select"
 >
 
 
-<option value="Present">
+<option value="present">
 
 Present
 
@@ -1436,7 +1436,7 @@ Present
 
 
 
-<option value="Absent">
+<option value="absent">
 
 Absent
 
@@ -1444,7 +1444,7 @@ Absent
 
 
 
-<option value="Late">
+<option value="late">
 
 Late
 
@@ -1452,7 +1452,7 @@ Late
 
 
 
-<option value="Excused">
+<option value="permission">
 
 Excused
 

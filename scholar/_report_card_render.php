@@ -225,7 +225,8 @@ function scholar_fetch_class_report_remarks(PDO $pdo, int $school_id, array $stu
  * accurate for every school with zero setup, rather than quietly
  * mis-scoping "this term" using boundaries nobody configured. 'sick' and
  * 'permission' are counted as not-present -- the student really wasn't at
- * school that day, whatever the reason.
+ * school that day, whatever the reason. 'late' counts as present -- they
+ * did attend, just not on time.
  *
  * @return array{present:int,total:int,rate:float}|null null when there's
  *   no attendance data at all for this student/year, so the caller can
@@ -246,7 +247,7 @@ function scholar_fetch_student_attendance_rate(PDO $pdo, int $school_id, int $st
     if ($total === 0) {
         return null;
     }
-    $present = (int) ($counts['present'] ?? 0);
+    $present = (int) ($counts['present'] ?? 0) + (int) ($counts['late'] ?? 0);
     return ['present' => $present, 'total' => $total, 'rate' => round($present / $total * 100, 1)];
 }
 
@@ -276,7 +277,7 @@ function scholar_fetch_class_attendance_rates(PDO $pdo, int $school_id, array $s
         if ($total === 0) {
             continue;
         }
-        $present = $counts['present'] ?? 0;
+        $present = ($counts['present'] ?? 0) + ($counts['late'] ?? 0);
         $rates[$sid] = ['present' => $present, 'total' => $total, 'rate' => round($present / $total * 100, 1)];
     }
     return $rates;

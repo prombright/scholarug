@@ -72,19 +72,7 @@ scholar_track_visit();
     color: rgba(255, 255, 255, .55);
 }
 .abn-preloader-word span {
-    background: linear-gradient(90deg, #0A3D62, #00A8A8, #38ada9, #0A3D62);
-    background-size: 300% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: abn-sweep 1.6s linear infinite;
-}
-@keyframes abn-sweep {
-    0% { background-position: 0% 0; }
-    100% { background-position: 300% 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .abn-preloader-word span { animation: none; color: #00A8A8; }
+    color: #00A8A8;
 }
 </style>
 <script>

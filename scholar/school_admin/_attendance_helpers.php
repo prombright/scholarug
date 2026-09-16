@@ -8,13 +8,21 @@ declare(strict_types=1);
 | Pulled out of school_admin/attendance.php so the classic page and the
 | JSON endpoint (api/admin/attendance.php) read/write the exact same way.
 |
-| Note this uses a DIFFERENT status vocabulary (Present/Absent/Late/Excused)
-| than the teacher Roll Call tool (present/absent/sick/permission) -- both
-| write to the same `attendance` table under school_id/subject_id IS NULL.
-| That mismatch predates this refactor; preserved as-is, not something this
-| pass reconciles.
+| Same status vocabulary as the teacher Roll Call tool now (both write to
+| the same `attendance` table under school_id/subject_id IS NULL): present/
+| absent/sick/permission/late -- the real attendance.status ENUM values
+| (see _setup/attendance_late_status_migration.sql). This page's UI labels
+| "Excused" for the stored 'permission' value and offers 'late' as its own
+| option; earlier versions of this page sent 'Present'/'Absent'/'Late'/
+| 'Excused' directly, which only 2 of the 4 ever matched a real enum member
+| -- 'Late'/'Excused' either silently truncated to '' (non-strict sql_mode)
+| or threw and rolled back the whole class's save (strict mode), while the
+| page still reported success either way.
 |--------------------------------------------------------------------------
 */
+
+/** The only 5 values attendance.status actually accepts. */
+const ADMIN_ATTENDANCE_STATUSES = ['present', 'absent', 'sick', 'permission', 'late'];
 
 function admin_attendance_fetch_classes(PDO $pdo, int $schoolId): array
 {
@@ -44,6 +52,14 @@ function admin_attendance_save(PDO $pdo, int $schoolId, int $classId, string $da
         $insert = $pdo->prepare('INSERT INTO attendance (school_id, student_id, class_id, attendance_date, status) VALUES (?, ?, ?, ?, ?)');
 
         foreach ($statuses as $studentId => $status) {
+            // Same allowlist the teacher Roll Call save already enforces --
+            // a status that isn't one of these 5 real enum values would
+            // otherwise either silently corrupt to '' or throw and roll
+            // back every other student's attendance in this same
+            // transaction (see this file's header).
+            if (!in_array($status, ADMIN_ATTENDANCE_STATUSES, true)) {
+                continue;
+            }
             $check->execute([$studentId, $schoolId, $date]);
             $existing = $check->fetchColumn();
 

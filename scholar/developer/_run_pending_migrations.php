@@ -6,8 +6,8 @@ declare(strict_types=1);
 | ONE-TIME MIGRATION RUNNER -- deploy helper, delete after use
 |--------------------------------------------------------------------------
 | Applies library_migration.sql, multi_school_login_migration.sql,
-| developer_messages_migration.sql and grading_scales_level_type_migration.sql
-| against the live database via the same
+| developer_messages_migration.sql, grading_scales_level_type_migration.sql
+| and attendance_late_status_migration.sql against the live database via the same
 | db.php connection every other page uses (no direct DB CLI/phpMyAdmin
 | access needed from the deploying machine). Gated behind an active
 | developer session, same as every other scholar/developer/* page. Lives
@@ -148,5 +148,20 @@ run_statements($pdo, 'grading_scales_level_type_migration', [
 echo "== grading_scales_level_type_migration: backfill ==\n";
 $backfilled = $pdo->exec("UPDATE grading_scales SET level_type = 'O-Level' WHERE level_type IS NULL");
 echo "OK: backfilled {$backfilled} row(s) to O-Level\n\n";
+
+// attendance_late_status_migration -- 'late' is a real enum value now (see
+// that .sql file's header for the Present/Absent/Late/Excused vocabulary
+// mismatch this fixes). MODIFY COLUMN has no "already applied" error code
+// to catch -- re-applying the identical enum definition is just a no-op --
+// so this always runs, not wrapped in run_statements()'s SKIP logic.
+echo "== attendance_late_status_migration ==\n";
+$pdo->exec("ALTER TABLE attendance MODIFY COLUMN status ENUM('present','absent','sick','permission','late') NULL DEFAULT 'present'");
+echo "OK: attendance.status now allows 'late'\n";
+try {
+    $pdo->prepare('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)')->execute(['attendance_late_status_migration.sql']);
+} catch (\PDOException $e) {
+    echo "(not recorded in schema_migrations -- run schema_migrations_tracking.sql first)\n";
+}
+echo "\n";
 
 echo "DONE. Verify the output above, then delete this file from the server.\n";
