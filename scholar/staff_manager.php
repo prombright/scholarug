@@ -65,7 +65,15 @@ if (isset($_GET['delete_id'])) {
     try {
         $del_roles = $pdo->prepare("DELETE FROM staff_responsibilities WHERE staff_id = ?");
         $del_roles->execute([$delete_id]);
-        
+
+        // users.staff_id is ON DELETE SET NULL, not CASCADE -- without this,
+        // the staff row disappears but their login survives (now pointing
+        // at staff_id=NULL) and keeps working indefinitely. "Hard Purge" is
+        // this page's own name for what the delete button does; a login
+        // that outlives the staff record it belonged to isn't that.
+        $del_login = $pdo->prepare("DELETE FROM users WHERE staff_id = ? AND school_id = ?");
+        $del_login->execute([$delete_id, $school_id]);
+
         $del_staff = $pdo->prepare("DELETE FROM staff WHERE staff_id = ? AND school_id = ?");
         $del_staff->execute([$delete_id, $school_id]);
         
@@ -214,10 +222,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_staff_record'
             } else if ($action === 'update' && $staff_row_id) {
                 $upd = $pdo->prepare("UPDATE staff SET first_name = ?, last_name = ?, email = ?, phone = ?, nin = ?, photo = ?, staff_category = ?, role = ?, staff_type = ?, assign_class = ?, assign_stream = ? WHERE staff_id = ? AND school_id = ?");
                 $upd->execute([$first_name, $last_name, $email, $phone, $nin, $photo_path, $staff_category, $role, strtolower($staff_category), $assign_class, $assign_stream, $staff_row_id, $school_id]);
-                
+
                 $del_roles = $pdo->prepare("DELETE FROM staff_responsibilities WHERE staff_id = ?");
                 $del_roles->execute([$staff_row_id]);
-                
+
+                // Keep an existing login's role in sync with the profile --
+                // without this, editing someone from Teaching to Bursar (or
+                // any other role change) left their login permissions
+                // exactly as they were before, silently contradicting the
+                // profile now shown here. Only touches a login that already
+                // exists; editing a staff member never creates one.
+                $pdo->prepare("UPDATE users SET role = ? WHERE staff_id = ? AND school_id = ?")
+                    ->execute([staff_login_role($role), $staff_row_id, $school_id]);
+
                 $msg = "SUCCESS: Profile records modified systematically.";
             }
 
@@ -367,15 +384,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
 // for a real provider call once one is chosen.
 // Map the staff record's own "Primary System Role" to a real login role.
 // Only roles that actually have a working dashboard today are mapped
-// explicitly; everything else keeps the historical 'teacher' fallback
-// rather than guessing at a login role that doesn't exist yet
-// (headteacher/bursar/dos accounts still have no self-service creation
-// path -- see _setup/CHANGES_AND_SETUP.md).
+// explicitly (role_destination() in auth_guard.php is the source of truth
+// for which ones do: dos_dashboard.php, headteacher_dashboard.php, and
+// bursar_dashboard.php all exist and work). This used to only map Nurse
+// and HR Manager, silently defaulting Head Teacher/DOS/Bursar (and every
+// other dropdown option) to a plain 'teacher' login -- registering someone
+// as "Bursar" gave them a teacher account with no bursar access at all.
+// Deputy Head Teacher/Accountant/Secretary/Warden/System Administrator
+// still have no dedicated dashboard to send them to, so they keep the
+// 'teacher' fallback -- not ideal, but a real working portal beats a
+// login role that resolves to nothing.
 function staff_login_role(string $staffRole): string
 {
     return match ($staffRole) {
         'Nurse' => 'nurse',
         'HR Manager' => 'HR',
+        'Director of Studies (DOS)' => 'dos',
+        'Head Teacher' => 'headteacher',
+        'Bursar' => 'bursar',
         default => 'teacher',
     };
 }

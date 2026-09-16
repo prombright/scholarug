@@ -92,14 +92,18 @@ if (isset($_GET['edit'])) {
 // 3. RETRIEVE RECENT ARCHIVE RECORDS WITH METRICS
 // ==========================================
 try {
-    // Counts aggregated staff using the department connection directly to avoid naming mismatch bugs
-    $query = "SELECT d.*, COUNT(s.department_id) AS total_staff 
-              FROM departments d 
-              LEFT JOIN staff s ON d.id = s.department_id 
-              WHERE d.school_id = ? 
-              GROUP BY d.id 
+    // staff has no department_id column at all -- the real staff<->department
+    // link is the staff_departments junction table (populated by
+    // school_admin/assign_teacher.php). The old query against a nonexistent
+    // column always threw, silently landing in the catch below and showing
+    // "0" for every department's staff count on every page load.
+    $query = "SELECT d.*, COUNT(sd.staff_id) AS total_staff
+              FROM departments d
+              LEFT JOIN staff_departments sd ON sd.department_id = d.id AND sd.school_id = d.school_id
+              WHERE d.school_id = ?
+              GROUP BY d.id
               ORDER BY d.department_name ASC";
-    
+
     $stmt = $pdo->prepare($query);
     $stmt->execute([$school_id]);
     $all_departments = $stmt->fetchAll(PDO::FETCH_ASSOC);

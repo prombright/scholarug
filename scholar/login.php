@@ -23,7 +23,7 @@ require_once __DIR__ . '/auth_guard.php'; // for role_destination() below
 
 
 
-$error = '';
+$error = isset($_GET['inactive']) ? 'This staff account has been marked inactive. Contact your school admin.' : '';
 $success = isset($_GET['reset'])
     ? 'Password updated -- log in with your new password.'
     : (isset($_GET['timeout']) ? 'You were signed out after 30 minutes of inactivity. Please log in again.' : '');
@@ -351,6 +351,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ) {
                         $user = $candidate;
                         break;
+                    }
+                }
+
+                // The "Inactive" toggle in Staff Management was purely
+                // cosmetic before this -- it updated staff.status but
+                // nothing ever checked it here, so a suspended/departed
+                // staff member's login kept working regardless.
+                if($user && !empty($user['staff_id'])){
+                    $status_stmt = $pdo->prepare("SELECT status FROM staff WHERE staff_id = ?");
+                    $status_stmt->execute([$user['staff_id']]);
+                    if($status_stmt->fetchColumn() === 'inactive'){
+                        $error = "This staff account has been marked inactive. Contact your school admin.";
+                        $user = null;
                     }
                 }
 

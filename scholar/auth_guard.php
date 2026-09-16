@@ -102,6 +102,21 @@ function require_role(array $allowed_roles): void
     require_once __DIR__ . '/../payments/config.php';
     $_SESSION['subscription_locked'] = scholar_subscription_is_locked($pdo, (int) $_SESSION['school_id']);
 
+    // Same check login.php now makes at sign-in, re-run on every request --
+    // otherwise deactivating a staff member mid-session (e.g. right after
+    // an incident) wouldn't actually revoke their access until they
+    // happened to log out on their own.
+    if (!empty($_SESSION['staff_id'])) {
+        $status_stmt = $pdo->prepare('SELECT status FROM staff WHERE staff_id = ?');
+        $status_stmt->execute([$_SESSION['staff_id']]);
+        if ($status_stmt->fetchColumn() === 'inactive') {
+            $_SESSION = [];
+            session_destroy();
+            header("Location: " . SCHOLAR_BASE . "/login.php?inactive=1");
+            exit();
+        }
+    }
+
     // Guarantee the school's class ladder (S.1-S.6, or Primary's Baby/
     // Middle/Top Class + P.1-P.7) already exists wherever classes get
     // referenced -- a teacher's mark-entry dropdown, students.php's Add
