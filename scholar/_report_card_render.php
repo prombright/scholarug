@@ -218,6 +218,71 @@ function scholar_fetch_class_report_remarks(PDO $pdo, int $school_id, array $stu
 }
 
 /**
+ * Year-to-date attendance, not strictly this-term -- `attendance` only
+ * stores a raw date (no term column), and the `terms` table that would
+ * define real term date ranges is never actually populated by any part of
+ * the app. Counting the whole calendar year is the honest option: it's
+ * accurate for every school with zero setup, rather than quietly
+ * mis-scoping "this term" using boundaries nobody configured. 'sick' and
+ * 'permission' are counted as not-present -- the student really wasn't at
+ * school that day, whatever the reason.
+ *
+ * @return array{present:int,total:int,rate:float}|null null when there's
+ *   no attendance data at all for this student/year, so the caller can
+ *   skip the section entirely instead of printing a misleading "0%".
+ */
+function scholar_fetch_student_attendance_rate(PDO $pdo, int $school_id, int $student_id, int $year): ?array
+{
+    $stmt = $pdo->prepare("
+        SELECT status, COUNT(*) AS cnt
+        FROM attendance
+        WHERE school_id = ? AND student_id = ? AND YEAR(attendance_date) = ?
+        GROUP BY status
+    ");
+    $stmt->execute([$school_id, $student_id, $year]);
+    $counts = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+    $total = array_sum($counts);
+    if ($total === 0) {
+        return null;
+    }
+    $present = (int) ($counts['present'] ?? 0);
+    return ['present' => $present, 'total' => $total, 'rate' => round($present / $total * 100, 1)];
+}
+
+/** Class-batch equivalent of scholar_fetch_student_attendance_rate() -- one query for the whole class instead of one per student. */
+function scholar_fetch_class_attendance_rates(PDO $pdo, int $school_id, array $studentIds, int $year): array
+{
+    if (empty($studentIds)) {
+        return [];
+    }
+    $placeholders = implode(',', array_fill(0, count($studentIds), '?'));
+    $stmt = $pdo->prepare("
+        SELECT student_id, status, COUNT(*) AS cnt
+        FROM attendance
+        WHERE school_id = ? AND student_id IN ($placeholders) AND YEAR(attendance_date) = ?
+        GROUP BY student_id, status
+    ");
+    $stmt->execute(array_merge([$school_id], $studentIds, [$year]));
+
+    $byStudent = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $byStudent[(int) $row['student_id']][$row['status']] = (int) $row['cnt'];
+    }
+
+    $rates = [];
+    foreach ($byStudent as $sid => $counts) {
+        $total = array_sum($counts);
+        if ($total === 0) {
+            continue;
+        }
+        $present = $counts['present'] ?? 0;
+        $rates[$sid] = ['present' => $present, 'total' => $total, 'rate' => round($present / $total * 100, 1)];
+    }
+    return $rates;
+}
+
+/**
  * Calculates a student's final weighted assessment score and maps it
  * against the school's admin-configured grading scale database table.
  *
@@ -770,6 +835,9 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
         <?php
         $average = $subject_count > 0 ? round($total_score / $subject_count, 1) : 0;
 
+        $attendance = $classBatch['attendance'][$student_id]
+            ?? scholar_fetch_student_attendance_rate($pdo, $school_id, $student_id, $year);
+
         // Verification payload -- the student's identifying details plus
         // this specific term's actual outcome (average), so scanning
         // confirms not just which student/term the card belongs to but
@@ -787,6 +855,7 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             . "School: {$school_name}\n"
             . "Term: {$term} {$year}\n"
             . "Term Average: {$average}%\n"
+            . ($attendance ? "Attendance This Year: {$attendance['rate']}% ({$attendance['present']}/{$attendance['total']} days)\n" : '')
             . "School Contact: {$school_contacts}";
         ?>
         <div class="rc-result-hero">
@@ -801,7 +870,10 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
                     <td style="width: 55%; vertical-align: top; padding-right:15px;">
                         <div style="font-size: 13.5px; margin-bottom: 6px;"><strong>Total Weighted Marks:</strong> <span style="font-family: monospace; font-weight: bold; background:#e2e8f0; padding:2px 6px; border-radius:4px;"><?= $total_score ?></span></div>
                         <div style="font-size: 13.5px; margin-bottom: 6px;"><strong>Class Terminal Average:</strong> <span style="font-family: monospace; font-weight: bold; color: #16a34a;"><?= $average ?>%</span></div>
-                        <div style="font-size: 13.5px;"><strong>Assessed Subjects:</strong> <span style="font-family: monospace; font-weight: bold;"><?= $subject_count ?> / <?= count($subject_evaluations) ?></span></div>
+                        <div style="font-size: 13.5px;<?= $attendance ? ' margin-bottom: 6px;' : '' ?>"><strong>Assessed Subjects:</strong> <span style="font-family: monospace; font-weight: bold;"><?= $subject_count ?> / <?= count($subject_evaluations) ?></span></div>
+                        <?php if ($attendance): ?>
+                        <div style="font-size: 13.5px;"><strong>Attendance This Year:</strong> <span style="font-family: monospace; font-weight: bold; color: #0284c7;"><?= $attendance['rate'] ?>%</span> <span style="color:#64748b; font-size:11.5px;">(<?= $attendance['present'] ?>/<?= $attendance['total'] ?> days present)</span></div>
+                        <?php endif; ?>
                     </td>
                     <td style="width: 45%; border-left: 1px dashed #cbd5e1; padding-left: 20px; vertical-align: top; text-align: center;">
                         <div class="rc-qr-target" data-qr="<?= htmlspecialchars($qr_payload) ?>"></div>

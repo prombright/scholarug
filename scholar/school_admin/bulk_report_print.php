@@ -102,6 +102,7 @@ if ($sel_class !== null) {
             'weighted_scores' => scholar_fetch_class_weighted_scores($pdo, $school_id, $student_ids, $term, $year),
             'draft_subjects'  => scholar_fetch_class_draft_subjects($pdo, $school_id, $student_ids, $term, $year),
             'remarks'         => scholar_fetch_class_report_remarks($pdo, $school_id, $student_ids, $term, $year),
+            'attendance'      => scholar_fetch_class_attendance_rates($pdo, $school_id, $student_ids, $year),
         ];
         $reportSettings = scholar_fetch_report_settings($pdo, $school_id);
 
