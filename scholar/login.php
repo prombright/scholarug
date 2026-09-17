@@ -14,7 +14,8 @@ declare(strict_types=1);
 
 session_start([
     'cookie_httponly' => true,
-    'cookie_samesite' => 'Strict'
+    'cookie_samesite' => 'Strict',
+    'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
 ]);
 
 
@@ -160,12 +161,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
 
-
+                    // Never a student (this branch is school_admin-only),
+                    // so unlike the username/password path below, this
+                    // lockout check always applies -- no exception. School
+                    // codes are a public "SC-###" format and the PIN used
+                    // to be compared in plaintext with no throttling at
+                    // all, making it brute-forceable.
                     elseif(
-                        $password ===
-                        $school['access_pin']
+                        login_is_locked_out($pdo, $username)
                     ){
 
+                        $error =
+                        "Too many failed attempts for this school code. Please try again in 15 minutes.";
+
+                    }
+
+
+
+                    elseif(
+                        password_verify($password, $school['access_pin'])
+                        ||
+                        $password === $school['access_pin']
+                    ){
+
+
+                        // access_pin used to be compared and stored as
+                        // plaintext -- self-heals the same way the main
+                        // password check below does: a plaintext match
+                        // immediately rehashes to bcrypt so this branch
+                        // can't fire for this school again.
+                        if (!password_verify($password, $school['access_pin'])) {
+                            $pdo->prepare('UPDATE schools SET access_pin = ? WHERE id = ?')
+                                ->execute([password_hash($password, PASSWORD_BCRYPT), $school['id']]);
+                        }
+                        login_record_attempt($pdo, $username, true);
 
 
                         /*
@@ -251,6 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // against `users` and redirects by role, so
                         // there is only one routing table to keep in
                         // sync, not two.
+                        login_record_attempt($pdo, $username, false);
                         $error = "Invalid school code or access PIN. If you're staff or a student, log in with your username and password instead.";
                     }
 
@@ -342,16 +372,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $candidates =
                 $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                // Deliberately NOT locking out student accounts -- a
+                // student's username/password are both just their student
+                // number (see admin_create_student_login()), and real
+                // students forget/mistype it often with no self-service
+                // reset flow of their own. Any candidate row missing means
+                // this is either a genuinely unknown username or a
+                // non-student one, and gets throttled either way.
+                $is_student_identifier = false;
+                foreach ($candidates as $candidate) {
+                    if (strtolower($candidate['role']) === 'student') {
+                        $is_student_identifier = true;
+                        break;
+                    }
+                }
+
+                $locked_out = !$is_student_identifier && login_is_locked_out($pdo, $username);
+
                 $user = null;
 
-                foreach ($candidates as $candidate) {
-                    if (
-                        $password === $candidate['password']
-                        ||
-                        password_verify($password, $candidate['password'])
-                    ) {
-                        $user = $candidate;
-                        break;
+                if (!$locked_out) {
+                    foreach ($candidates as $candidate) {
+                        if (password_verify($password, $candidate['password'])) {
+                            $user = $candidate;
+                            break;
+                        }
+                        // Legacy fallback for any row that predates bcrypt
+                        // hashing everywhere -- every current write path
+                        // (admin_create_student_login, staff_manager.php,
+                        // etc.) already hashes before saving, so this should
+                        // never actually match today. Self-heals on the one
+                        // time it does: a plain '===' match immediately
+                        // rehashes to bcrypt so this branch stops being able
+                        // to fire for that row again, rather than leaving a
+                        // plaintext password (and a non-constant-time compare)
+                        // sitting there indefinitely.
+                        if ($password === $candidate['password']) {
+                            $pdo->prepare('UPDATE users SET password = ? WHERE id = ?')
+                                ->execute([password_hash($password, PASSWORD_BCRYPT), $candidate['id']]);
+                            $user = $candidate;
+                            break;
+                        }
+                    }
+
+                    if (!$is_student_identifier) {
+                        login_record_attempt($pdo, $username, (bool) $user);
                     }
                 }
 
@@ -478,8 +543,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 else{
 
 
-                    $error =
-                    "Invalid username or password.";
+                    $error = $locked_out
+                        ? "Too many failed attempts. Please try again in 15 minutes."
+                        : "Invalid username or password.";
 
 
                 }
@@ -493,10 +559,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         catch(Throwable $e){
 
-
-            $error =
-            "System error: ".$e->getMessage();
-
+            // Same rule as db.php's own catch -- never echo a raw
+            // exception to an anonymous, pre-auth visitor (can leak table/
+            // column names or DSN details). Logged server-side instead.
+            if (defined('SCHOLAR_ENV') && SCHOLAR_ENV === 'production') {
+                error_log('Scholar login error: ' . $e->getMessage());
+                $error = "System error. Please try again shortly.";
+            } else {
+                $error = "System error: " . $e->getMessage();
+            }
 
         }
 

@@ -5,7 +5,11 @@ require '../db.php';
 require_once __DIR__ . '/_school_delete.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Strict',
+        'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    ]);
 }
 
 if (

@@ -36,7 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_reset'])) {
         if ($user) {
             $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $expires = date('Y-m-d H:i:s', strtotime('+15 minutes'));
-            $pdo->prepare("UPDATE users SET password_reset_otp = ?, otp_expires_at = ? WHERE id = ?")
+            // Fresh code, fresh attempt budget -- see
+            // password_reset_otp_attempts_migration.sql for why this
+            // counter exists (the code itself was brute-forceable with no
+            // cap on guesses).
+            $pdo->prepare("UPDATE users SET password_reset_otp = ?, otp_expires_at = ?, password_reset_otp_attempts = 0 WHERE id = ?")
                 ->execute([$otp, $expires, $user['id']]);
 
             abn_send_email(
@@ -67,11 +71,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_reset'])) {
     } elseif ($new_password !== $confirm_password) {
         $error = 'Passwords do not match.';
     } else {
-        $stmt = $pdo->prepare("SELECT id, password_reset_otp, otp_expires_at FROM users WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT id, password_reset_otp, otp_expires_at, password_reset_otp_attempts FROM users WHERE email = ?");
         $stmt->execute([$reset_email]);
         $user = $stmt->fetch();
 
-        if (!$user || $user['password_reset_otp'] === null || $user['password_reset_otp'] !== $otp || strtotime($user['otp_expires_at']) < time()) {
+        // Capped at 5 guesses per issued code -- see
+        // password_reset_otp_attempts_migration.sql. Counted even for a
+        // wrong/expired code (not just a wrong OTP value) so an attacker
+        // can't dodge the cap by also varying the expiry check somehow;
+        // every failed confirm attempt against a real user counts.
+        if ($user && (int) $user['password_reset_otp_attempts'] >= 5) {
+            $error = 'Too many attempts with this code. Please request a new one.';
+        } elseif (!$user || $user['password_reset_otp'] === null || $user['password_reset_otp'] !== $otp || strtotime($user['otp_expires_at']) < time()) {
+            if ($user) {
+                $pdo->prepare("UPDATE users SET password_reset_otp_attempts = password_reset_otp_attempts + 1 WHERE id = ?")
+                    ->execute([$user['id']]);
+            }
             $error = 'That code is invalid or has expired.';
         } else {
             $hash = password_hash($new_password, PASSWORD_BCRYPT);

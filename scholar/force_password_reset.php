@@ -17,7 +17,11 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php'; // for the shared role_destination()
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start(['cookie_httponly' => true, 'cookie_samesite' => 'Strict']);
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Strict',
+        'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    ]);
 }
 
 if (!isset($_SESSION['user_id'], $_SESSION['role'])) {

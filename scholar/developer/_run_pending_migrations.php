@@ -7,7 +7,8 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 | Applies library_migration.sql, multi_school_login_migration.sql,
 | developer_messages_migration.sql, grading_scales_level_type_migration.sql,
-| attendance_late_status_migration.sql and fees_term_scoping_migration.sql
+| attendance_late_status_migration.sql, fees_term_scoping_migration.sql,
+| login_lockout_migration.sql and password_reset_otp_attempts_migration.sql
 | against the live database via the same
 | db.php connection every other page uses (no direct DB CLI/phpMyAdmin
 | access needed from the deploying machine). Gated behind an active
@@ -24,7 +25,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Strict',
+        'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    ]);
 }
 
 if (
@@ -214,5 +219,27 @@ try {
     echo "(not recorded in schema_migrations -- run schema_migrations_tracking.sql first)\n";
 }
 echo "\n";
+
+// login_lockout_migration -- adds the login_attempts table used by
+// auth_guard.php's login_is_locked_out()/login_record_attempt() to
+// rate-limit login.php's school-code+PIN and non-student username/
+// password paths. See that .sql file's header for the full reasoning.
+run_statements($pdo, 'login_lockout_migration', [
+    "CREATE TABLE IF NOT EXISTS login_attempts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        identifier VARCHAR(191) NOT NULL,
+        succeeded TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_login_attempts_identifier_time (identifier, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+], 'login_lockout_migration.sql');
+
+// password_reset_otp_attempts_migration -- caps how many OTP guesses
+// forgot_password.php accepts against one issued code (was previously
+// unlimited within the 15-minute expiry window). See that .sql file's
+// header for the full reasoning.
+run_statements($pdo, 'password_reset_otp_attempts_migration', [
+    "ALTER TABLE users ADD COLUMN password_reset_otp_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0",
+], 'password_reset_otp_attempts_migration.sql');
 
 echo "DONE. Verify the output above, then delete this file from the server.\n";

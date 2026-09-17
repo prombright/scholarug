@@ -12,7 +12,15 @@ require_once __DIR__ . '/_attendance_helpers.php';
 
 if(session_status() !== PHP_SESSION_ACTIVE){
 
-    session_start();
+    // Same options as auth_guard.php's session_start() -- this runs
+    // before that file is required below (via _admin_shell.php), so a
+    // bare session_start() here would win the race and leave the cookie
+    // without httponly/samesite/secure for this page's whole session.
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Strict',
+        'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    ]);
 
 }
 

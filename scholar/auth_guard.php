@@ -22,9 +22,14 @@ declare(strict_types=1);
 
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
+    // cookie_secure is gated on the ACTUAL request scheme (not an env
+    // flag) so this keeps working over plain HTTP on local XAMPP dev,
+    // while the live site (always HTTPS, per the root .htaccess redirect)
+    // gets the flag -- same detection config.php itself already uses.
     session_start([
         'cookie_httponly' => true,
         'cookie_samesite' => 'Strict',
+        'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
     ]);
 }
 
@@ -291,6 +296,44 @@ function require_csrf_json(): void
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['success' => false, 'message' => 'Security check failed (invalid or expired session token). Please refresh the page and try again.']);
         exit;
+    }
+}
+
+/**
+ * Login rate-limiting/lockout, used by login.php (both the school-code+PIN
+ * branch and the normal username/password branch, for any resolved role
+ * OTHER than 'student' -- see login_lockout_migration.sql's header for why
+ * students are deliberately excepted) and developer/login.php. Keyed by
+ * whatever identifier was typed (username/email/school code), not IP --
+ * a whole school can share one NAT'd IP, and blocking by IP would lock out
+ * every legitimate user behind it along with an actual attacker.
+ *
+ * Both functions fail OPEN (never locked / never recorded) if the
+ * `login_attempts` table doesn't exist yet -- a site that hasn't applied
+ * login_lockout_migration.sql shouldn't have every login silently break.
+ */
+function login_is_locked_out(PDO $pdo, string $identifier): bool
+{
+    try {
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(*) FROM login_attempts
+             WHERE identifier = ? AND succeeded = 0
+               AND created_at > (NOW() - INTERVAL 15 MINUTE)'
+        );
+        $stmt->execute([$identifier]);
+        return (int) $stmt->fetchColumn() >= 5;
+    } catch (\PDOException $e) {
+        return false;
+    }
+}
+
+function login_record_attempt(PDO $pdo, string $identifier, bool $succeeded): void
+{
+    try {
+        $pdo->prepare('INSERT INTO login_attempts (identifier, succeeded) VALUES (?, ?)')
+            ->execute([$identifier, $succeeded ? 1 : 0]);
+    } catch (\PDOException $e) {
+        // table not migrated yet -- nothing to record
     }
 }
 

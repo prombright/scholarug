@@ -1,9 +1,14 @@
 <?php
 declare(strict_types=1);
 
-session_start();
+session_start([
+    'cookie_httponly' => true,
+    'cookie_samesite' => 'Strict',
+    'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+]);
 
 require_once '../db.php';
+require_once __DIR__ . '/../auth_guard.php'; // for csrf_token()/require_csrf()/login_is_locked_out()/login_record_attempt()
 
 ini_set('display_errors', '1');
 error_reporting(E_ALL);
@@ -32,6 +37,8 @@ if (
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    require_csrf();
+
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
@@ -42,6 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
 
         try {
+
+            // Never a student, and there's no self-service reset flow to
+            // worry about here -- unlike login.php's own lockout, this one
+            // has no exception.
+            if (login_is_locked_out($pdo, $username)) {
+
+                $error = "Too many failed attempts. Please try again in 15 minutes.";
+
+            } else {
 
             $stmt = $pdo->prepare("
                 SELECT *
@@ -60,13 +76,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $developer = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (
-                $developer &&
-                (
-                    password_verify($password, $developer['password']) ||
-                    $password === $developer['password']
-                )
-            ) {
+            $password_ok = $developer && password_verify($password, $developer['password']);
+            $password_ok_legacy_plaintext = $developer && !$password_ok && $password === $developer['password'];
+
+            if ($developer && ($password_ok || $password_ok_legacy_plaintext)) {
+
+                // Self-heals the same way the main app's login.php does --
+                // a plaintext match immediately rehashes to bcrypt.
+                if ($password_ok_legacy_plaintext) {
+                    $pdo->prepare('UPDATE users SET password = ? WHERE id = ?')
+                        ->execute([password_hash($password, PASSWORD_BCRYPT), $developer['id']]);
+                }
+                login_record_attempt($pdo, $username, true);
 
                 session_regenerate_id(true);
 
@@ -79,13 +100,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             } else {
 
+                login_record_attempt($pdo, $username, false);
                 $error = "Invalid developer credentials.";
+
+            }
 
             }
 
         } catch (Throwable $e) {
 
-            $error = $e->getMessage();
+            // Same rule as the main app's login.php/db.php -- never echo a
+            // raw exception to a pre-auth visitor.
+            if (defined('SCHOLAR_ENV') && SCHOLAR_ENV === 'production') {
+                error_log('Scholar developer login error: ' . $e->getMessage());
+                $error = "System error. Please try again shortly.";
+            } else {
+                $error = $e->getMessage();
+            }
 
         }
 
@@ -350,6 +381,8 @@ Platform Administration
 <?php endif; ?>
 
 <form method="POST">
+
+<input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
 <label>
 
