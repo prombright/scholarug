@@ -19,6 +19,9 @@ require_once __DIR__ . '/../../../payments/Gateways.php';
 require_once __DIR__ . '/../../../payments/CountryCodes.php';
 
 require_role(['school_admin', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 
 header('Content-Type: application/json');
 

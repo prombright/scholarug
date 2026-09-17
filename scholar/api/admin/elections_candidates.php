@@ -15,6 +15,9 @@ require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../elections/_election_helpers.php';
 require_once __DIR__ . '/../../elections/_admin_pages_helpers.php';
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 
 header('Content-Type: application/json; charset=utf-8');
 

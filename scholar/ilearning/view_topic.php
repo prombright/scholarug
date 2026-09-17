@@ -265,6 +265,7 @@ ul.attachments a{color:var(--cyan);text-decoration:none;}
         <script>
         (function () {
             "use strict";
+            var csrfToken = <?= json_encode(csrf_token()) ?>;
             var form = document.getElementById('pdfAnswerForm');
             var btn = document.getElementById('submitAnswerBtn');
             var errEl = document.getElementById('submitError');
@@ -280,6 +281,7 @@ ul.attachments a{color:var(--cyan);text-decoration:none;}
                 var body = new URLSearchParams();
                 body.set('topic_id', form.topic_id.value);
                 body.set('answer_text', answerValue);
+                body.set('csrf_token', csrfToken);
 
                 fetch('save_pdf_submission.php', { method: 'POST', body: body, credentials: 'same-origin' })
                     .then(function (r) { return r.json(); })

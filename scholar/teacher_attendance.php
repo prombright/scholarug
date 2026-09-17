@@ -21,6 +21,9 @@ require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/_attendance_helpers.php';
 
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id  = current_school_id();
 $staff_id   = current_staff_id();
@@ -165,7 +168,7 @@ tr.rc-row-hidden{display:none;}
             </button>
         </div>
     <?php endif; ?>
-    <form method="POST">
+    <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="class_id" value="<?= $sel_class ?>">
         <input type="hidden" name="attendance_date" value="<?= htmlspecialchars($sel_date, ENT_QUOTES) ?>">
         <table>

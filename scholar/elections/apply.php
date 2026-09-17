@@ -14,6 +14,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['student']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_election_helpers.php';
 
 $school_id = current_school_id();
@@ -117,7 +120,7 @@ button{background:var(--cyan);color:#04121a;font-weight:700;border:none;padding:
             <?php if ($p['already_applied']): ?>
                 <div class="already">You've already applied for this position — check "My Candidacy Status" on your dashboard for the outcome.</div>
             <?php else: ?>
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="position_id" value="<?= (int) $p['id'] ?>">
                     <label>Why should students vote for you? (optional)</label>
                     <textarea name="manifesto" placeholder="A short statement about what you'd do in this role..."></textarea>

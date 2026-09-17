@@ -17,6 +17,9 @@ if (session_status() === PHP_SESSION_NONE) {
 // ANY visitor with no session at all -- the same auth bypass found and
 // fixed in staff_manager.php, just copy-pasted here too.
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $msg = '';
@@ -252,7 +255,7 @@ require_once __DIR__ . '/_admin_shell.php';
             </div>
             <div style="display:flex; gap:10px;">
                 <?php if ($school_type === 'Primary'): ?>
-                    <form method="POST" onsubmit="return confirm('Seed the default Primary subject list (P.1-P.7)? Existing subjects are left untouched.');">
+                    <form method="POST" onsubmit="return confirm('Seed the default Primary subject list (P.1-P.7)? Existing subjects are left untouched.');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <button type="submit" name="seed_primary_subjects" value="1" style="background:transparent; color:#00A8A8; border:1px solid rgba(0,168,168,0.4); padding:12px 20px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer; text-transform:uppercase;">Seed Default Subjects</button>
                     </form>
                 <?php endif; ?>
@@ -270,7 +273,7 @@ require_once __DIR__ . '/_admin_shell.php';
                 </div>
             <?php endif; ?>
             
-            <form action="subject_matrix.php" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;">
+            <form action="subject_matrix.php" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <div>
                     <label style="display: block; font-size: 0.7rem; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-weight: 700;">Curricular Bracket</label>
                     <?php if ($school_type === 'Primary'): ?>
@@ -377,7 +380,7 @@ require_once __DIR__ . '/_admin_shell.php';
                 <h4 id="matrixModalTitle" style="margin:0; font-size:1rem; text-transform:uppercase; color:var(--text);">Matrix Workbench</h4>
                 <button type="button" onclick="closeMatrixModal()" style="background:transparent; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer;">✕</button>
             </div>
-            <form action="subject_matrix.php" method="POST" style="padding:25px; margin:0; display:flex; flex-direction:column; gap:16px;">
+            <form action="subject_matrix.php" method="POST" style="padding:25px; margin:0; display:flex; flex-direction:column; gap:16px;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="form_action" id="matrixFormAction" value="add">
                 <input type="hidden" name="subject_row_id" id="matrixFormRowId" value="">
 

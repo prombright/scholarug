@@ -20,6 +20,9 @@ if (!$school_id) {
 // meaning any logged-in user of any role could edit any student in their
 // school by visiting this URL directly.
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $student_id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 
@@ -128,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
             <form method="POST" action="edit_student.php?id=<?= (int) $student_id; ?>" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="id" value="<?= (int) $student_id; ?>">
                 <div class="mb-3 d-flex align-items-center gap-3">
                     <?php if (!empty($student['photo_path']) && file_exists(__DIR__ . '/../' . $student['photo_path'])): ?>

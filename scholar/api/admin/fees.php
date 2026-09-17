@@ -15,6 +15,9 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../school_admin/_fees_helpers.php';
 require_role(['school_admin', 'bursar']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 
 header('Content-Type: application/json; charset=utf-8');
 

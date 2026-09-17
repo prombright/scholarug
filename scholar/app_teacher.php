@@ -42,6 +42,7 @@ $inject = '<base href="assets/spa-teacher/">'
     . '<script>'
     . 'window.__SCHOLAR_BASE__ = ' . json_encode($scholarBase) . ';'
     . 'window.__SCHOLAR_API_BASE__ = ' . json_encode($scholarBase . 'api/') . ';'
+    . 'window.__CSRF_TOKEN__ = ' . json_encode(csrf_token()) . ';'
     // Same "scholar-theme" localStorage key preloader.php's site-wide
     // toggle uses, applied before Vue mounts (and before the bundle's own
     // stylesheet is even requested) so there's no flash of the wrong theme.

@@ -232,6 +232,68 @@ function require_ilearning_addon(): void
     }
 }
 
+/**
+ * App-wide CSRF token, one per session (not per-page like the
+ * scholar/developer/* pages' own $_SESSION['developer_csrf_token']
+ * copies -- those predate this and are left alone). Call from any
+ * template that renders a <form method="post">:
+ *   <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+ * A JSON/SPA page instead prints it into a JS global (see app_admin.php
+ * etc.) so its axios client can send it back as the X-CSRF-Token header,
+ * since those requests carry a raw JSON body, not $_POST fields.
+ */
+function csrf_token(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Checks the token from either a classic form field ($_POST['csrf_token'])
+ * or the SPA header (X-CSRF-Token) against the one issued to this session.
+ * Returns bool rather than dying/redirecting itself so a JSON endpoint can
+ * reply with a proper JSON error instead of an HTML redirect.
+ */
+function verify_csrf_token(): bool
+{
+    $expected = $_SESSION['csrf_token'] ?? '';
+    $submitted = $_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    return $expected !== '' && is_string($submitted) && $submitted !== '' && hash_equals($expected, $submitted);
+}
+
+/**
+ * Call at the top of a classic (non-JSON) page's POST handling. Dies with
+ * a plain-text 403 rather than silently no-op'ing -- an expired/missing
+ * token should look like an error, not like the action quietly did
+ * nothing. Session-expiry is the normal way to hit this (token minted on
+ * a page loaded hours ago, session's own 30-minute idle timeout usually
+ * catches that first) or an actual cross-site attempt.
+ */
+function require_csrf(): void
+{
+    if (!verify_csrf_token()) {
+        http_response_code(403);
+        die('Security check failed (invalid or expired form token). Please go back, refresh the page, and try again.');
+    }
+}
+
+/**
+ * Same check as require_csrf(), for the api/*.php JSON twins -- replies
+ * with the same JSON error shape those endpoints already use instead of
+ * a plain-text die().
+ */
+function require_csrf_json(): void
+{
+    if (!verify_csrf_token()) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => 'Security check failed (invalid or expired session token). Please refresh the page and try again.']);
+        exit;
+    }
+}
+
 function current_school_id(): int{
     return $_SESSION['school_id'] ?? 0;
 }

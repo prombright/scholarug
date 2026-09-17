@@ -1,9 +1,11 @@
 import axios from 'axios'
 
 // Same idea as eSpace's api.ts: one shared axios instance, everything routes
-// through it. Simpler here because auth is the existing PHP session cookie
-// (auth_guard.php) -- withCredentials is the only piece that matters, there's
-// no separate token/CSRF-header scheme to reimplement.
+// through it. Auth is the existing PHP session cookie (auth_guard.php) --
+// withCredentials matters for that. The X-CSRF-Token header below is the
+// separate app-wide CSRF defense (auth_guard.php's require_csrf_json()) --
+// app_teacher.php injects window.__CSRF_TOKEN__ before this bundle loads,
+// same way it injects __SCHOLAR_API_BASE__.
 const api = axios.create({
   // app_teacher.php injects the real path (built from PHP's SCHOLAR_BASE)
   // before this bundle loads -- can't rely on plain relative resolution
@@ -12,7 +14,7 @@ const api = axios.create({
   // path for `npm run dev` against vite.config.js's proxy.
   baseURL: window.__SCHOLAR_API_BASE__ || '/ScholarUg/scholar/api/',
   withCredentials: true,
-  headers: { Accept: 'application/json' }
+  headers: { Accept: 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' }
 })
 
 // auth_guard.php redirects an expired/missing session to login.php as HTML.

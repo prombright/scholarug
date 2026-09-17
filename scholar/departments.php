@@ -9,6 +9,9 @@ require 'db.php';
 require_once __DIR__ . '/auth_guard.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $msg = '';
@@ -163,7 +166,7 @@ require_once __DIR__ . '/_admin_shell.php';
             <div class="log-box">▶ <?= htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>
 
-        <form action="departments.php" method="POST">
+        <form action="departments.php" method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="save_department_form" value="1">
             <input type="hidden" name="department_id" value="<?= htmlspecialchars($edit_id) ?>">
             

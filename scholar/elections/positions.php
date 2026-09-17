@@ -14,6 +14,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_election_helpers.php';
 require_once __DIR__ . '/_admin_pages_helpers.php';
 
@@ -88,7 +91,7 @@ a.back{color:var(--muted);text-decoration:none;font-size:0.8rem;}
 
     <?php if (!$locked): ?>
     <div class="section">
-        <form method="post" class="row">
+        <form method="post" class="row"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="election_id" value="<?= (int) $election_id ?>">
             <div>
                 <label>New Position</label>
@@ -112,7 +115,7 @@ a.back{color:var(--muted);text-decoration:none;font-size:0.8rem;}
                         <td>
                             <a class="act" href="candidates.php?election_id=<?= (int) $election_id ?>#position-<?= (int) $p['id'] ?>">Candidates</a>
                             <?php if (!$locked): ?>
-                                <form method="post" style="display:inline;margin-left:12px;" onsubmit="return confirm('Remove this position and all its applications?');">
+                                <form method="post" style="display:inline;margin-left:12px;" onsubmit="return confirm('Remove this position and all its applications?');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                     <input type="hidden" name="election_id" value="<?= (int) $election_id ?>">
                                     <input type="hidden" name="position_id" value="<?= (int) $p['id'] ?>">
                                     <button type="submit" name="delete_position" class="danger">Remove</button>

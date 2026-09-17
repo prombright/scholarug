@@ -4,6 +4,15 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['student']);
+// No require_csrf_json() here, deliberately: the page-unload path
+// (view_topic.php) sends this via navigator.sendBeacon(), which can't set
+// a custom header or be redirected into a form-encoded body a $_POST check
+// could read -- there is no channel left to carry a token on that path. The
+// blast radius of skipping it is low: this only ever upserts the calling
+// student's own progress row (current_student_id(), not attacker-choosable)
+// with a percent/seconds value that's clamped either way, so a forged
+// cross-site POST can only nudge the victim's own progress bar, not read or
+// touch anyone else's data.
 require_once __DIR__ . '/_ilearning_helpers.php';
 
 header('Content-Type: application/json');

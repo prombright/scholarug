@@ -27,7 +27,11 @@ if (
     die("<p style='color:#ef4444; padding:20px; font-family:sans-serif; background:#060709; height:100vh; margin:0;'>Access Denied. Admin privileges required.</p>");
 }
 
-$school_id = (int) $_SESSION['school_id']; 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
+
+$school_id = (int) $_SESSION['school_id'];
 $msg = '';
 $msg_type = 'success';
 
@@ -159,7 +163,7 @@ require_once __DIR__ . '/_admin_shell.php';
             <?php endif; ?>
         </div>
 
-        <form action="settings.php" method="POST" enctype="multipart/form-data" style="background: var(--panel-bg); border: 1px solid var(--border-gray); border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+        <form action="settings.php" method="POST" enctype="multipart/form-data" style="background: var(--panel-bg); border: 1px solid var(--border-gray); border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             
             
 
@@ -236,6 +240,7 @@ require_once __DIR__ . '/_admin_shell.php';
                 <a href="school_admin/assessments.php" style="color:#00A8A8;">Assessments</a>.
             </div>
             <form method="post" onsubmit="return confirm('Close <?= htmlspecialchars(addslashes($__term . ' ' . $__year), ENT_QUOTES) ?> and lock all its assessments? Teachers will no longer be able to save marks against them. This cannot be undone in bulk.');">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <button type="submit" name="close_current_term" class="danger-btn">Close <?= htmlspecialchars($__term, ENT_QUOTES) ?></button>
             </form>
         </div>
@@ -250,6 +255,7 @@ require_once __DIR__ . '/_admin_shell.php';
                 This cannot be undone in bulk.
             </div>
             <form method="post" onsubmit="return confirm('Close <?= htmlspecialchars(addslashes($__year), ENT_QUOTES) ?> and promote every active student to their next class? Graduating students will be flagged as alumni. This cannot be undone in bulk.');">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <button type="submit" name="close_current_year" class="danger-btn">Close <?= htmlspecialchars($__year, ENT_QUOTES) ?> &amp; Promote Students</button>
             </form>
         </div>

@@ -121,7 +121,7 @@ th, td { padding:10px; border:1px solid #1e293b; text-align:left; font-size:.85r
         <div class="method-card" data-network="airtel">Airtel<span class="badge"><?= htmlspecialchars($airtelGateway->label(), ENT_QUOTES, 'UTF-8') ?></span></div>
     </div>
 
-    <form id="subForm" style="display:none;">
+    <form id="subForm" style="display:none;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="network" id="subNetwork" value="">
         <input type="hidden" name="plan_code" id="subPlanCode" value="">
 

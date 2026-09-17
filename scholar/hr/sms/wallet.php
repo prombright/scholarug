@@ -108,7 +108,7 @@ if ($is_hr_role) {
         </button>
     </div>
 
-    <form id="topupForm" style="display:none;">
+    <form id="topupForm" style="display:none;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="network" id="topupNetwork" value="">
         <div style="display:flex;gap:10px;">
             <div style="flex:0 0 140px;">

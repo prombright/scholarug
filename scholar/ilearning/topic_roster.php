@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_ilearning_helpers.php';
 
 $school_id = current_school_id();
@@ -171,7 +174,7 @@ button{cursor:pointer;border:none;border-radius:4px;padding:6px 10px;font-size:0
                             </details>
                             <?php if ($topic['assessment_id'] !== null): ?>
                                 <?php $existing_mark = $pdf_marks[(int) $r['student_id']] ?? null; ?>
-                                <form method="POST" style="display:flex;gap:6px;align-items:center;margin-top:6px;">
+                                <form method="POST" style="display:flex;gap:6px;align-items:center;margin-top:6px;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                     <input type="hidden" name="student_id" value="<?= (int) $r['student_id'] ?>">
                                     <input type="number" name="score" min="0" max="100" style="width:60px;" value="<?= $existing_mark !== null ? $existing_mark : '' ?>" placeholder="0-100" required>
                                     <button type="submit" name="grade_pdf_submission"><?= $existing_mark !== null ? 'Update' : 'Grade' ?></button>
@@ -183,7 +186,7 @@ button{cursor:pointer;border:none;border-radius:4px;padding:6px 10px;font-size:0
                     </td>
                     <?php endif; ?>
                     <td>
-                        <form method="POST" style="display:flex;gap:6px;">
+                        <form method="POST" style="display:flex;gap:6px;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="student_id" value="<?= (int) $r['student_id'] ?>">
                             <input type="text" name="feedback_note" value="<?= htmlspecialchars((string) ($r['feedback_note'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="One-line note...">
                             <button type="submit" name="save_feedback">Save</button>

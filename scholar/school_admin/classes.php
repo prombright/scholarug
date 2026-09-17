@@ -25,6 +25,9 @@ require_once __DIR__ . '/../_subject_helpers.php';
 require_once __DIR__ . '/_classes_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $error = '';
@@ -134,14 +137,14 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                 <span class="muted">No streams.</span>
             <?php endif; ?>
 
-            <form method="post" style="display:inline-flex;gap:6px;align-items:center;margin-left:10px;">
+            <form method="post" style="display:inline-flex;gap:6px;align-items:center;margin-left:10px;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="stream_class_name" value="<?= $cn ?>">
                 <input type="text" name="stream_name" placeholder="e.g. A, Blue, Sciences" style="width:150px;padding:6px 8px;margin:0;" required>
                 <button type="submit" name="add_stream" value="1" style="margin-top:0;padding:6px 12px;font-size:0.78rem;">+ Add Stream</button>
             </form>
 
             <?php if ($school_type === 'Secondary' && in_array($cn, $LEVEL_CLASSES['A-Level'] ?? [], true) && empty($streams_by_class[$cn])): ?>
-                <form method="post" style="display:inline;">
+                <form method="post" style="display:inline;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="seed_class_name" value="<?= $cn ?>">
                     <button type="submit" name="seed_alevel_streams" value="1" class="ghost-btn" style="margin-top:0;padding:4px 10px;font-size:0.75rem;">+ Seed Sciences &amp; Arts</button>
                 </form>
@@ -163,12 +166,12 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                 <td>
                     <?php if ($c['class_teacher_id']): ?>
                         <span class="pill"><?= htmlspecialchars(trim($c['class_teacher_name']), ENT_QUOTES) ?></span>
-                        <form method="post" style="display:inline;">
+                        <form method="post" style="display:inline;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="class_id" value="<?= (int) $c['id'] ?>">
                             <button type="submit" name="remove_class_teacher" value="1" class="danger-btn" style="margin-top:4px;padding:3px 10px;font-size:0.75rem;">Remove</button>
                         </form>
                     <?php else: ?>
-                        <form method="post" class="row" style="gap:6px;margin:0;">
+                        <form method="post" class="row" style="gap:6px;margin:0;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="class_id" value="<?= (int) $c['id'] ?>">
                             <select name="teacher_staff_id" style="min-width:160px;" required>
                                 <option value="">-- Select teacher --</option>
@@ -181,7 +184,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                     <?php endif; ?>
                 </td>
                 <td>
-                    <form method="post" onsubmit="return confirm('Delete this class? Students in it will become unassigned, not deleted.');">
+                    <form method="post" onsubmit="return confirm('Delete this class? Students in it will become unassigned, not deleted.');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="class_id" value="<?= (int) $c['id'] ?>">
                         <button type="submit" name="delete_class" value="1" class="danger-btn" style="margin-top:0;">Delete</button>
                     </form>

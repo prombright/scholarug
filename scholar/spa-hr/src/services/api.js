@@ -1,10 +1,12 @@
 import axios from 'axios'
 
 // Same pattern as scholar/spa/, scholar/spa-student/, and scholar/spa-admin/'s api.js.
+// app_hr.php injects window.__CSRF_TOKEN__ before this bundle loads, checked
+// server-side by auth_guard.php's require_csrf_json() on every mutating request.
 const api = axios.create({
   baseURL: window.__SCHOLAR_API_BASE__ || '/ScholarUg/scholar/api/',
   withCredentials: true,
-  headers: { Accept: 'application/json' }
+  headers: { Accept: 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' }
 })
 
 // Raw calls into the existing hr/sms/topup_*.php endpoints, which predate
@@ -14,7 +16,7 @@ const api = axios.create({
 const raw = axios.create({
   baseURL: window.__SCHOLAR_BASE__ || '/ScholarUg/scholar/',
   withCredentials: true,
-  headers: { Accept: 'application/json' }
+  headers: { Accept: 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' }
 })
 
 function isAuthRedirect(response) {

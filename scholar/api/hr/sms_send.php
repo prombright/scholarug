@@ -16,6 +16,9 @@ require_once __DIR__ . '/../../lib/ScholarSmsWallet.php';
 require_once __DIR__ . '/../../lib/ScholarSmsPricing.php';
 require_once __DIR__ . '/../../hr/sms/_send_helpers.php';
 require_role(['school_admin', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 
 header('Content-Type: application/json; charset=utf-8');
 

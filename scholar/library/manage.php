@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_library_helpers.php';
 
 $school_id = current_school_id();
@@ -142,7 +145,7 @@ button.status-btn{background:none;color:var(--cyan);padding:0;font-weight:600;fo
     <div class="section"><div class="empty">You have no class/subject assignments yet — ask your school admin to assign you via Teacher Assignments.</div></div>
 <?php else: ?>
     <div class="section">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="upload">
             <div class="upload-grid">
                 <div>
@@ -205,13 +208,13 @@ button.status-btn{background:none;color:var(--cyan);padding:0;font-weight:600;fo
                 <td><span class="badge badge-<?= strtolower($d['status']) ?>"><?= htmlspecialchars($d['status'], ENT_QUOTES, 'UTF-8') ?></span></td>
                 <td>
                     <a class="act" href="view.php?id=<?= (int) $d['id'] ?>" target="_blank">Preview</a>
-                    <form class="inline" method="POST">
+                    <form class="inline" method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="action" value="toggle_status">
                         <input type="hidden" name="doc_id" value="<?= (int) $d['id'] ?>">
                         <button type="submit" class="status-btn"><?= $d['status'] === 'Published' ? 'Unpublish' : 'Publish' ?></button>
                     </form>
                     &nbsp;
-                    <form class="inline" method="POST" onsubmit="return confirm('Delete this document?');">
+                    <form class="inline" method="POST" onsubmit="return confirm('Delete this document?');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="doc_id" value="<?= (int) $d['id'] ?>">
                         <button type="submit" class="link-btn">Delete</button>

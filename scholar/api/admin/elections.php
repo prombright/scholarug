@@ -14,6 +14,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 require_once __DIR__ . '/../../elections/_election_helpers.php';
 require_once __DIR__ . '/../../elections/_index_helpers.php';
 

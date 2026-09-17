@@ -19,6 +19,9 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
 
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $staff_id = current_staff_id();
@@ -142,7 +145,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:6px 12px;font-weight
                             <?php if ($r['reset_requested']): ?>
                                 <span class="pill">Reset requested</span>
                             <?php else: ?>
-                                <form method="POST" style="display:inline;" onsubmit="return confirm('Ask the school admin to reset this student\'s password?');">
+                                <form method="POST" style="display:inline;" onsubmit="return confirm('Ask the school admin to reset this student\'s password?');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                     <input type="hidden" name="action" value="request_reset">
                                     <input type="hidden" name="student_id" value="<?= (int) $r['id'] ?>">
                                     <button type="submit">Request Reset</button>

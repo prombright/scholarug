@@ -6,6 +6,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_timetable_view_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $DAY_NAMES = SCHOLAR_TIMETABLE_DAY_NAMES;
@@ -114,7 +117,7 @@ button{background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:
                 <div class="section" id="edit-panel">
                     <h2 style="font-size:1rem;margin:0 0 4px;">Edit <?= $DAY_NAMES[$editDay] ?>, <?= htmlspecialchars($editingRow['label'], ENT_QUOTES) ?></h2>
                     <p class="empty"><?= substr($editingRow['start'], 0, 5) ?>–<?= substr($editingRow['end'], 0, 5) ?></p>
-                    <form method="post">
+                    <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="class_id" value="<?= $selectedClassId ?>">
                         <input type="hidden" name="day" value="<?= $editDay ?>">
                         <input type="hidden" name="period_id" value="<?= $editPeriodId ?>">

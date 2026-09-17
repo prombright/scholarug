@@ -33,6 +33,9 @@ if (file_exists($base_dir . '/auth_guard.php')) {
 // bare $_SESSION['role'] check bypassed the shared require_role() helper
 // every other page in this folder uses.
 require_role(['school_admin', 'dos']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $ACTIVE_NAV = 'assessments';
 
@@ -143,7 +146,7 @@ td.paper-cell{max-width:110px;}
 
     <div class="section">
         <h2 style="font-size:1rem;margin:0 0 16px;">New Assessment</h2>
-        <form method="POST" action="assessments.php">
+        <form method="POST" action="assessments.php"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="create_assessment">
             <div class="new-form-row">
                 <div>
@@ -229,6 +232,7 @@ td.paper-cell{max-width:110px;}
                 <?php $form_id = 'assess_form_' . (int) $a['id']; ?>
                 <tr>
                     <form id="<?= $form_id ?>" method="POST" action="assessments.php">
+                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="action" value="update_assessment">
                         <input type="hidden" name="id" value="<?= (int) $a['id'] ?>">
                     </form>

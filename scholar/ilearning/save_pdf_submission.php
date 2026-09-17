@@ -17,6 +17,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['student']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 require_once __DIR__ . '/_ilearning_helpers.php';
 
 header('Content-Type: application/json');

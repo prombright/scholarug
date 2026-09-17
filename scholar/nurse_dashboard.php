@@ -5,6 +5,9 @@ require_once __DIR__ . '/auth_guard.php';
 require_once __DIR__ . '/db.php';
 
 require_role(['nurse']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $nurse_username = $_SESSION['username'] ?? 'nurse';
@@ -445,7 +448,7 @@ if (!empty($__school_brand['school_badge']) && file_exists(__DIR__ . '/' . $__sc
             <div>
                 <div class="panel">
                     <h3>Log Patient Visit</h3>
-                    <form method="POST">
+                    <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="log_visit" value="1">
                         <input type="hidden" name="patient_source" id="patient_source" value="student">
                         <input type="hidden" name="patient_ref" id="patient_ref" value="">

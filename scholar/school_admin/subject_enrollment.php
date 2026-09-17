@@ -20,6 +20,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_subject_enrollment_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $message = '';
@@ -111,7 +114,7 @@ button{background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:
         <?php endif; ?>
 
         <?php if ($sel_class && $sel_subject): ?>
-            <form method="post">
+            <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="class_id" value="<?= (int) $sel_class['id'] ?>">
                 <input type="hidden" name="subject_id" value="<?= (int) $sel_subject['id'] ?>">
                 <?php if (empty($students)): ?>

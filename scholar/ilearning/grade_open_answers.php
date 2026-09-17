@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_ilearning_helpers.php';
 
 $school_id = current_school_id();
@@ -122,7 +125,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:9px 16px;font-weight
         <div class="block"><div class="label">AI Score / Feedback</div><?= (int) $item['points_awarded'] ?>/100 — <?= htmlspecialchars((string) $item['teacher_feedback'], ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>
 
-        <form method="POST" class="gradeform">
+        <form method="POST" class="gradeform"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="answer_id" value="<?= (int) $item['answer_id'] ?>">
             <div>
                 <label>Score (0-100)</label>

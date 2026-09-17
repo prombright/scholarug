@@ -59,6 +59,9 @@ if (file_exists($base_dir . '/../_subject_helpers.php')) {
 // no role check at all, meaning any logged-in user of any role could open
 // it directly by URL.
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $ACTIVE_NAV = 'students';
 
@@ -355,7 +358,7 @@ tr:last-child td{border-bottom:none;}
 <details class="section-toggle">
     <summary>Register New Student</summary>
     <div class="form-body">
-        <form method="POST" action="students.php">
+        <form method="POST" action="students.php"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="add_student">
             <div class="row">
                 <div>
@@ -421,7 +424,7 @@ tr:last-child td{border-bottom:none;}
 <details class="section-toggle">
     <summary>Bulk CSV Import</summary>
     <div class="form-body">
-        <form method="POST" action="students.php" enctype="multipart/form-data">
+        <form method="POST" action="students.php" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="import_csv">
             <p class="hint" style="margin-top:0;">Upload a CSV file to register multiple students at once. Format: <strong>Full Name, Gender, Class Name</strong> — O-Level/A-Level is set automatically from the class (S.1-S.4 vs S.5-S.6). Use the "Download CSV Template" button above for a ready-made example.</p>
             <label>Select CSV File</label>
@@ -473,12 +476,12 @@ tr:last-child td{border-bottom:none;}
                     <a :href="row.subjects_url" class="btn btn-ghost btn-sm">Subjects</a>
                     <span v-if="row.login_username" class="pill green" title="Portal username">{{ row.login_username }}</span>
                     <span v-if="row.reset_requested" class="pill" style="background:rgba(245,158,11,0.15);color:#f59e0b;" title="A class teacher requested a password reset for this student">Reset requested</span>
-                    <form v-if="row.login_username" method="POST" action="students.php" style="display:inline;" onsubmit="return confirm('Generate a new password for this student? Their old password will stop working immediately.');">
+                    <form v-if="row.login_username" method="POST" action="students.php" style="display:inline;" onsubmit="return confirm('Generate a new password for this student? Their old password will stop working immediately.');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="action" value="regenerate_student_password">
                         <input type="hidden" name="student_id" :value="row.id">
                         <button type="submit" class="btn btn-ghost btn-sm">Regenerate Password</button>
                     </form>
-                    <form v-else method="POST" action="students.php" style="display:inline;" onsubmit="return confirm('Create a portal login for this student?');">
+                    <form v-else method="POST" action="students.php" style="display:inline;" onsubmit="return confirm('Create a portal login for this student?');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="action" value="create_student_login">
                         <input type="hidden" name="student_id" :value="row.id">
                         <button type="submit" class="btn btn-ghost btn-sm">Create Login</button>

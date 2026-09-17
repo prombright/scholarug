@@ -21,6 +21,9 @@ require_once __DIR__ . '/../../lib/ScholarSmsContacts.php';
 require_once __DIR__ . '/_contacts_helpers.php';
 
 require_role(['school_admin', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $message = '';
@@ -164,7 +167,7 @@ if ($is_hr_role) {
         <?php if (empty($available_classes)): ?>
             <div class="sms-empty">Every class already has a group.</div>
         <?php else: ?>
-            <form method="POST">
+            <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <label>Class</label>
                 <select name="class_id" required>
                     <?php foreach ($available_classes as $c): ?>
@@ -179,7 +182,7 @@ if ($is_hr_role) {
     <div class="sms-section">
         <h3 style="margin:0 0 6px;font-size:1rem;">Import Contacts</h3>
         <p style="color:var(--muted);font-size:0.8rem;margin:0 0 10px;">CSV or .xlsx, phone number in column A, name (optional) in column B.</p>
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <label>Group Name (optional)</label>
             <input type="text" name="group_name" placeholder="e.g. Alumni 2025">
             <label>File</label>
@@ -202,7 +205,7 @@ if ($is_hr_role) {
             <td><span class="sms-pill"><?= $g['group_type'] === 'class' ? 'Class (live)' : 'Imported' ?></span></td>
             <td><?= (int) $g['recipient_count'] ?></td>
             <td>
-                <form method="POST" onsubmit="return confirm('Delete this group?');" style="display:inline;">
+                <form method="POST" onsubmit="return confirm('Delete this group?');" style="display:inline;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="group_id" value="<?= (int) $g['id'] ?>">
                     <button type="submit" name="delete_group" class="danger">Delete</button>
                 </form>

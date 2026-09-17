@@ -4,7 +4,10 @@ import axios from 'axios'
 const api = axios.create({
   baseURL: window.__SCHOLAR_API_BASE__ || '/ScholarUg/scholar/api/',
   withCredentials: true,
-  headers: { Accept: 'application/json' }
+  // app_admin.php injects window.__CSRF_TOKEN__ before this bundle loads,
+  // same way it injects __SCHOLAR_API_BASE__ -- checked server-side by
+  // auth_guard.php's require_csrf_json() on every mutating request.
+  headers: { Accept: 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' }
 })
 
 function isAuthRedirect(response) {

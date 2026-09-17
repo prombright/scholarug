@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_ilearning_helpers.php';
 require_once __DIR__ . '/../bulksms_client.php';
 
@@ -211,7 +214,7 @@ ul.attachments a{color:var(--cyan);}
     <?php if ($success): ?><div class="alert alert-success"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
     <div class="card">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="topic_id" value="<?= (int) $topic_id ?>">
 
             <div class="field">

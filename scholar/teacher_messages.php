@@ -31,6 +31,9 @@ require_once __DIR__ . '/_chat_helpers.php';
 require_once __DIR__ . '/_teacher_messages_helpers.php';
 
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 
 $school_id = current_school_id();
 $staff_id = current_staff_id();
@@ -228,7 +231,7 @@ require_once __DIR__ . '/_teacher_shell.php';
             <?php if ($selected_class === null): ?>
                 <div class="empty">Pick a class above to message its students.</div>
             <?php else: ?>
-                <form method="POST" id="newMessageForm">
+                <form method="POST" id="newMessageForm"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="action" id="newMessageAction" value="send_individual">
                     <input type="hidden" name="class_id" value="<?= (int) $selected_class['id'] ?>">
                     <div class="recipient-toggle">
@@ -313,7 +316,7 @@ require_once __DIR__ . '/_teacher_shell.php';
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
-                <form method="POST" class="chat-composer" id="chatComposer">
+                <form method="POST" class="chat-composer" id="chatComposer"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="action" value="send_message">
                     <textarea name="body" id="chatInput" rows="1" required placeholder="Reply to <?= htmlspecialchars($open_student_name) ?>..."></textarea>
                     <button type="submit" aria-label="Send"><i class="bi bi-send-fill"></i></button>

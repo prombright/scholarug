@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['teacher', 'student']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_ilearning_helpers.php';
 
 $school_id = current_school_id();
@@ -155,7 +158,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
     <?php if ($isTeacher): ?>
     <div class="card">
         <h3 style="margin:0 0 14px;font-size:1rem;">Schedule a Session</h3>
-        <form method="POST">
+        <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="field">
                 <label>Class &amp; Subject</label>
                 <select name="class_subject" onchange="var p=this.value.split('|');document.getElementById('cid').value=p[0];document.getElementById('sid').value=p[1];">

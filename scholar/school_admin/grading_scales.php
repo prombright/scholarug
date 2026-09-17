@@ -27,6 +27,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_grading_scales_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $message = '';
@@ -177,7 +180,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                 <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No <?= htmlspecialchars($sec['level'], ENT_QUOTES) ?> bands configured yet.</td></tr>
             <?php else: foreach ($sec['bands'] as $b): ?>
                 <tr>
-                    <form method="post" class="inline-form">
+                    <form method="post" class="inline-form"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
                     <td style="min-width:130px;"><input type="text" name="grade" value="<?= htmlspecialchars($b['grade'], ENT_QUOTES) ?>" style="margin:0;"></td>
                     <td style="max-width:90px;"><input type="number" step="0.01" name="min_mark" value="<?= htmlspecialchars((string) $b['min_mark'], ENT_QUOTES) ?>" style="margin:0;"></td>
@@ -195,7 +198,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                     </td>
                     </form>
                     <td style="white-space:nowrap;">
-                        <form method="post" class="inline-form" onsubmit="return confirm('Delete this grading band?');">
+                        <form method="post" class="inline-form" onsubmit="return confirm('Delete this grading band?');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
                             <button type="submit" name="delete_band" value="1" class="danger-btn" style="margin:0;padding:6px 12px;font-size:0.78rem;">Delete</button>
                         </form>
@@ -205,7 +208,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
         </table>
 
         <div class="row" style="margin-top:20px;">
-            <form method="post" class="row" style="flex:3;">
+            <form method="post" class="row" style="flex:3;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="level_type" value="<?= htmlspecialchars($sec['level'], ENT_QUOTES) ?>">
                 <div>
                     <label>Grade / Descriptor</label>
@@ -240,6 +243,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
         </div>
 
         <form method="post" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;" onsubmit="return confirm('<?= htmlspecialchars($sec['reset_prompt'], ENT_QUOTES) ?>');">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <button type="submit" name="<?= htmlspecialchars($sec['reset_field'], ENT_QUOTES) ?>" value="1" class="ghost-btn"><?= htmlspecialchars($sec['reset_label'], ENT_QUOTES) ?></button>
         </form>
     </div>
@@ -258,11 +262,11 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                     <td><?= htmlspecialchars($s['skill_name'], ENT_QUOTES) ?></td>
                     <td><span class="pill <?= $s['is_active'] ? '' : 'muted' ?>"><?= $s['is_active'] ? 'Active' : 'Hidden' ?></span></td>
                     <td style="white-space:nowrap;">
-                        <form method="post" class="inline-form">
+                        <form method="post" class="inline-form"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
                             <button type="submit" name="toggle_skill" value="1" class="ghost-btn" style="margin:0;padding:6px 12px;font-size:0.78rem;"><?= $s['is_active'] ? 'Hide' : 'Activate' ?></button>
                         </form>
-                        <form method="post" class="inline-form" onsubmit="return confirm('Delete this skill? Past ratings for it are removed too.');">
+                        <form method="post" class="inline-form" onsubmit="return confirm('Delete this skill? Past ratings for it are removed too.');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
                             <button type="submit" name="delete_skill" value="1" class="danger-btn" style="margin:0;padding:6px 12px;font-size:0.78rem;">Delete</button>
                         </form>
@@ -272,7 +276,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
         </table>
 
         <div class="row" style="margin-top:16px;">
-            <form method="post" class="row" style="flex:1;">
+            <form method="post" class="row" style="flex:1;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <div>
                     <label>New Skill Name</label>
                     <input type="text" name="skill_name" placeholder="e.g. Critical Thinking" required>
@@ -281,7 +285,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                     <button type="submit" name="create_skill" value="1">Add Skill</button>
                 </div>
             </form>
-            <form method="post" style="flex:0 0 auto;align-self:flex-end;">
+            <form method="post" style="flex:0 0 auto;align-self:flex-end;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <button type="submit" name="seed_default_skills" value="1" class="ghost-btn" style="margin-top:0;">Seed Default Skills</button>
             </form>
         </div>

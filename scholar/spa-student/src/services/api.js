@@ -1,11 +1,13 @@
 import axios from 'axios'
 
 // Same pattern as scholar/spa/src/services/api.js (the teacher pilot) --
-// session-cookie auth, no separate token scheme.
+// session-cookie auth, plus the X-CSRF-Token header app_student.php injects
+// as window.__CSRF_TOKEN__ before this bundle loads (auth_guard.php's
+// require_csrf_json() checks it on every mutating request).
 const api = axios.create({
   baseURL: window.__SCHOLAR_API_BASE__ || '/ScholarUg/scholar/api/',
   withCredentials: true,
-  headers: { Accept: 'application/json' }
+  headers: { Accept: 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' }
 })
 
 function isAuthRedirect(response) {

@@ -7,6 +7,9 @@ require_once __DIR__ . '/../_timetable_engine.php';
 require_once __DIR__ . '/_timetable_generate_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 
@@ -62,6 +65,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
                 <div class="alert warn">A timetable already exists for this term. Generating again replaces it completely.</div>
             <?php endif; ?>
             <form method="post" onsubmit="return confirm('Generate the timetable for <?= htmlspecialchars($term, ENT_QUOTES) ?> <?= htmlspecialchars($year, ENT_QUOTES) ?>? Any existing timetable for this term will be replaced.');">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <button type="submit" name="generate" value="1">Generate Timetable</button>
             </form>
         <?php endif; ?>

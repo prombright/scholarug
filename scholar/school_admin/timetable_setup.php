@@ -24,6 +24,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_timetable_setup_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $error = '';
@@ -102,7 +105,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
         <div class="section">
             <h2 style="font-size:1rem;margin:0 0 6px;">Quick Setup</h2>
             <p class="empty">Builds the same pattern across every day you tick below, replacing whatever those days currently have.</p>
-            <form method="post">
+            <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <label>Days</label>
                 <div>
                     <?php foreach ($DAY_NAMES as $num => $name): ?>
@@ -194,7 +197,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.68rem;}
             foreach ($rowForms as $rowFormId):
                 $pid = (int) substr($rowFormId, strlen('period-form-'));
             ?>
-                <form id="<?= $rowFormId ?>" method="post"><input type="hidden" name="period_id" value="<?= $pid ?>"></form>
+                <form id="<?= $rowFormId ?>" method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>"><input type="hidden" name="period_id" value="<?= $pid ?>"></form>
             <?php endforeach; ?>
         </div>
 

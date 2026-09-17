@@ -17,6 +17,9 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
 
 require_role(['teacher', 'dos', 'headteacher', 'bursar', 'nurse', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $staff_id = current_staff_id();
@@ -98,7 +101,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
     <?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
     <div class="section">
-        <form method="POST">
+        <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <label>Leave Type</label>
             <select name="leave_type" required>
                 <option value="">-- Select --</option>

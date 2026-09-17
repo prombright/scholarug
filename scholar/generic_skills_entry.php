@@ -17,6 +17,9 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
 
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $staff_id = current_staff_id();
@@ -190,7 +193,7 @@ table{display:block;overflow-x:auto;}
         <?php if (empty($students)): ?>
             <p class="empty">No students found in this class.</p>
         <?php else: ?>
-        <form method="POST">
+        <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="class_id" value="<?= (int) $sel_class ?>">
             <input type="hidden" name="term" value="<?= htmlspecialchars($term) ?>">
             <input type="hidden" name="year" value="<?= htmlspecialchars((string) $year) ?>">

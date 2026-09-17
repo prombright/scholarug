@@ -26,6 +26,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/../_report_card_render.php';
 
 require_role(['school_admin', 'headteacher', 'dos', 'teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $role = $_SESSION['role'];
@@ -236,7 +239,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:10px 18px;font-weigh
 
     <?php if ($sel_class !== null): ?>
         <?php if (!empty($students)): ?>
-            <form method="POST">
+            <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="class_id" value="<?= $sel_class ?>">
                 <input type="hidden" name="term" value="<?= htmlspecialchars($term) ?>">
                 <input type="hidden" name="year" value="<?= htmlspecialchars((string) $year) ?>">

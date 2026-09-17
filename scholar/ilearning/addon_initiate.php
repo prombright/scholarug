@@ -15,6 +15,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['headteacher', 'school_admin', 'bursar']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 require_once __DIR__ . '/../../payments/Gateways.php';
 require_once __DIR__ . '/../../payments/CountryCodes.php';
 require_once __DIR__ . '/../../payments/Plans.php';

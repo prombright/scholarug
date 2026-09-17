@@ -19,6 +19,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_projects_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $admin_user_id = (int) ($_SESSION['user_id'] ?? 0);
@@ -124,7 +127,7 @@ button{background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:
         <?php if (!$project): ?>
             <div class="section">
                 <h2 style="font-size:1rem;margin:0;">Create Project</h2>
-                <form method="POST">
+                <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <label>Title</label>
                     <input type="text" name="title" placeholder="e.g. S.3 Community-Based Project" required>
                     <label>Description</label>
@@ -148,7 +151,7 @@ button{background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:
                         <span class="pill"><?= htmlspecialchars($t['teacher_name']) ?></span>
                     <?php endforeach; ?>
                 </div>
-                <form method="POST" style="display:flex;gap:10px;align-items:flex-end;">
+                <form method="POST" style="display:flex;gap:10px;align-items:flex-end;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
                     <div style="flex:1;">
                         <label style="margin-top:0;">Assign Another Teacher</label>

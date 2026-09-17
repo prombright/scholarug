@@ -21,6 +21,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_assign_teacher_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $error = '';
@@ -137,7 +140,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 
         <div class="section">
             <h2 style="font-size:1rem;margin:0 0 14px;">Departments</h2>
-            <form method="post">
+            <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="staff_id" value="<?= $selected_staff_id ?>">
                 <?php foreach ($departments as $d): ?>
                     <label class="dept-check">
@@ -162,7 +165,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                     <td><?= htmlspecialchars($a['class_name'], ENT_QUOTES) ?></td>
                     <td><?= htmlspecialchars($a['stream_name'] ?? '—', ENT_QUOTES) ?></td>
                     <td>
-                        <form method="post" style="margin:0;display:flex;gap:6px;align-items:center;">
+                        <form method="post" style="margin:0;display:flex;gap:6px;align-items:center;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="staff_id" value="<?= $selected_staff_id ?>">
                             <input type="hidden" name="assignment_id" value="<?= (int)$a['id'] ?>">
                             <input type="number" name="periods_per_week" min="1" max="15" value="<?= (int) $a['periods_per_week'] ?>" style="width:60px;padding:6px;">
@@ -170,7 +173,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                         </form>
                     </td>
                     <td>
-                        <form method="post" style="margin:0;">
+                        <form method="post" style="margin:0;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="staff_id" value="<?= $selected_staff_id ?>">
                             <input type="hidden" name="assignment_id" value="<?= (int)$a['id'] ?>">
                             <button type="submit" name="remove_assignment" value="1" class="danger-btn">Remove</button>
@@ -181,7 +184,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                 <?php if (!$their_assignments): ?><tr><td colspan="6" class="empty">No teaching assignments yet.</td></tr><?php endif; ?>
             </table>
 
-            <form method="post">
+            <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="staff_id" value="<?= $selected_staff_id ?>">
                 <div class="row">
                     <div>
@@ -271,7 +274,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
             <?php if ($their_current_role === null): ?>
                 <div class="empty">This staff member doesn't have a portal login yet — create one from Manage Teachers first.</div>
             <?php else: ?>
-                <form method="post">
+                <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="staff_id" value="<?= $selected_staff_id ?>">
                     <label>Primary Role (one at a time — class teacher is set separately, on the Classes page)</label>
                     <select name="role">

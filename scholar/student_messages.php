@@ -25,6 +25,9 @@ require_once __DIR__ . '/_chat_helpers.php';
 require_once __DIR__ . '/_student_messages_helpers.php';
 
 require_role(['student']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_json();
+}
 
 $school_id = current_school_id();
 $student_id = current_student_id();
@@ -201,7 +204,7 @@ require_once __DIR__ . '/_student_shell.php';
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
-                <form method="POST" class="chat-composer" id="chatComposer">
+                <form method="POST" class="chat-composer" id="chatComposer"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="action" value="send_message">
                     <textarea name="body" id="chatInput" rows="1" required placeholder="Type a message..."></textarea>
                     <button type="submit" aria-label="Send"><i class="bi bi-send-fill"></i></button>

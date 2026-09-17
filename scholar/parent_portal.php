@@ -17,6 +17,9 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
 
 require_role(['parent']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $parent_user_id = current_user_id();
@@ -209,7 +212,7 @@ table{display:block;overflow-x:auto;}
     <?php if ($children): ?>
     <div class="section">
         <h2 style="font-size:1rem;margin:0;">Send a Message to the School</h2>
-        <form method="post">
+        <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <label>Regarding</label>
             <select name="student_id" required>
                 <?php foreach ($children as $child): ?>

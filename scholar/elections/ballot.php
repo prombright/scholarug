@@ -18,6 +18,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['student']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_election_helpers.php';
 
 $school_id = current_school_id();
@@ -97,7 +100,7 @@ button{background:var(--cyan);color:#04121a;font-weight:700;border:none;padding:
     <?php if (empty($ballot)): ?>
         <div class="card"><div class="empty">No positions are open for voting right now.</div></div>
     <?php else: ?>
-    <form method="post">
+    <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <?php foreach ($ballot as $position): ?>
             <div class="card">
                 <div style="font-weight:700;font-size:0.95rem;"><?= htmlspecialchars($position['title'], ENT_QUOTES) ?></div>

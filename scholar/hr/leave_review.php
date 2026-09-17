@@ -20,6 +20,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_leave_review_helpers.php';
 
 require_role(['school_admin', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $reviewer_id = (int) ($_SESSION['user_id'] ?? 0);
@@ -95,8 +98,8 @@ if ($is_hr_role) {
                     <td>
                         <?php if ($r['status'] === 'pending'): ?>
                             <div class="lr-actions">
-                                <form method="POST"><input type="hidden" name="request_id" value="<?= (int) $r['id'] ?>"><button type="submit" name="action" value="approve" class="lr-btn-approve">Approve</button></form>
-                                <form method="POST"><input type="hidden" name="request_id" value="<?= (int) $r['id'] ?>"><button type="submit" name="action" value="reject" class="lr-btn-reject">Reject</button></form>
+                                <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>"><input type="hidden" name="request_id" value="<?= (int) $r['id'] ?>"><button type="submit" name="action" value="approve" class="lr-btn-approve">Approve</button></form>
+                                <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>"><input type="hidden" name="request_id" value="<?= (int) $r['id'] ?>"><button type="submit" name="action" value="reject" class="lr-btn-reject">Reject</button></form>
                             </div>
                         <?php endif; ?>
                     </td>

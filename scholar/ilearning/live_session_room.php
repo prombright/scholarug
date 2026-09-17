@@ -98,6 +98,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:8px 14px;font-weight
 <script>
 (function () {
     "use strict";
+    var csrfToken = <?= json_encode(csrf_token()) ?>;
     var sessionId = <?= (int) $session_id ?>;
     var isTeacher = <?= $isTeacher ? 'true' : 'false' ?>;
     var roomName = <?= json_encode($session['room_reference']) ?>;
@@ -116,7 +117,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:8px 14px;font-weight
         fetch('live_attendance.php', {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
             body: JSON.stringify({ session_id: sessionId, event: event }),
         }).catch(function () {});
     }
@@ -151,7 +152,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:8px 14px;font-weight
                 if (!input.value.trim()) return;
                 fetch('live_question_answer.php', {
                     method: 'POST', credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                     body: JSON.stringify({ question_id: qid, answer_text: input.value.trim() }),
                 }).then(poll);
             });
@@ -174,7 +175,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:8px 14px;font-weight
         var visibility = visEl ? visEl.value : 'public';
         fetch('live_question_ask.php', {
             method: 'POST', credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
             body: JSON.stringify({ session_id: sessionId, question_text: text, visibility: visibility }),
         }).then(function () {
             document.getElementById('qText').value = '';

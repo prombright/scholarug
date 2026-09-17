@@ -35,6 +35,9 @@ if (file_exists($base_dir . '/auth_guard.php')) {
 // school -- it had no role check at all, meaning any logged-in user of any
 // role (teacher, student, parent, nurse) could open it directly by URL.
 require_role(['school_admin', 'bursar']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $ACTIVE_NAV = 'fees';
 
@@ -367,7 +370,7 @@ $total_collected = $__annotated['metrics']['total_collected'];
 <!-- MODAL 1: Configure Class Fee Structure -->
 <div class="modal fade" id="configFeesModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" action="fees.php">
+        <form method="POST" action="fees.php"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="save_fee_structure">
             <input type="hidden" name="term" value="<?= safe_text($term) ?>">
             <input type="hidden" name="year" value="<?= safe_text($year) ?>">
@@ -411,7 +414,7 @@ $total_collected = $__annotated['metrics']['total_collected'];
 <!-- MODAL 2: Record Payment / Bursary -->
 <div class="modal fade" id="recordPaymentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" action="fees.php">
+        <form method="POST" action="fees.php"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="record_payment">
             <input type="hidden" name="term" value="<?= safe_text($term) ?>">
             <input type="hidden" name="year" value="<?= safe_text($year) ?>">

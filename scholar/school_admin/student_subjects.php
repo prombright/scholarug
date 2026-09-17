@@ -34,6 +34,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_student_subjects_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id  = current_school_id();
 $student_id = (int) ($_GET['student_id'] ?? $_POST['student_id'] ?? 0);
@@ -131,7 +134,7 @@ button{background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:
         <?php if (empty($electives)): ?>
             <p class="empty">No elective subjects exist for <?= htmlspecialchars($class_name, ENT_QUOTES) ?> yet. Add one via <a href="subject_matrix.php" style="color:#00A8A8;">Subject Matrix</a> or the <a href="subject_catalog.php" style="color:#00A8A8;">Subject Catalog</a> first, marking it Elective.</p>
         <?php else: ?>
-        <form method="post" id="subjectsForm">
+        <form method="post" id="subjectsForm"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="student_id" value="<?= (int) $student_id ?>">
 
             <?php if ($is_a_level && !empty($combinations)): ?>

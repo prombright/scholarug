@@ -16,6 +16,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_payroll_helpers.php';
 
 require_role(['school_admin', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $recorded_by = (int) ($_SESSION['user_id'] ?? 0);
@@ -139,7 +142,7 @@ a.pr-print-link{color:var(--cyan);text-decoration:none;font-size:0.78rem;}
 <?php if ($error): ?><div class="pr-alert pr-alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
 <div class="pr-section">
-        <form method="POST">
+        <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <label>Staff Member</label>
             <select name="staff_id" required>
                 <option value="">-- Select --</option>

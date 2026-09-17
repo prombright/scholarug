@@ -20,6 +20,9 @@ require_once __DIR__ . '/../_report_card_render.php'; // scholar_fetch_report_se
 require_once __DIR__ . '/_report_settings_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $message = '';
@@ -72,7 +75,7 @@ button{margin-top:16px;background:var(--cyan);color:#04222a;font-weight:700;bord
 
     <?php if ($message): ?><div class="alert <?= $message_type ?>"><?= htmlspecialchars($message, ENT_QUOTES) ?></div><?php endif; ?>
 
-    <form method="post" class="section">
+    <form method="post" class="section"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <label class="toggle-row">
             <input type="checkbox" name="show_student_photos" value="1" <?= $settings['show_student_photos'] ? 'checked' : '' ?>>
             <div>

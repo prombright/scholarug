@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    require_csrf();
 
     $username =
         trim($_POST['username'] ?? '');
@@ -653,7 +654,7 @@ $login_school_name = 'ScholarUg';
                 </div>
             <?php endif; ?>
 
-            <form action="login.php" method="POST" autocomplete="off">
+            <form action="login.php" method="POST" autocomplete="off"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <div class="field">
                     <label>Username / Email / School Code</label>
                     <input type="text" name="username" required class="form-control" placeholder="e.g. jdoe or SC-001">

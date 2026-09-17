@@ -18,6 +18,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/../bulksms_client.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $error = '';
@@ -120,7 +123,7 @@ button{margin-top:16px;background:var(--cyan);color:#04222a;font-weight:700;bord
     <?php if ($success): ?><div class="alert success"><?= htmlspecialchars($success, ENT_QUOTES) ?></div><?php endif; ?>
 
     <div class="section">
-        <form method="post" id="messageParentsForm">
+        <form method="post" id="messageParentsForm"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <label>Send to</label>
             <div class="radio-row">
                 <label><input type="radio" name="target" value="class" checked> A class</label>

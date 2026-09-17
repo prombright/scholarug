@@ -45,6 +45,10 @@ if(
 
 
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
+
 $school_id =
 (int)$_SESSION['school_id'];
 
@@ -1289,7 +1293,7 @@ No students found in this class.
 
 
 
-<form method="POST">
+<form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
 
 

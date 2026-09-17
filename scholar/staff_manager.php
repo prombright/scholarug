@@ -19,6 +19,9 @@ if (session_status() === PHP_SESSION_NONE) {
 // Human Resources sidebar section, reachable by either role (same
 // "shared page, multiple roles" pattern as fees.php/assessments.php).
 require_role(['school_admin', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 
@@ -799,7 +802,7 @@ if ($is_hr_role) {
                 <div>
                     <a href="staff_manager.php?download_template=csv" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:6px; background:var(--bg); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:0.8rem; font-weight:600;"><i class="bi bi-download"></i> Download CSV Template</a>
                 </div>
-                <form method="POST" action="staff_manager.php" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <form method="POST" action="staff_manager.php" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="action" value="import_csv">
                     <input type="file" name="csv_file" accept=".csv" required class="form-control" style="max-width:320px;">
                     <button type="submit" style="background:#10b981; color:#fff; border:none; padding:10px 18px; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer;">Upload &amp; Import</button>
@@ -864,12 +867,12 @@ if ($is_hr_role) {
        title="Delete Profile">
         <i class="bi bi-trash3"></i>
     </a>
-    <form method="POST" action="staff_manager.php" style="display:inline;" onsubmit="return confirm('Send a portal login invite to this staff member?');">
+    <form method="POST" action="staff_manager.php" style="display:inline;" onsubmit="return confirm('Send a portal login invite to this staff member?');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="action" value="send_invite">
         <input type="hidden" name="staff_id" value="<?= (int)($st['staff_id'] ?? 0) ?>">
         <button type="submit" class="action-btn" title="Send Portal Invite (needs email or phone; staff sets their own password)"><i class="bi bi-send"></i></button>
     </form>
-    <form method="POST" action="staff_manager.php" style="display:inline;" onsubmit="return confirm('Generate a temporary password for this staff member now?');">
+    <form method="POST" action="staff_manager.php" style="display:inline;" onsubmit="return confirm('Generate a temporary password for this staff member now?');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="action" value="generate_credentials">
         <input type="hidden" name="staff_id" value="<?= (int)($st['staff_id'] ?? 0) ?>">
         <button type="submit" class="action-btn" title="Generate Temporary Password (works without email/phone -- hand it over directly)"><i class="bi bi-key"></i></button>
@@ -928,7 +931,7 @@ if ($is_hr_role) {
                 <button type="button" onclick="closeStaffModal()" style="background:transparent; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer; padding:4px; transition: color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">✕</button>
             </div>
             
-            <form action="staff_manager.php" method="POST" enctype="multipart/form-data" style="padding:24px; margin:0; display:flex; flex-direction:column; gap:16px; max-height:80vh; overflow-y:auto;">
+            <form action="staff_manager.php" method="POST" enctype="multipart/form-data" style="padding:24px; margin:0; display:flex; flex-direction:column; gap:16px; max-height:80vh; overflow-y:auto;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="form_action" id="staffFormAction" value="add">
                 <input type="hidden" name="staff_row_id" id="staffFormRowId" value="">
 

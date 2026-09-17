@@ -25,6 +25,10 @@ if (!isset($_SESSION['user_id'], $_SESSION['role'])) {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
+
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -86,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <?php if ($error): ?><div class="alert">&#9888; <?= htmlspecialchars($error, ENT_QUOTES) ?></div><?php endif; ?>
 
-    <form method="post">
+    <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <label>New Password</label>
         <input type="password" name="new_password" class="form-control" required minlength="6">
         <label>Confirm New Password</label>

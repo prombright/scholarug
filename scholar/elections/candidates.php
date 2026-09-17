@@ -20,6 +20,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_election_helpers.php';
 require_once __DIR__ . '/_admin_pages_helpers.php';
 
@@ -115,8 +118,8 @@ a.back{color:var(--muted);text-decoration:none;font-size:0.8rem;}
                             <?php if ($c['manifesto']): ?><div class="cand-manifesto"><?= nl2br(htmlspecialchars($c['manifesto'], ENT_QUOTES)) ?></div><?php endif; ?>
                             <?php if ($c['status'] === 'Pending' && !$locked): ?>
                                 <div class="cand-actions">
-                                    <form method="post"><input type="hidden" name="election_id" value="<?= (int) $election_id ?>"><input type="hidden" name="candidate_id" value="<?= (int) $c['id'] ?>"><input type="hidden" name="decision" value="Approved"><button type="submit" name="review_candidate" class="approve">Approve</button></form>
-                                    <form method="post"><input type="hidden" name="election_id" value="<?= (int) $election_id ?>"><input type="hidden" name="candidate_id" value="<?= (int) $c['id'] ?>"><input type="hidden" name="decision" value="Rejected"><button type="submit" name="review_candidate" class="reject">Reject</button></form>
+                                    <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>"><input type="hidden" name="election_id" value="<?= (int) $election_id ?>"><input type="hidden" name="candidate_id" value="<?= (int) $c['id'] ?>"><input type="hidden" name="decision" value="Approved"><button type="submit" name="review_candidate" class="approve">Approve</button></form>
+                                    <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>"><input type="hidden" name="election_id" value="<?= (int) $election_id ?>"><input type="hidden" name="candidate_id" value="<?= (int) $c['id'] ?>"><input type="hidden" name="decision" value="Rejected"><button type="submit" name="review_candidate" class="reject">Reject</button></form>
                                 </div>
                             <?php endif; ?>
                         </div>

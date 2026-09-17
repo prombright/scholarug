@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['student']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_ilearning_helpers.php';
 require_once __DIR__ . '/AiGrader.php';
 
@@ -158,7 +161,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:11px 22px;font-weigh
         <?php if (empty($questions)): ?>
             <div class="card">No practice questions available for this subject yet.</div>
         <?php else: ?>
-        <form method="POST">
+        <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="subject_id" value="<?= $subject_id ?>">
             <?php foreach ($questions as $q): ?>
             <div class="card">

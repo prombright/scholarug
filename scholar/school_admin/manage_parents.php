@@ -15,6 +15,9 @@ require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_manage_parents_helpers.php';
 
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $error = '';
@@ -81,7 +84,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 
     <div class="section">
         <h2 style="font-size:1rem;margin:0;">Create Parent Account</h2>
-        <form method="post">
+        <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <label>Parent Full Name</label>
             <input type="text" name="full_name" required>
             <label>Username (parent will log in with this)</label>
@@ -181,7 +184,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
             <h4 style="margin:0; font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">Edit Linked Children — <span id="editParentUsername"></span></h4>
             <button type="button" onclick="closeEditParentModal()" style="background:transparent; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer;">✕</button>
         </div>
-        <form method="post" style="padding:24px;">
+        <form method="post" style="padding:24px;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="parent_user_id" id="editParentUserId" value="">
             <div class="picker-head">
                 <label style="margin:0;">Linked Child(ren)</label>

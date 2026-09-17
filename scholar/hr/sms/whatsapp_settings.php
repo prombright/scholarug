@@ -18,6 +18,9 @@ require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/_whatsapp_helpers.php';
 
 require_role(['school_admin', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $message = '';
@@ -106,7 +109,7 @@ if ($is_hr_role) {
         </div>
     <?php endif; ?>
 
-    <form method="POST">
+    <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="action" value="save">
         <label>Sender Name</label>
         <input type="text" name="sender_name" value="<?= htmlspecialchars($settings['sender_name'] ?? '') ?>" placeholder="e.g. Greenhill Academy" required>
@@ -126,7 +129,7 @@ if ($is_hr_role) {
     </form>
 
     <?php if ($settings && $settings['status'] === 'active'): ?>
-        <form method="POST" style="margin-top:0;">
+        <form method="POST" style="margin-top:0;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="disable">
             <button type="submit" class="ghost">Disconnect WhatsApp</button>
         </form>

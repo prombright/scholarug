@@ -20,6 +20,9 @@ require_once __DIR__ . '/../../lib/ScholarSmsPricing.php';
 require_once __DIR__ . '/_send_helpers.php';
 
 require_role(['school_admin', 'hr']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $user_id = (int) ($_SESSION['user_id'] ?? 0);
@@ -121,7 +124,7 @@ if ($is_hr_role) {
         <?php if (!$preview['can_afford']): ?>
             <div class="sms-alert warn" style="margin-top:16px;">Not enough wallet balance for this send. <a href="wallet.php" style="color:inherit;text-decoration:underline;">Top up first</a>.</div>
         <?php else: ?>
-            <form method="POST" style="margin-top:8px;">
+            <form method="POST" style="margin-top:8px;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="action" value="confirm_send">
                 <input type="hidden" name="group_selection" value="<?= htmlspecialchars($preview['group_selection']) ?>">
                 <input type="hidden" name="message" value="<?= htmlspecialchars($preview['message']) ?>">
@@ -133,7 +136,7 @@ if ($is_hr_role) {
 
 <?php else: ?>
     <div class="sms-section">
-        <form method="POST">
+        <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="preview">
             <label>Send To</label>
             <select name="group_selection" required>

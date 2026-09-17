@@ -17,6 +17,9 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 
 $school_id = current_school_id();
 $staff_id = (int) ($_SESSION['staff_id'] ?? 0);
@@ -177,7 +180,7 @@ button{cursor:pointer;border:none;border-radius:6px;padding:10px 18px;font-weigh
         </div>
     <?php else: ?>
         <div class="section">
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <label>Student</label>
                 <select name="student_id" required>
                     <option value="">-- Select Student --</option>

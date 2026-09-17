@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['teacher']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_ilearning_helpers.php';
 
 $school_id = current_school_id();
@@ -185,7 +188,7 @@ a.del{color:var(--danger);text-decoration:none;font-size:0.75rem;float:right;}
 
     <?php if ($topic_id > 0 || ($class_id > 0 && $subject_id > 0)): ?>
     <div class="card">
-        <form method="POST">
+        <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="topic_id" value="<?= (int) $topic_id ?>">
             <input type="hidden" name="class_id" value="<?= (int) $class_id ?>">
             <input type="hidden" name="subject_id" value="<?= (int) $subject_id ?>">

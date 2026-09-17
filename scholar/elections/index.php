@@ -16,6 +16,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_role(['school_admin']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+}
 require_once __DIR__ . '/_election_helpers.php';
 require_once __DIR__ . '/_index_helpers.php';
 
@@ -79,7 +82,7 @@ a.act{color:var(--cyan);text-decoration:none;font-size:0.8rem;font-weight:600;ma
 
     <div class="section">
         <h3 style="margin-top:0;font-size:1rem;">New Election</h3>
-        <form method="post">
+        <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="row3">
                 <div>
                     <label>Title</label>
@@ -129,7 +132,7 @@ a.act{color:var(--cyan);text-decoration:none;font-size:0.8rem;font-weight:600;ma
                             <a class="act" href="candidates.php?election_id=<?= (int) $e['id'] ?>">Candidates</a>
                             <a class="act" href="results.php?election_id=<?= (int) $e['id'] ?>">Results</a>
                             <?php if ($e['status'] === 'Draft'): ?>
-                                <form method="post" style="display:inline;">
+                                <form method="post" style="display:inline;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                     <input type="hidden" name="election_id" value="<?= (int) $e['id'] ?>">
                                     <button type="submit" name="publish_election" style="padding:4px 10px;font-size:0.75rem;">Publish</button>
                                 </form>

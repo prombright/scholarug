@@ -15,11 +15,16 @@ declare(strict_types=1);
 
 session_start();
 require_once 'db.php';
+require_once __DIR__ . '/auth_guard.php'; // for csrf_token()/require_csrf()
 require_once __DIR__ . '/_marks_entry_helpers.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header("Location: login.php");
     exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
 }
 
 $school_id = $_SESSION['school_id'];
@@ -450,7 +455,7 @@ table{display:block;overflow-x:auto;}
            href="?download_marks_template=csv&class_id=<?= urlencode($sel_class) ?>&subject_id=<?= urlencode($sel_subject) ?>&assessment_id=<?= urlencode((string) $sel_assessment) ?>&paper_number=<?= urlencode((string) $sel_paper) ?>">
             Download Marks Template
         </a>
-        <form method="POST" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;">
+        <form method="POST" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="class_id" value="<?= htmlspecialchars($sel_class) ?>">
             <input type="hidden" name="subject_id" value="<?= htmlspecialchars($sel_subject) ?>">
             <input type="hidden" name="assessment_id" value="<?= htmlspecialchars((string) $sel_assessment) ?>">
@@ -461,7 +466,7 @@ table{display:block;overflow-x:auto;}
     </div>
 
     <div id="rosterApp">
-        <form method="POST">
+        <form method="POST"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="class_id" value="<?= htmlspecialchars($sel_class) ?>">
             <input type="hidden" name="subject_id" value="<?= htmlspecialchars($sel_subject) ?>">
             <input type="hidden" name="assessment_id" value="<?= htmlspecialchars((string) $sel_assessment) ?>">
