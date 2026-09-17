@@ -42,6 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file'])) {
 
     if ($file['error'] !== UPLOAD_ERR_OK || $file['size'] === 0) {
         $error = 'Please choose a CSV or .xlsx file to upload.';
+    } elseif ($file['size'] > 10 * 1024 * 1024) {
+        $error = 'File is too large (10MB max).';
     } else {
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         try {

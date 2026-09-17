@@ -144,7 +144,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_staff_record'
 
             if (isset($_FILES['staff_photo']) && $_FILES['staff_photo']['error'] === UPLOAD_ERR_OK) {
                 $file_ext = strtolower(pathinfo($_FILES['staff_photo']['name'], PATHINFO_EXTENSION));
-                if (in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                // getimagesize() confirms it's a genuine image, not just a
+                // file renamed to look like one by extension.
+                if (
+                    in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'])
+                    && $_FILES['staff_photo']['size'] <= 5 * 1024 * 1024
+                    && @getimagesize($_FILES['staff_photo']['tmp_name']) !== false
+                ) {
                     if ($action === 'update' && $photo_path && file_exists($photo_path) && !str_contains($photo_path, 'default_avatar.png')) {
                         unlink($photo_path);
                     }
@@ -278,6 +284,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
 
     if (empty($file) || !is_uploaded_file($file)) {
         $msg = "Please select a valid CSV file to upload.";
+        $msg_type = 'error';
+    } elseif ($_FILES['csv_file']['size'] > 10 * 1024 * 1024) {
+        $msg = "CSV file is too large (10MB max).";
         $msg_type = 'error';
     } else {
         $handle = fopen($file, "r");

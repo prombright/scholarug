@@ -30,7 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $contact_message_type = 'error';
     } else {
         $to = 'info@scholarug.com';
-        $subject = 'ScholarUg Contact Form: ' . ($contact_values['subject'] !== '' ? $contact_values['subject'] : 'New message');
+        // Strip CR/LF before it reaches mail()'s subject param -- unlike
+        // the email field (FILTER_VALIDATE_EMAIL already rejects embedded
+        // newlines), this free-text field had nothing stopping a
+        // "subject\r\nBcc: someone@else.com" submission from injecting
+        // extra headers on mail implementations that don't guard this
+        // themselves (the classic PHP mail() header-injection vector).
+        $safe_subject = str_replace(["\r", "\n"], '', $contact_values['subject']);
+        $subject = 'ScholarUg Contact Form: ' . ($safe_subject !== '' ? $safe_subject : 'New message');
         $body = "Name: {$contact_values['name']}\n"
             . "Email: {$contact_values['email']}\n\n"
             . "{$contact_values['message']}";

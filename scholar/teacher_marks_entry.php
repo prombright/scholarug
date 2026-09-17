@@ -13,7 +13,14 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 
-session_start();
+// Same options as auth_guard.php's session_start() -- this runs before
+// that file is required below, so a bare session_start() here would win
+// the race and leave the cookie without httponly/samesite/secure.
+session_start([
+    'cookie_httponly' => true,
+    'cookie_samesite' => 'Strict',
+    'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+]);
 require_once 'db.php';
 require_once __DIR__ . '/auth_guard.php'; // for csrf_token()/require_csrf()
 require_once __DIR__ . '/_marks_entry_helpers.php';
@@ -116,6 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_marks_csv']) &
         $message = "<div class='alert alert-danger'>This assessment is closed and no longer accepting marks.</div>";
     } elseif (empty($_FILES['marks_csv']['tmp_name']) || !is_uploaded_file($_FILES['marks_csv']['tmp_name'])) {
         $message = "<div class='alert alert-danger'>Please choose a CSV file to upload.</div>";
+    } elseif ($_FILES['marks_csv']['size'] > 10 * 1024 * 1024) {
+        $message = "<div class='alert alert-danger'>CSV file is too large (10MB max).</div>";
     } else {
         $roster_by_id_stmt  = $pdo->prepare("SELECT id FROM students WHERE school_id = ? AND class_id = ? AND id = ?");
         $roster_by_no_stmt  = $pdo->prepare("SELECT id FROM students WHERE school_id = ? AND class_id = ? AND student_no = ?");

@@ -32,7 +32,13 @@ function admin_settings_save(PDO $pdo, int $schoolId, array $post, array $files)
 
         $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
-        if (in_array($file_ext, $allowed_extensions, true)) {
+        // getimagesize() confirms it's a genuine image, not just a file
+        // renamed to look like one by extension.
+        if (
+            in_array($file_ext, $allowed_extensions, true)
+            && $files['school_logo']['size'] <= 5 * 1024 * 1024
+            && @getimagesize($file_tmp_path) !== false
+        ) {
             if (!is_dir('assets/uploads')) {
                 mkdir('assets/uploads', 0755, true);
             }
@@ -45,7 +51,7 @@ function admin_settings_save(PDO $pdo, int $schoolId, array $post, array $files)
                 return ['ok' => false, 'message' => 'FILE SYSTEM NOTICE: Failed to migrate uploaded asset to destination storage.'];
             }
         } else {
-            return ['ok' => false, 'message' => 'VALIDATION ERROR: Unsupported file type. Please use WebP, PNG, JPG, or JPEG.'];
+            return ['ok' => false, 'message' => 'VALIDATION ERROR: Please upload a genuine WebP, PNG, GIF, or JPEG image, 5MB or smaller.'];
         }
     }
 

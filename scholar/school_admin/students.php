@@ -126,9 +126,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
 
         $file = $_FILES['csv_file']['tmp_name'];
-        
+
         if (empty($file) || !is_uploaded_file($file)) {
             $error = "Please select a valid CSV file to upload.";
+        } elseif ($_FILES['csv_file']['size'] > 10 * 1024 * 1024) {
+            $error = "CSV file is too large (10MB max).";
         } else {
             $handle = fopen($file, "r");
             $header = fgetcsv($handle, 1000, ","); // Skip header line

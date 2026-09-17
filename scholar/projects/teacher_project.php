@@ -88,7 +88,13 @@ if ($sel_project !== null) {
                         continue;
                     }
                     $ext = strtolower(pathinfo($_FILES['photos']['name'][$i], PATHINFO_EXTENSION));
-                    if (!in_array($ext, $allowed, true)) {
+                    // getimagesize() confirms it's a genuine image, not
+                    // just a file renamed to look like one by extension.
+                    if (
+                        !in_array($ext, $allowed, true)
+                        || $_FILES['photos']['size'][$i] > 5 * 1024 * 1024
+                        || @getimagesize($_FILES['photos']['tmp_name'][$i]) === false
+                    ) {
                         continue;
                     }
                     $filename = 'stage_' . $stage_id . '_' . time() . '_' . rand(1000, 9999) . '.' . $ext;

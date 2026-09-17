@@ -1,0 +1,7 @@
+# Defense-in-depth: school badge/logo uploads only ever come from an
+# extension-whitelisted handler with a server-generated filename -- this
+# blocks .php execution outright as a second layer. See scholar/uploads/
+# .htaccess for the full reasoning (same pattern, different directory).
+<FilesMatch "\.ph(p[3457]?|t|tml)$">
+    Require all denied
+</FilesMatch>

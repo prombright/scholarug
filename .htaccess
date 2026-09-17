@@ -1,6 +1,22 @@
 # Don't allow browsing folder contents (hides file listings/extensions)
 Options -Indexes
 
+# Block direct access to dotfiles (.git, .env, .gitignore, etc.) -- matters
+# most for .git specifically: if this repo is ever deployed by `git clone`/
+# `git pull` straight into the webroot (plausible on cPanel), .git/config
+# and the full commit history would otherwise be downloadable.
+<IfModule mod_authz_core.c>
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^\.">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 

@@ -1,0 +1,13 @@
+# Defense-in-depth: these directories only ever hold what each upload
+# handler's extension whitelist allows (photos, PDFs, office docs) and every
+# saved filename is server-generated, not attacker-chosen -- so nothing here
+# should ever be a runnable .php file. This blocks execution outright as a
+# second layer, in case a future upload path is ever added without its own
+# whitelist, or an existing one has a bug. uploads/library_private and
+# uploads/ilearning_private have their own stricter "Require all denied"
+# (nothing in them is fetched directly, only streamed through serve_pdf.php)
+# which this doesn't conflict with -- blocking .php execution is a no-op on
+# a directory that's already fully denied.
+<FilesMatch "\.ph(p[3457]?|t|tml)$">
+    Require all denied
+</FilesMatch>

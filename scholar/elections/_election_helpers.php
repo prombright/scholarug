@@ -267,7 +267,13 @@ function election_save_candidate_photo(array $file, int $positionId): ?array
     }
 
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
+    // getimagesize() confirms it's a genuine image, not just a file
+    // renamed to look like one by extension.
+    if (
+        !in_array($ext, ['jpg', 'jpeg', 'png'], true)
+        || $file['size'] > 5 * 1024 * 1024
+        || @getimagesize($file['tmp_name']) === false
+    ) {
         return null;
     }
 

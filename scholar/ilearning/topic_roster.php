@@ -24,11 +24,18 @@ if (!$topic) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_feedback'])) {
     $student_id = (int) ($_POST['student_id'] ?? 0);
     $note = trim($_POST['feedback_note'] ?? '');
-    $pdo->prepare(
-        'INSERT INTO ilearning_progress (school_id, student_id, topic_id, feedback_note, feedback_by, feedback_at)
-         VALUES (?, ?, ?, ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE feedback_note = VALUES(feedback_note), feedback_by = VALUES(feedback_by), feedback_at = NOW()'
-    )->execute([$school_id, $student_id, $topic_id, $note, $staff_id]);
+    // Unlike grade_pdf_submission below (which validates class membership
+    // via ilearning_grade_pdf_submission()), this never checked that
+    // $student_id -- a raw client-supplied field -- actually belongs to
+    // this topic's class, so a POST with an arbitrary student_id (any
+    // school) would silently insert a feedback row under it.
+    if (ilearning_student_in_class($pdo, $school_id, $student_id, (int) $topic['class_id'])) {
+        $pdo->prepare(
+            'INSERT INTO ilearning_progress (school_id, student_id, topic_id, feedback_note, feedback_by, feedback_at)
+             VALUES (?, ?, ?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE feedback_note = VALUES(feedback_note), feedback_by = VALUES(feedback_by), feedback_at = NOW()'
+        )->execute([$school_id, $student_id, $topic_id, $note, $staff_id]);
+    }
     header('Location: topic_roster.php?topic_id=' . $topic_id);
     exit;
 }

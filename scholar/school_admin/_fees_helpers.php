@@ -106,6 +106,17 @@ function admin_fees_record_payment(PDO $pdo, int $schoolId, int $studentId, floa
     if ($term === '' || $year === '') {
         return ['ok' => false, 'message' => 'Term and year are required.'];
     }
+    // $studentId is a raw client-supplied field -- without this, a payment
+    // could be recorded against another school's student id. The ledger
+    // reads already join fee_payments to students on a matching school_id,
+    // so such a row would just be an orphan that never displays -- but
+    // it's cheap to reject it outright instead of leaving that garbage
+    // data around.
+    $owns_stmt = $pdo->prepare('SELECT id FROM students WHERE id = ? AND school_id = ?');
+    $owns_stmt->execute([$studentId, $schoolId]);
+    if (!$owns_stmt->fetchColumn()) {
+        return ['ok' => false, 'message' => 'Student not found for this school.'];
+    }
 
     $stmt = $pdo->prepare('
         INSERT INTO fee_payments (school_id, student_id, term, year, amount_paid, bursary_discount, residence_type, is_new_student, notes, paid_at)

@@ -74,7 +74,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $photo_path = $student['photo_path'] ?? null;
             if (isset($_FILES['student_photo']) && $_FILES['student_photo']['error'] === UPLOAD_ERR_OK) {
                 $file_ext = strtolower(pathinfo($_FILES['student_photo']['name'], PATHINFO_EXTENSION));
-                if (in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+                // getimagesize() reads the actual image header, not just the
+                // client-supplied filename extension -- a non-image file
+                // renamed to .jpg fails this even though the extension check
+                // alone would have passed it.
+                if (
+                    in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'], true)
+                    && $_FILES['student_photo']['size'] <= 5 * 1024 * 1024
+                    && @getimagesize($_FILES['student_photo']['tmp_name']) !== false
+                ) {
                     $upload_dir = $base_dir . '/../uploads/students';
                     if (!is_dir($upload_dir)) {
                         mkdir($upload_dir, 0755, true);
@@ -86,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     move_uploaded_file($_FILES['student_photo']['tmp_name'], $upload_dir . '/' . $photo_name);
                     $photo_path = 'uploads/students/' . $photo_name;
                 } else {
-                    $error = "Photo must be a JPG, PNG, or WEBP image.";
+                    $error = "Photo must be a genuine JPG, PNG, or WEBP image, 5MB or smaller.";
                 }
             }
 

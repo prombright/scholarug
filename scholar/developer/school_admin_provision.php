@@ -9,7 +9,11 @@ require '../db.php';
 
 
 if(session_status() !== PHP_SESSION_ACTIVE){
-    session_start();
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Strict',
+        'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    ]);
 }
 
 
@@ -715,17 +719,17 @@ Role
 <tr>
 
 <td>
-<?=$admin['username']?>
+<?= htmlspecialchars($admin['username'], ENT_QUOTES, 'UTF-8') ?>
 </td>
 
 
 <td>
-<?=$admin['email']?>
+<?= htmlspecialchars($admin['email'], ENT_QUOTES, 'UTF-8') ?>
 </td>
 
 
 <td>
-<?=$admin['role']?>
+<?= htmlspecialchars($admin['role'], ENT_QUOTES, 'UTF-8') ?>
 </td>
 
 
