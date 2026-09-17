@@ -179,9 +179,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                     elseif(
-                        password_verify($password, $school['access_pin'])
+                        // (string) cast -- access_pin predates this
+                        // session's hashing fix, and PDO can hand back a
+                        // non-string scalar for some column types; a
+                        // password_verify() call with a non-string $hash
+                        // throws under this file's strict_types instead of
+                        // just returning false, which would otherwise
+                        // break every school-code login outright.
+                        password_verify($password, (string) $school['access_pin'])
                         ||
-                        $password === $school['access_pin']
+                        $password === (string) $school['access_pin']
                     ){
 
 
@@ -190,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // password check below does: a plaintext match
                         // immediately rehashes to bcrypt so this branch
                         // can't fire for this school again.
-                        if (!password_verify($password, $school['access_pin'])) {
+                        if (!password_verify($password, (string) $school['access_pin'])) {
                             $pdo->prepare('UPDATE schools SET access_pin = ? WHERE id = ?')
                                 ->execute([password_hash($password, PASSWORD_BCRYPT), $school['id']]);
                         }
