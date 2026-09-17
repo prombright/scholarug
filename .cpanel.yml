@@ -2,19 +2,10 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/scholaru/public_html/
-    # rsync instead of `cp -R *`, for two reasons:
-    #   1. `cp -R *` re-copies every single file on every deploy, even ones
-    #      that didn't change -- rsync compares size/mtime and only
-    #      transfers what's actually different, which is what made repeat
-    #      deploys of this same ~456-file repo slow.
-    #   2. `cp -R *`'s bare `*` glob never matched dotfiles (.htaccess
-    #      included), so .htaccess was silently never deployed by the old
-    #      command at all. rsync walks the real directory tree, not a
-    #      shell glob, so it picks it up correctly without a separate line.
-    #
-    # Deliberately NO --delete: DEPLOYPATH is the shared docroot for other
-    # ABN apps (iClinic, Bulk SMS, MediCare, devportal) that aren't part of
-    # this repo, plus this app's own live-uploaded content (student/staff
-    # photos, school badges) that only ever exists on the server, never in
-    # git. --delete would wipe all of that the moment it ran.
-    - rsync -a --exclude=.git --exclude=.gitignore --exclude=.cpanel.yml ./ $DEPLOYPATH
+    # Reverted from rsync back to cp -- rsync may not be installed on this
+    # specific host, which would make every deploy fail outright rather
+    # than just be slow. cp is guaranteed present. The bare `*` glob still
+    # never matches dotfiles (.htaccess included), so that's copied
+    # explicitly on its own line.
+    - /bin/cp -R * $DEPLOYPATH
+    - /bin/cp .htaccess $DEPLOYPATH
