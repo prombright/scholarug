@@ -177,8 +177,19 @@ if (!function_exists('scholar_seed_default_primary_subjects')) {
             ['English', 'ENG', 'P.7'], ['Mathematics', 'MTC', 'P.7'], ['Science', 'SCI', 'P.7'], ['Social Studies', 'SST', 'P.7'], ['Religious Education', 'RE', 'P.7'],
         ];
 
+        // Religious Education is seeded as Elective, not Core -- unlike
+        // English/Mathematics/Science/Social Studies, it isn't compulsory
+        // at every school (some don't teach it, or teach a variant like
+        // Islamic RE instead). Seeding it as Elective still creates the
+        // subject row automatically (a school that does want it doesn't
+        // have to type it in by hand), but leaves it out of every
+        // student's compulsory subject list until the admin actually
+        // enrolls specific students into it via subject_enrollment.php --
+        // the same "assign students individually" flow every other
+        // elective in the app already uses (subject_matrix.php's own
+        // "Assign Students" link only shows for Elective subjects).
         $exists = $pdo->prepare("SELECT id FROM subjects WHERE school_id = ? AND class_name = ? AND subject_code = ?");
-        $ins = $pdo->prepare("INSERT INTO subjects (school_id, level_type, subject_name, subject_code, is_compulsory, papers_count, class_name, subject_type) VALUES (?, 'Primary', ?, ?, 1, 1, ?, 'Core')");
+        $ins = $pdo->prepare("INSERT INTO subjects (school_id, level_type, subject_name, subject_code, is_compulsory, papers_count, class_name, subject_type) VALUES (?, 'Primary', ?, ?, ?, 1, ?, ?)");
 
         $seeded = 0;
         foreach ($defaults as [$name, $code, $class_name]) {
@@ -187,7 +198,8 @@ if (!function_exists('scholar_seed_default_primary_subjects')) {
             }
             $exists->execute([$schoolId, $class_name, $code]);
             if (!$exists->fetchColumn()) {
-                $ins->execute([$schoolId, $name, $code, $class_name]);
+                $is_elective = $code === 'RE';
+                $ins->execute([$schoolId, $name, $code, $is_elective ? 0 : 1, $class_name, $is_elective ? 'Elective' : 'Core']);
                 $seeded++;
             }
         }

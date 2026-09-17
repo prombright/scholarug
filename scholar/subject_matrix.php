@@ -145,8 +145,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_matrix_item']
             // O-Level. Reuses the same class ladder every other class
             // dropdown in the app is already built from, so this can't
             // drift out of sync with the dropdown's actual values again.
-            $a_level_classes = array_map('scholar_normalize_class_name', scholar_class_ladder('Secondary')['A-Level']);
-            $level_calc = in_array(scholar_normalize_class_name($class_name), $a_level_classes, true) ? 'A-Level' : 'O-Level';
+            // A Primary school's classes (P.1-P.7) never appear in either
+            // ladder below, so without this check every Primary subject
+            // edited through this modal -- the only way to flip Religious
+            // Education from Core to Elective, for instance -- was
+            // silently corrupted from level_type='Primary' to 'O-Level'.
+            if ($school_type === 'Primary') {
+                $level_calc = 'Primary';
+            } else {
+                $a_level_classes = array_map('scholar_normalize_class_name', scholar_class_ladder('Secondary')['A-Level']);
+                $level_calc = in_array(scholar_normalize_class_name($class_name), $a_level_classes, true) ? 'A-Level' : 'O-Level';
+            }
 
             if ($action === 'add') {
                 $ins = $pdo->prepare("INSERT INTO subjects (school_id, subject_code, subject_name, class_name, subject_type, papers_count, paper1_weight_percentage, paper2_weight_percentage, level_type, is_compulsory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
