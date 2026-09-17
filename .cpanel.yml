@@ -3,3 +3,10 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/scholaru/public_html/
     - /bin/cp -R * $DEPLOYPATH
+    # The bare `*` above never matches dotfiles (bash doesn't expand `*` to
+    # include them without `dotglob`), so .htaccess -- and any other
+    # dotfile at the repo root -- was silently never deployed by the line
+    # above, ever. Copying `.` instead would fix that but also drags the
+    # whole .git history into public_html, which is worse. This copies
+    # just the one dotfile that actually needs to be live.
+    - /bin/cp .htaccess $DEPLOYPATH
