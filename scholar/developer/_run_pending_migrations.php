@@ -8,8 +8,8 @@ declare(strict_types=1);
 | Applies library_migration.sql, multi_school_login_migration.sql,
 | developer_messages_migration.sql, grading_scales_level_type_migration.sql,
 | attendance_late_status_migration.sql, fees_term_scoping_migration.sql,
-| login_lockout_migration.sql and password_reset_otp_attempts_migration.sql
-| against the live database via the same
+| login_lockout_migration.sql, password_reset_otp_attempts_migration.sql
+| and subject_paper_weights_migration.sql against the live database via the same
 | db.php connection every other page uses (no direct DB CLI/phpMyAdmin
 | access needed from the deploying machine). Gated behind an active
 | developer session, same as every other scholar/developer/* page. Lives
@@ -241,5 +241,13 @@ run_statements($pdo, 'login_lockout_migration', [
 run_statements($pdo, 'password_reset_otp_attempts_migration', [
     "ALTER TABLE users ADD COLUMN password_reset_otp_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0",
 ], 'password_reset_otp_attempts_migration.sql');
+
+// subject_paper_weights_migration -- lets a two-paper subject weight
+// Paper 1/Paper 2 unevenly toward the combined mark the report card
+// grades (default 50/50, identical to the old flat average). See that
+// .sql file's header for the full reasoning.
+run_statements($pdo, 'subject_paper_weights_migration', [
+    "ALTER TABLE subjects ADD COLUMN paper1_weight_percentage DECIMAL(5,2) NOT NULL DEFAULT 50.00, ADD COLUMN paper2_weight_percentage DECIMAL(5,2) NOT NULL DEFAULT 50.00",
+], 'subject_paper_weights_migration.sql');
 
 echo "DONE. Verify the output above, then delete this file from the server.\n";

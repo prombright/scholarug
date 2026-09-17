@@ -124,9 +124,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_matrix_item']
     $class_name     = trim($_POST['class_name'] ?? '');
     $subject_type   = $_POST['subject_type'] ?? 'Core';
     $papers_count   = (int)($_POST['papers_count'] ?? 1);
+    // Only meaningful for a genuine two-paper subject -- default 50/50
+    // (mathematically identical to the old flat average) whenever the
+    // form doesn't show these fields (papers_count != 2) or an admin
+    // hasn't touched them.
+    $paper1_weight  = $papers_count === 2 ? (float)($_POST['paper1_weight_percentage'] ?? 50) : 50.0;
+    $paper2_weight  = $papers_count === 2 ? (float)($_POST['paper2_weight_percentage'] ?? 50) : 50.0;
 
     if (empty($subject_code) || empty($subject_name) || empty($class_name)) {
         $msg = "VALIDATION ERROR: Code, Subject Title, and Class are required parameters.";
+    } elseif ($papers_count === 2 && abs(($paper1_weight + $paper2_weight) - 100.0) > 0.01) {
+        $msg = "VALIDATION ERROR: Paper 1 and Paper 2 weights must add up to 100%.";
     } else {
         try {
             $is_comp_val = ($subject_type === 'Core') ? 1 : 0;
@@ -141,15 +149,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_matrix_item']
             $level_calc = in_array(scholar_normalize_class_name($class_name), $a_level_classes, true) ? 'A-Level' : 'O-Level';
 
             if ($action === 'add') {
-                $ins = $pdo->prepare("INSERT INTO subjects (school_id, subject_code, subject_name, class_name, subject_type, papers_count, level_type, is_compulsory) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $ins->execute([$school_id, $subject_code, $subject_name, $class_name, $subject_type, $papers_count, $level_calc, $is_comp_val]);
-                
+                $ins = $pdo->prepare("INSERT INTO subjects (school_id, subject_code, subject_name, class_name, subject_type, papers_count, paper1_weight_percentage, paper2_weight_percentage, level_type, is_compulsory) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $ins->execute([$school_id, $subject_code, $subject_name, $class_name, $subject_type, $papers_count, $paper1_weight, $paper2_weight, $level_calc, $is_comp_val]);
+
                 header("Location: subject_matrix.php?status=success");
                 exit;
             } else if ($action === 'update' && $subject_row_id) {
-                $upd = $pdo->prepare("UPDATE subjects SET subject_code = ?, subject_name = ?, class_name = ?, subject_type = ?, papers_count = ?, level_type = ?, is_compulsory = ? WHERE id = ? AND school_id = ?");
-                $upd->execute([$subject_code, $subject_name, $class_name, $subject_type, $papers_count, $level_calc, $is_comp_val, $subject_row_id, $school_id]);
-                
+                $upd = $pdo->prepare("UPDATE subjects SET subject_code = ?, subject_name = ?, class_name = ?, subject_type = ?, papers_count = ?, paper1_weight_percentage = ?, paper2_weight_percentage = ?, level_type = ?, is_compulsory = ? WHERE id = ? AND school_id = ?");
+                $upd->execute([$subject_code, $subject_name, $class_name, $subject_type, $papers_count, $paper1_weight, $paper2_weight, $level_calc, $is_comp_val, $subject_row_id, $school_id]);
+
                 header("Location: subject_matrix.php?status=success");
                 exit;
             }
@@ -342,12 +350,14 @@ require_once __DIR__ . '/_admin_shell.php';
                         <tr><td colspan="7" style="padding:30px; text-align:center; color:var(--muted); font-family:monospace;">[No subjects mapped into standard repository loop parameters yet]</td></tr>
                     <?php else: foreach($subjects_matrix_collection as $sub): 
                         $js_payload = json_encode([
-                            'id' => $sub['id'], 
-                            'code' => $sub['subject_code'], 
+                            'id' => $sub['id'],
+                            'code' => $sub['subject_code'],
                             'name' => $sub['subject_name'],
-                            'class' => $sub['class_name'] ?? '', 
-                            'type' => $sub['subject_type'] ?? 'Core', 
-                            'papers' => $sub['papers_count']
+                            'class' => $sub['class_name'] ?? '',
+                            'type' => $sub['subject_type'] ?? 'Core',
+                            'papers' => $sub['papers_count'],
+                            'paper1Weight' => $sub['paper1_weight_percentage'] ?? 50,
+                            'paper2Weight' => $sub['paper2_weight_percentage'] ?? 50,
                         ]);
                     ?>
                         <tr style="transition: background 0.15s;" onmouseover="this.style.background='var(--panel)'" onmouseout="this.style.background='transparent'">
@@ -366,7 +376,12 @@ require_once __DIR__ . '/_admin_shell.php';
                                     <?= htmlspecialchars($sub['subject_type'] ?? 'Core') ?>
                                 </span>
                             </td>
-                            <td><span style="font-weight:700; color:var(--text); font-family:monospace;"><?= (int)$sub['papers_count'] ?></span> Paper(s)</td>
+                            <td>
+                                <span style="font-weight:700; color:var(--text); font-family:monospace;"><?= (int)$sub['papers_count'] ?></span> Paper(s)
+                                <?php if ((int)$sub['papers_count'] === 2): ?>
+                                    <span style="color:var(--muted); font-size:0.75rem; font-family:monospace;">(<?= (int)round((float)($sub['paper1_weight_percentage'] ?? 50)) ?>/<?= (int)round((float)($sub['paper2_weight_percentage'] ?? 50)) ?>)</span>
+                                <?php endif; ?>
+                            </td>
                             <td><?= !empty($sub['instructor_name']) ? htmlspecialchars($sub['instructor_name']) : '<span style="color:var(--muted); font-style:italic;">Unassigned (Staff Mapping Dynamic)</span>' ?></td>
                         </tr>
                     <?php endforeach; endif; ?>
@@ -417,7 +432,23 @@ require_once __DIR__ . '/_admin_shell.php';
                 <div style="display:grid; grid-template-columns:1fr; gap:15px;">
                     <div>
                         <label style="display:block; font-size:0.7rem; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:6px;">Number of Papers</label>
-                        <input type="number" name="papers_count" id="mat_papers" min="1" max="4" value="1" required style="font-family:monospace;">
+                        <input type="number" name="papers_count" id="mat_papers" min="1" max="4" value="1" required style="font-family:monospace;" oninput="updateMatPaperWeights()">
+                    </div>
+                </div>
+
+                <!-- Only shown for a genuine two-paper subject -- a teacher already
+                     enters both Paper 1 and Paper 2 marks for these (see
+                     teacher_marks_entry.php); this is how much each paper counts
+                     toward the combined mark the report card grades, instead of
+                     always splitting it evenly. -->
+                <div id="mat_paper_weights_wrap" style="display:none; grid-template-columns:1fr 1fr; gap:15px;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:6px;">Paper 1 Weight %</label>
+                        <input type="number" name="paper1_weight_percentage" id="mat_paper1_weight" min="0" max="100" step="0.01" value="50" style="font-family:monospace;" oninput="syncMatPaperWeight(1)">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:6px;">Paper 2 Weight %</label>
+                        <input type="number" name="paper2_weight_percentage" id="mat_paper2_weight" min="0" max="100" step="0.01" value="50" style="font-family:monospace;" oninput="syncMatPaperWeight(2)">
                     </div>
                 </div>
 
@@ -441,6 +472,8 @@ require_once __DIR__ . '/_admin_shell.php';
                 document.getElementById('mat_class').value = "";
                 document.getElementById('mat_type').value = "Core";
                 document.getElementById('mat_papers').value = "1";
+                document.getElementById('mat_paper1_weight').value = "50";
+                document.getElementById('mat_paper2_weight').value = "50";
             } else {
                 document.getElementById('matrixModalTitle').innerText = "Modify Metric Configuration";
                 document.getElementById('matrixFormRowId').value = data.id;
@@ -459,10 +492,33 @@ require_once __DIR__ . '/_admin_shell.php';
 
                 document.getElementById('mat_type').value = data.type;
                 document.getElementById('mat_papers').value = data.papers;
+                document.getElementById('mat_paper1_weight').value = data.paper1Weight ?? 50;
+                document.getElementById('mat_paper2_weight').value = data.paper2Weight ?? 50;
             }
+            updateMatPaperWeights();
             document.getElementById('matrixModalOverlay').style.display = 'flex';
         }
         function closeMatrixModal() { document.getElementById('matrixModalOverlay').style.display = 'none'; }
+
+        // Weight fields only make sense for a genuine two-paper subject --
+        // hidden otherwise so a 1 or 3/4-paper subject doesn't show a
+        // meaningless "how much does Paper 2 count" control.
+        function updateMatPaperWeights() {
+            var papers = parseInt(document.getElementById('mat_papers').value, 10) || 1;
+            document.getElementById('mat_paper_weights_wrap').style.display = papers === 2 ? 'grid' : 'none';
+        }
+        // Keeps the pair summing to 100 as the admin types, instead of
+        // relying only on the server-side "must add up to 100%" check --
+        // matches assessments.php's own weight-percentage validation rule.
+        function syncMatPaperWeight(edited) {
+            var p1 = document.getElementById('mat_paper1_weight');
+            var p2 = document.getElementById('mat_paper2_weight');
+            if (edited === 1) {
+                p2.value = Math.round((100 - parseFloat(p1.value || '0')) * 100) / 100;
+            } else {
+                p1.value = Math.round((100 - parseFloat(p2.value || '0')) * 100) / 100;
+            }
+        }
     </script>
 </body>
 </html>

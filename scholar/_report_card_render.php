@@ -71,6 +71,64 @@ function scholar_fetch_report_settings(PDO $pdo, int $school_id): array
 }
 
 /**
+ * Combines a subject's per-paper marks for one assessment into a single
+ * raw mark. For a genuine two-paper subject (papers_count = 2) with BOTH
+ * papers present, uses the subject's configured contribution weights
+ * (subjects.paper1_weight_percentage/paper2_weight_percentage -- default
+ * 50/50, set via subject_matrix.php) instead of a flat average. Falls
+ * back to a plain average of whatever rows exist for every other case --
+ * a single-paper subject, more than two papers, or a two-paper subject
+ * where a teacher hasn't entered one of the papers yet (weighting only
+ * one paper as if it were the whole mark would be wrong; averaging it
+ * alone just returns that one value unchanged).
+ *
+ * @param array<int,array{paper_number:int|string,marks:float|string}> $paperRows
+ */
+function scholar_combine_paper_marks(array $paperRows, int $papersCount, float $paper1Weight, float $paper2Weight): float
+{
+    if ($papersCount === 2) {
+        $byPaper = [];
+        foreach ($paperRows as $row) {
+            $byPaper[(int) $row['paper_number']] = (float) $row['marks'];
+        }
+        if (isset($byPaper[1], $byPaper[2])) {
+            return $byPaper[1] * ($paper1Weight / 100) + $byPaper[2] * ($paper2Weight / 100);
+        }
+    }
+    if (empty($paperRows)) {
+        return 0.0;
+    }
+    $sum = 0.0;
+    foreach ($paperRows as $row) {
+        $sum += (float) $row['marks'];
+    }
+    return $sum / count($paperRows);
+}
+
+/**
+ * Whether subjects.paper1_weight_percentage/paper2_weight_percentage exist
+ * yet (subject_paper_weights_migration.sql) -- checked once per request
+ * and cached. A database that hasn't applied that migration must keep
+ * generating report cards exactly as it did before paper weighting
+ * existed (plain AVG() across a subject's papers), not start throwing on
+ * every single report -- the same mistake that broke the student portal
+ * earlier today when fees_term_scoping_migration.sql wasn't live yet.
+ */
+function scholar_paper_weights_column_exists(PDO $pdo): bool
+{
+    static $exists = null;
+    if ($exists === null) {
+        try {
+            $pdo->query("SELECT paper1_weight_percentage FROM subjects LIMIT 0");
+            $exists = true;
+        } catch (\PDOException $e) {
+            $exists = false;
+        }
+    }
+    return $exists;
+}
+
+/**
  * Every submitted, report-eligible weighted score for every student/subject
  * in one class in a single query -- the batched replacement for calling
  * getCalculatedGradeAndComment() once per (student, subject), which is what
@@ -88,38 +146,72 @@ function scholar_fetch_class_weighted_scores(PDO $pdo, int $school_id, array $st
     if (empty($studentIds)) {
         return [];
     }
+    // 50.00/50.00 literals (never user input) stand in for the real
+    // columns when subject_paper_weights_migration.sql hasn't been
+    // applied yet -- reproduces the exact old AVG() behavior (an even
+    // split) instead of a hard SQL error on every report.
+    $weightCols = scholar_paper_weights_column_exists($pdo)
+        ? 'sub.paper1_weight_percentage, sub.paper2_weight_percentage'
+        : '50.00 AS paper1_weight_percentage, 50.00 AS paper2_weight_percentage';
     $placeholders = implode(',', array_fill(0, count($studentIds), '?'));
     $stmt = $pdo->prepare("
-        SELECT sm.student_id, sm.subject_id, a.id AS assessment_id, a.title, AVG(sm.marks) AS marks, a.weight_percentage
+        SELECT sm.student_id, sm.subject_id, sm.paper_number, sm.marks,
+               a.id AS assessment_id, a.title, a.weight_percentage,
+               sub.papers_count, {$weightCols}
         FROM student_marks sm
         JOIN assessments a ON sm.assessment_id = a.id
+        JOIN subjects sub ON sub.id = sm.subject_id AND sub.school_id = sm.school_id
         WHERE sm.school_id = ?
           AND sm.student_id IN ($placeholders)
           AND a.term = ?
           AND a.year = ?
           AND a.include_in_report = 1
           AND sm.submission_status = 'submitted'
-        GROUP BY sm.student_id, sm.subject_id, a.id, a.title, a.weight_percentage
     ");
     $stmt->execute(array_merge([$school_id], $studentIds, [$term, $year]));
 
-    $bySubjectRecords = [];
+    // Grouped by (student, subject, assessment) rather than aggregated in
+    // SQL -- scholar_combine_paper_marks() needs each paper's individual
+    // mark, not a pre-averaged one, to apply the subject's own paper
+    // weights instead of always splitting 50/50.
+    $byAssessment = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $bySubjectRecords[(int) $row['student_id']][(int) $row['subject_id']][] = $row;
+        $sid = (int) $row['student_id'];
+        $subjectId = (int) $row['subject_id'];
+        $assessmentId = (int) $row['assessment_id'];
+        if (!isset($byAssessment[$sid][$subjectId][$assessmentId])) {
+            $byAssessment[$sid][$subjectId][$assessmentId] = [
+                'title'                     => $row['title'],
+                'weight_percentage'         => $row['weight_percentage'],
+                'papers_count'              => (int) $row['papers_count'],
+                'paper1_weight_percentage'  => (float) $row['paper1_weight_percentage'],
+                'paper2_weight_percentage'  => (float) $row['paper2_weight_percentage'],
+                'papers'                    => [],
+            ];
+        }
+        $byAssessment[$sid][$subjectId][$assessmentId]['papers'][] = [
+            'paper_number' => $row['paper_number'],
+            'marks'        => $row['marks'],
+        ];
     }
 
     $scores = [];
-    foreach ($bySubjectRecords as $sid => $subjects) {
-        foreach ($subjects as $subjectId => $records) {
+    foreach ($byAssessment as $sid => $subjects) {
+        foreach ($subjects as $subjectId => $assessments) {
             $final = 0.0;
             $breakdown = [];
-            foreach ($records as $row) {
-                $raw = floatval($row['marks']);
-                $weight = floatval($row['weight_percentage']);
+            foreach ($assessments as $entry) {
+                $raw = scholar_combine_paper_marks(
+                    $entry['papers'],
+                    $entry['papers_count'],
+                    $entry['paper1_weight_percentage'],
+                    $entry['paper2_weight_percentage']
+                );
+                $weight = floatval($entry['weight_percentage']);
                 $contribution = $raw * ($weight / 100);
                 $final += $contribution;
                 $breakdown[] = [
-                    'title'             => $row['title'],
+                    'title'             => $entry['title'],
                     'raw_mark'          => round($raw, 1),
                     'weight_percentage' => $weight,
                     'contribution'      => round($contribution, 1),
@@ -398,17 +490,31 @@ function getCalculatedGradeAndComment(PDO $pdo, int $school_id, int $student_id,
     // of them affecting the official grade.
     // A subject with more than one paper can have multiple student_marks
     // rows per assessment (one per paper, each entered out of 100) --
-    // AVG() combines them into one effective mark for that assessment
-    // before its weight_percentage is applied. For a single-paper subject
-    // this is just AVG() of one row, i.e. the row's own mark -- no change
-    // in behavior from before papers existed.
+    // scholar_combine_paper_marks() below combines them into one effective
+    // mark for that assessment (using the subject's own Paper 1/Paper 2
+    // weights, or a plain average when that doesn't apply) before its
+    // weight_percentage is applied. For a single-paper subject this is
+    // still just the one row's own mark -- no change in behavior from
+    // before papers/weights existed.
+    // 50.00/50.00 literals (never user input) stand in for the real
+    // columns when subject_paper_weights_migration.sql hasn't been
+    // applied yet -- reproduces the exact old AVG() behavior (an even
+    // split) instead of a hard SQL error on every report.
+    $weightCols = scholar_paper_weights_column_exists($pdo)
+        ? 'sub.paper1_weight_percentage, sub.paper2_weight_percentage'
+        : '50.00 AS paper1_weight_percentage, 50.00 AS paper2_weight_percentage';
     $stmt = $pdo->prepare("
         SELECT
+            a.id AS assessment_id,
             a.title,
-            AVG(sm.marks) AS marks,
-            a.weight_percentage
+            sm.paper_number,
+            sm.marks,
+            a.weight_percentage,
+            sub.papers_count,
+            {$weightCols}
         FROM student_marks sm
         JOIN assessments a ON sm.assessment_id = a.id
+        JOIN subjects sub ON sub.id = sm.subject_id AND sub.school_id = sm.school_id
         WHERE sm.school_id = :school_id
           AND sm.student_id = :student_id
           AND sm.subject_id = :subject_id
@@ -416,7 +522,6 @@ function getCalculatedGradeAndComment(PDO $pdo, int $school_id, int $student_id,
           AND a.year = :year
           AND a.include_in_report = 1
           AND sm.submission_status = 'submitted'
-        GROUP BY a.id, a.title, a.weight_percentage
     ");
     $stmt->execute([
         ':school_id'  => $school_id,
@@ -466,18 +571,46 @@ function getCalculatedGradeAndComment(PDO $pdo, int $school_id, int $student_id,
         ];
     }
 
+    // Group raw per-paper rows by assessment first -- scholar_combine_
+    // paper_marks() needs each paper's individual mark, not a pre-averaged
+    // one, to apply the subject's own paper weights instead of always
+    // splitting 50/50.
+    $byAssessment = [];
+    foreach ($records as $row) {
+        $assessmentId = (int) $row['assessment_id'];
+        if (!isset($byAssessment[$assessmentId])) {
+            $byAssessment[$assessmentId] = [
+                'title'                    => $row['title'],
+                'weight_percentage'        => $row['weight_percentage'],
+                'papers_count'             => (int) $row['papers_count'],
+                'paper1_weight_percentage' => (float) $row['paper1_weight_percentage'],
+                'paper2_weight_percentage' => (float) $row['paper2_weight_percentage'],
+                'papers'                   => [],
+            ];
+        }
+        $byAssessment[$assessmentId]['papers'][] = [
+            'paper_number' => $row['paper_number'],
+            'marks'        => $row['marks'],
+        ];
+    }
+
     // Compute aggregate weighted score, and keep the per-assessment inputs
     // alongside it -- shown in brackets on the report so a term doesn't
     // look like it was one exam, without changing this sum at all.
     $final_score = 0;
     $breakdown = [];
-    foreach ($records as $row) {
-        $raw_mark = floatval($row['marks']);
-        $weight   = floatval($row['weight_percentage']);
+    foreach ($byAssessment as $entry) {
+        $raw_mark = scholar_combine_paper_marks(
+            $entry['papers'],
+            $entry['papers_count'],
+            $entry['paper1_weight_percentage'],
+            $entry['paper2_weight_percentage']
+        );
+        $weight   = floatval($entry['weight_percentage']);
         $contribution = $raw_mark * ($weight / 100);
         $final_score += $contribution;
         $breakdown[] = [
-            'title'             => $row['title'],
+            'title'             => $entry['title'],
             'raw_mark'          => round($raw_mark, 1),
             'weight_percentage' => $weight,
             'contribution'      => round($contribution, 1),
