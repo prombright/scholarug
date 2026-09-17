@@ -33,8 +33,15 @@ function admin_fees_json_error(string $message, int $code = 400): void
 
 function admin_fees_snapshot(PDO $pdo, int $schoolId, string $search, string $classFilter, string $term, string $year): array
 {
-    $structures = admin_fees_fetch_structures($pdo, $schoolId, $term, $year);
-    $ledger_raw = admin_fees_fetch_ledger($pdo, $schoolId, $search, $classFilter, $term, $year);
+    // Falls back to a clean JSON error rather than a hard 500 if the
+    // term/year columns this depends on (fees_term_scoping_migration.sql)
+    // haven't been applied on this database yet.
+    try {
+        $structures = admin_fees_fetch_structures($pdo, $schoolId, $term, $year);
+        $ledger_raw = admin_fees_fetch_ledger($pdo, $schoolId, $search, $classFilter, $term, $year);
+    } catch (\PDOException $e) {
+        admin_fees_json_error('Fee structures and the ledger are temporarily unavailable -- a required database update hasn\'t been applied yet.', 503);
+    }
     $annotated = admin_fees_annotate_ledger($ledger_raw);
 
     return [

@@ -38,7 +38,14 @@ if (!$student) {
 // admin_fees_fetch_ledger_for_student() for why the old flat
 // day_tuition + entry_fee formula here didn't match the real ledger for
 // boarders, bursary recipients, or returning (non-new) students.
-$fee_row = admin_fees_fetch_ledger_for_student($pdo, $school_id, $student_id, current_term(), current_year());
+// Falls back to 0/0 rather than a hard crash if the term/year columns
+// this depends on (fees_term_scoping_migration.sql) haven't been applied
+// yet.
+try {
+    $fee_row = admin_fees_fetch_ledger_for_student($pdo, $school_id, $student_id, current_term(), current_year());
+} catch (\PDOException $e) {
+    $fee_row = null;
+}
 $expected = (float) ($fee_row['net_due'] ?? 0.0);
 $paid = (float) ($fee_row['total_paid'] ?? 0.0);
 // Signed, not the ledger's own clamped 'balance' field -- this page shows

@@ -111,12 +111,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // 2. QUERY DATA FOR REPORTING & INTERFACE
 // ==========================================
 
-$fee_structures = admin_fees_fetch_structures($pdo, $school_id, $term, $year);
+// Falls back to empty rather than a hard crash if the term/year columns
+// this depends on (fees_term_scoping_migration.sql) haven't been applied
+// on this database yet.
+$fees_migration_pending = false;
+try {
+    $fee_structures = admin_fees_fetch_structures($pdo, $school_id, $term, $year);
+} catch (\PDOException $e) {
+    $fee_structures = [];
+    $fees_migration_pending = true;
+}
 
 $search_query = trim($_GET['q'] ?? '');
 $filter_class = trim($_GET['class_id'] ?? '');
 
-$__ledger_raw = admin_fees_fetch_ledger($pdo, $school_id, $search_query, $filter_class, $term, $year);
+try {
+    $__ledger_raw = admin_fees_fetch_ledger($pdo, $school_id, $search_query, $filter_class, $term, $year);
+} catch (\PDOException $e) {
+    $__ledger_raw = [];
+    $fees_migration_pending = true;
+}
 $__annotated = admin_fees_annotate_ledger($__ledger_raw);
 $student_ledger = $__annotated['ledger'];
 $total_students = $__annotated['metrics']['total_students'];
@@ -195,6 +209,15 @@ $total_collected = $__annotated['metrics']['total_collected'];
             </button>
         </div>
     </div>
+
+    <?php if ($fees_migration_pending): ?>
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Fee structures and the ledger are temporarily unavailable -- a required database update
+        (fees_term_scoping_migration.sql) hasn't been applied yet. Nothing shown below reflects real
+        data until that's run.
+    </div>
+    <?php endif; ?>
 
     <!-- Term/year scope -- which term's ledger is shown, and which term a
          new fee-structure save or payment gets tagged with. Fee rates and
