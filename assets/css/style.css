@@ -186,11 +186,28 @@ header {
 
 .logo {
 
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 10px;
+
     font-size: 28px;
 
     font-weight: 800;
 
     color: var(--primary);
+
+}
+
+
+.logo-icon {
+
+    width: 52px;
+
+    height: 52px;
+
+    flex-shrink: 0;
 
 }
 
@@ -317,9 +334,16 @@ header {
 
     align-items: center;
 
-    background: var(--dark);
+    /* The exact teal from the new book/screen icon, not the navy
+       var(--dark) used elsewhere (footer) -- requested specifically for
+       this section. modules/hero.php's own inline <style> block actually
+       renders (it loads after this stylesheet, so its equal-specificity
+       .hero rule wins, including its own text/button color overrides for
+       this brighter background) -- kept identical here too so the two
+       don't silently drift apart. */
+    background: #00B5AC;
 
-    color: white;
+    color: #fff;
 
 }
 

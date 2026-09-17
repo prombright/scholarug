@@ -97,14 +97,27 @@ Talk To Us
 </section>
 
 <style>
-.hero { position: relative; padding: 100px 0 90px; background: var(--dark); color: #fff; }
+/* #00B5AC -- the exact teal from the new book/screen icon (not the
+   slightly different --secondary: #00A8A8 brand token), requested
+   specifically for this section. Text/badge go white (requested) rather
+   than dark, so the site-wide teal-fill .btn-primary still needs its own
+   dark override below -- white text on it would otherwise sit on a teal
+   button that itself blends into this teal section. */
+.hero { position: relative; padding: 100px 0 90px; background: #00B5AC; color: #fff; }
 .hero .container { position: relative; z-index: 1; }
 .hero-content { display: grid; grid-template-columns: 1.05fr 0.95fr; align-items: center; gap: 56px; }
 
-.hero-eyebrow { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--secondary); background: rgba(0,168,168,.12); border: 1px solid rgba(0,168,168,.35); padding: 6px 16px; border-radius: 30px; margin-bottom: 20px; }
+.hero-eyebrow { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #fff; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.4); padding: 6px 16px; border-radius: 30px; margin-bottom: 20px; }
 .hero-text h1 { font-size: 48px; font-weight: 800; line-height: 1.16; margin: 0; color: #fff; text-wrap: balance; }
-.hero-text p { font-size: 17px; line-height: 1.75; margin: 22px 0 30px; max-width: 540px; color: rgba(255,255,255,.82); }
+.hero-text p { font-size: 17px; line-height: 1.75; margin: 22px 0 30px; max-width: 540px; color: rgba(255,255,255,.92); }
 .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+/* The site-wide .btn-primary is a teal fill -- invisible on this bright
+   teal section -- so the hero gets its own dark-fill override instead of
+   changing that global button everywhere else (header CTA, footer CTA). */
+.hero .btn-primary { background: #04302E; color: #fff; }
+.hero .btn-primary:hover { background: #06423F; }
+.hero .btn-outline { border-color: #fff; color: #fff; }
+.hero .btn-outline:hover { background: #fff; color: #04302E; }
 
 /* Modules inside Scholar, named plainly -- no stats, no marketing sentence
    per item, just what's actually in the product. */
