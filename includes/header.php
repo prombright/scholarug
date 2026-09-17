@@ -20,7 +20,6 @@
 
 <a href="index.php" class="logo">
 
-<img src="assets/images/logos/scholar-icon.png" alt="" class="logo-icon" width="52" height="52">
 Scholar<span>Ug</span>
 
 </a>

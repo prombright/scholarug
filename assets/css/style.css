@@ -186,28 +186,11 @@ header {
 
 .logo {
 
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 10px;
-
     font-size: 28px;
 
     font-weight: 800;
 
     color: var(--primary);
-
-}
-
-
-.logo-icon {
-
-    width: 52px;
-
-    height: 52px;
-
-    flex-shrink: 0;
 
 }
 
