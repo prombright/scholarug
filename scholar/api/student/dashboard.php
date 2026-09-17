@@ -59,7 +59,7 @@ $marks_count = (int) $marks_count_stmt->fetchColumn();
 // always charged the entry fee even for a returning student, and never
 // subtracted a bursary discount, so a boarder/bursary recipient/returning
 // student saw a balance that didn't match the real ledger at all.
-$fee_row = admin_fees_fetch_ledger_for_student($pdo, $school_id, $student_id);
+$fee_row = admin_fees_fetch_ledger_for_student($pdo, $school_id, $student_id, current_term(), current_year());
 $expected = (float) ($fee_row['net_due'] ?? 0.0);
 $paid = (float) ($fee_row['total_paid'] ?? 0.0);
 // Signed, not the ledger's own clamped 'balance' field -- matches

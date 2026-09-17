@@ -6,8 +6,9 @@ declare(strict_types=1);
 | ONE-TIME MIGRATION RUNNER -- deploy helper, delete after use
 |--------------------------------------------------------------------------
 | Applies library_migration.sql, multi_school_login_migration.sql,
-| developer_messages_migration.sql, grading_scales_level_type_migration.sql
-| and attendance_late_status_migration.sql against the live database via the same
+| developer_messages_migration.sql, grading_scales_level_type_migration.sql,
+| attendance_late_status_migration.sql and fees_term_scoping_migration.sql
+| against the live database via the same
 | db.php connection every other page uses (no direct DB CLI/phpMyAdmin
 | access needed from the deploying machine). Gated behind an active
 | developer session, same as every other scholar/developer/* page. Lives
@@ -159,6 +160,56 @@ $pdo->exec("ALTER TABLE attendance MODIFY COLUMN status ENUM('present','absent',
 echo "OK: attendance.status now allows 'late'\n";
 try {
     $pdo->prepare('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)')->execute(['attendance_late_status_migration.sql']);
+} catch (\PDOException $e) {
+    echo "(not recorded in schema_migrations -- run schema_migrations_tracking.sql first)\n";
+}
+echo "\n";
+
+// fees_term_scoping_migration -- adds nullable term/year to fee_structures
+// and fee_payments, backfills existing rows to each school's own
+// current_term/current_year, then widens fee_structures' unique key to
+// (school_id, class_id, term, year). See that .sql file's header for why
+// (raising tuition for a new term was silently recalculating balances for
+// already-settled prior terms). Done via PHP-side existence checks rather
+// than run_statements()'s try/catch-on-error-code pattern because the key
+// widen step depends on the columns already existing.
+echo "== fees_term_scoping_migration ==\n";
+$hasCol = static function (PDO $pdo, string $table, string $column): bool {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
+    $stmt->execute([$table, $column]);
+    return (int) $stmt->fetchColumn() > 0;
+};
+
+if (!$hasCol($pdo, 'fee_structures', 'term')) {
+    $pdo->exec("ALTER TABLE fee_structures ADD COLUMN term VARCHAR(20) NULL AFTER class_id, ADD COLUMN year VARCHAR(10) NULL AFTER term");
+    echo "OK: fee_structures.term/year added\n";
+} else {
+    echo "SKIP (already applied): fee_structures.term/year\n";
+}
+
+if (!$hasCol($pdo, 'fee_payments', 'term')) {
+    $pdo->exec("ALTER TABLE fee_payments ADD COLUMN term VARCHAR(20) NULL AFTER student_id, ADD COLUMN year VARCHAR(10) NULL AFTER term");
+    echo "OK: fee_payments.term/year added\n";
+} else {
+    echo "SKIP (already applied): fee_payments.term/year\n";
+}
+
+$backfilledStructures = $pdo->exec("UPDATE fee_structures fs JOIN schools s ON s.id = fs.school_id SET fs.term = s.current_term, fs.year = s.current_year WHERE fs.term IS NULL");
+echo "OK: backfilled {$backfilledStructures} fee_structures row(s)\n";
+$backfilledPayments = $pdo->exec("UPDATE fee_payments fp JOIN schools s ON s.id = fp.school_id SET fp.term = s.current_term, fp.year = s.current_year WHERE fp.term IS NULL");
+echo "OK: backfilled {$backfilledPayments} fee_payments row(s)\n";
+
+$oldKeyStmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'fee_structures' AND INDEX_NAME = 'school_class_unique'");
+$oldKeyStmt->execute();
+if ((int) $oldKeyStmt->fetchColumn() > 0) {
+    $pdo->exec("ALTER TABLE fee_structures DROP INDEX school_class_unique, ADD UNIQUE KEY school_class_term_year_unique (school_id, class_id, term, year)");
+    echo "OK: fee_structures unique key widened to (school_id, class_id, term, year)\n";
+} else {
+    echo "SKIP (already applied): fee_structures unique key already widened\n";
+}
+
+try {
+    $pdo->prepare('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)')->execute(['fees_term_scoping_migration.sql']);
 } catch (\PDOException $e) {
     echo "(not recorded in schema_migrations -- run schema_migrations_tracking.sql first)\n";
 }

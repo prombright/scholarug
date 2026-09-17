@@ -18,18 +18,22 @@ function admin_fees_ensure_schema(PDO $pdo): void
               `id` INT AUTO_INCREMENT PRIMARY KEY,
               `school_id` INT NOT NULL,
               `class_id` INT NOT NULL,
+              `term` VARCHAR(20) NULL,
+              `year` VARCHAR(10) NULL,
               `day_tuition` DECIMAL(12,2) DEFAULT 0.00,
               `boarding_tuition` DECIMAL(12,2) DEFAULT 0.00,
               `entry_fee` DECIMAL(12,2) DEFAULT 0.00,
               `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
               `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-              UNIQUE KEY `school_class_unique` (`school_id`, `class_id`)
+              UNIQUE KEY `school_class_term_year_unique` (`school_id`, `class_id`, `term`, `year`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
             CREATE TABLE IF NOT EXISTS `fee_payments` (
               `id` INT AUTO_INCREMENT PRIMARY KEY,
               `school_id` INT NOT NULL,
               `student_id` INT NOT NULL,
+              `term` VARCHAR(20) NULL,
+              `year` VARCHAR(10) NULL,
               `amount_paid` DECIMAL(12,2) DEFAULT 0.00,
               `bursary_discount` DECIMAL(12,2) DEFAULT 0.00,
               `residence_type` ENUM('Day', 'Boarding') DEFAULT 'Day',
@@ -43,8 +47,28 @@ function admin_fees_ensure_schema(PDO $pdo): void
     }
 }
 
+/**
+ * Picks the best fee_structures row for a given class/term/year: an exact
+ * (school_id, class_id, term, year) match if one exists, otherwise that
+ * class's most recent prior rate (so a school that doesn't proactively
+ * re-save a rate every term still sees a sensible number instead of a
+ * blank/zero fee for a term nobody configured). $classIdExpr/$schoolIdExpr
+ * are the caller's own column references (the two queries below join from
+ * a different starting table -- students vs classes -- so the "current
+ * class/school" columns aren't always named the same thing).
+ */
+function fee_structure_lookup_sql(string $classIdExpr, string $schoolIdExpr): string
+{
+    return "(
+        SELECT fs2.id FROM fee_structures fs2
+        WHERE fs2.school_id = {$schoolIdExpr} AND fs2.class_id = {$classIdExpr}
+        ORDER BY (fs2.term = :fs_term AND fs2.year = :fs_year) DESC, fs2.year DESC, fs2.term DESC
+        LIMIT 1
+    )";
+}
+
 /** @return array{ok:bool,message:string} */
-function admin_fees_save_structure(PDO $pdo, int $schoolId, int $classId, float $dayTuition, float $boardTuition, float $entryFee): array
+function admin_fees_save_structure(PDO $pdo, int $schoolId, int $classId, float $dayTuition, float $boardTuition, float $entryFee, string $term, string $year): array
 {
     if ($classId <= 0) {
         return ['ok' => false, 'message' => 'Please select a valid class to configure fees.'];
@@ -52,23 +76,26 @@ function admin_fees_save_structure(PDO $pdo, int $schoolId, int $classId, float 
     if ($dayTuition < 0 || $boardTuition < 0 || $entryFee < 0) {
         return ['ok' => false, 'message' => 'Fee amounts cannot be negative.'];
     }
+    if ($term === '' || $year === '') {
+        return ['ok' => false, 'message' => 'Term and year are required.'];
+    }
 
     $stmt = $pdo->prepare('
-        INSERT INTO fee_structures (school_id, class_id, day_tuition, boarding_tuition, entry_fee)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO fee_structures (school_id, class_id, term, year, day_tuition, boarding_tuition, entry_fee)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             day_tuition = VALUES(day_tuition),
             boarding_tuition = VALUES(boarding_tuition),
             entry_fee = VALUES(entry_fee)
     ');
-    if ($stmt->execute([$schoolId, $classId, $dayTuition, $boardTuition, $entryFee])) {
-        return ['ok' => true, 'message' => 'Fee structure updated successfully!'];
+    if ($stmt->execute([$schoolId, $classId, $term, $year, $dayTuition, $boardTuition, $entryFee])) {
+        return ['ok' => true, 'message' => "Fee structure updated for {$term} {$year}!"];
     }
     return ['ok' => false, 'message' => 'Failed to update fee structure.'];
 }
 
 /** @return array{ok:bool,message:string} */
-function admin_fees_record_payment(PDO $pdo, int $schoolId, int $studentId, float $amountPaid, float $bursaryAmount, string $residenceType, bool $isNewStudent, string $notes): array
+function admin_fees_record_payment(PDO $pdo, int $schoolId, int $studentId, float $amountPaid, float $bursaryAmount, string $residenceType, bool $isNewStudent, string $notes, string $term, string $year): array
 {
     if ($studentId <= 0) {
         return ['ok' => false, 'message' => 'Invalid student selected.'];
@@ -76,34 +103,41 @@ function admin_fees_record_payment(PDO $pdo, int $schoolId, int $studentId, floa
     if ($amountPaid < 0 || $bursaryAmount < 0) {
         return ['ok' => false, 'message' => 'Payment and bursary amounts cannot be negative.'];
     }
+    if ($term === '' || $year === '') {
+        return ['ok' => false, 'message' => 'Term and year are required.'];
+    }
 
     $stmt = $pdo->prepare('
-        INSERT INTO fee_payments (school_id, student_id, amount_paid, bursary_discount, residence_type, is_new_student, notes, paid_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+        INSERT INTO fee_payments (school_id, student_id, term, year, amount_paid, bursary_discount, residence_type, is_new_student, notes, paid_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     ');
-    if ($stmt->execute([$schoolId, $studentId, $amountPaid, $bursaryAmount, $residenceType, $isNewStudent ? 1 : 0, $notes])) {
-        return ['ok' => true, 'message' => 'Payment record saved successfully!'];
+    if ($stmt->execute([$schoolId, $studentId, $term, $year, $amountPaid, $bursaryAmount, $residenceType, $isNewStudent ? 1 : 0, $notes])) {
+        return ['ok' => true, 'message' => "Payment recorded for {$term} {$year}!"];
     }
     return ['ok' => false, 'message' => 'Error recording payment transaction.'];
 }
 
-function admin_fees_fetch_structures(PDO $pdo, int $schoolId): array
+function admin_fees_fetch_structures(PDO $pdo, int $schoolId, string $term, string $year): array
 {
+    // All-named placeholders throughout -- PDO doesn't allow mixing "?"
+    // and ":name" placeholders in the same prepared statement, and the
+    // fee_structure_lookup_sql() subquery always uses named ones.
     $stmt = $pdo->prepare('
         SELECT c.id AS class_id, c.class_name,
                COALESCE(fs.day_tuition, 0) AS day_tuition,
                COALESCE(fs.boarding_tuition, 0) AS boarding_tuition,
-               COALESCE(fs.entry_fee, 0) AS entry_fee
+               COALESCE(fs.entry_fee, 0) AS entry_fee,
+               fs.term AS structure_term, fs.year AS structure_year
         FROM classes c
-        LEFT JOIN fee_structures fs ON c.id = fs.class_id AND fs.school_id = c.school_id
-        WHERE c.school_id = ?
+        LEFT JOIN fee_structures fs ON fs.id = ' . fee_structure_lookup_sql('c.id', 'c.school_id') . '
+        WHERE c.school_id = :school_id
         ORDER BY c.class_name ASC
     ');
-    $stmt->execute([$schoolId]);
+    $stmt->execute([':school_id' => $schoolId, ':fs_term' => $term, ':fs_year' => $year]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function admin_fees_fetch_ledger(PDO $pdo, int $schoolId, string $search, string $classFilter): array
+function admin_fees_fetch_ledger(PDO $pdo, int $schoolId, string $search, string $classFilter, string $term, string $year): array
 {
     $sql = "
         SELECT
@@ -120,19 +154,19 @@ function admin_fees_fetch_ledger(PDO $pdo, int $schoolId, string $search, string
             MAX(fp.is_new_student) AS is_new
         FROM students s
         LEFT JOIN classes c ON s.class_id = c.id
-        LEFT JOIN fee_structures fs ON s.class_id = fs.class_id AND fs.school_id = s.school_id
-        LEFT JOIN fee_payments fp ON s.id = fp.student_id AND fp.school_id = s.school_id
-        WHERE s.school_id = ?
+        LEFT JOIN fee_structures fs ON fs.id = " . fee_structure_lookup_sql('s.class_id', 's.school_id') . "
+        LEFT JOIN fee_payments fp ON s.id = fp.student_id AND fp.school_id = s.school_id AND fp.term = :fp_term AND fp.year = :fp_year
+        WHERE s.school_id = :school_id
     ";
-    $params = [$schoolId];
+    $params = [':school_id' => $schoolId, ':fs_term' => $term, ':fs_year' => $year, ':fp_term' => $term, ':fp_year' => $year];
 
     if ($search !== '') {
-        $sql .= ' AND s.full_name LIKE ?';
-        $params[] = '%' . $search . '%';
+        $sql .= ' AND s.full_name LIKE :search';
+        $params[':search'] = '%' . $search . '%';
     }
     if ($classFilter !== '') {
-        $sql .= ' AND s.class_id = ?';
-        $params[] = $classFilter;
+        $sql .= ' AND s.class_id = :class_filter';
+        $params[':class_filter'] = $classFilter;
     }
     $sql .= ' GROUP BY s.id ORDER BY s.full_name ASC';
 
@@ -157,7 +191,7 @@ function admin_fees_fetch_ledger(PDO $pdo, int $schoolId, string $search, string
  *
  * @return array|null null if the student doesn't belong to this school
  */
-function admin_fees_fetch_ledger_for_student(PDO $pdo, int $schoolId, int $studentId): ?array
+function admin_fees_fetch_ledger_for_student(PDO $pdo, int $schoolId, int $studentId, string $term, string $year): ?array
 {
     $stmt = $pdo->prepare("
         SELECT
@@ -174,12 +208,19 @@ function admin_fees_fetch_ledger_for_student(PDO $pdo, int $schoolId, int $stude
             MAX(fp.is_new_student) AS is_new
         FROM students s
         LEFT JOIN classes c ON s.class_id = c.id
-        LEFT JOIN fee_structures fs ON s.class_id = fs.class_id AND fs.school_id = s.school_id
-        LEFT JOIN fee_payments fp ON s.id = fp.student_id AND fp.school_id = s.school_id
-        WHERE s.school_id = ? AND s.id = ?
+        LEFT JOIN fee_structures fs ON fs.id = " . fee_structure_lookup_sql('s.class_id', 's.school_id') . "
+        LEFT JOIN fee_payments fp ON s.id = fp.student_id AND fp.school_id = s.school_id AND fp.term = :fp_term AND fp.year = :fp_year
+        WHERE s.school_id = :school_id AND s.id = :student_id
         GROUP BY s.id
     ");
-    $stmt->execute([$schoolId, $studentId]);
+    $stmt->execute([
+        ':school_id' => $schoolId,
+        ':student_id' => $studentId,
+        ':fs_term' => $term,
+        ':fs_year' => $year,
+        ':fp_term' => $term,
+        ':fp_year' => $year,
+    ]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) {
         return null;

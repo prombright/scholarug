@@ -93,7 +93,7 @@ export const electionsApi = {
   action: (payload) => api.post('admin/elections.php', payload)
 }
 export const feesApi = {
-  get: (q, classId) => api.get('admin/fees.php', { params: { q: q || '', class_id: classId || '' } }),
+  get: (q, classId, term, year) => api.get('admin/fees.php', { params: { q: q || '', class_id: classId || '', term: term || '', year: year || '' } }),
   action: (payload) => api.post('admin/fees.php', payload)
 }
 export const studentProfileApi = {

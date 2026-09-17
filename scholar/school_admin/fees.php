@@ -62,6 +62,16 @@ admin_fees_ensure_schema($pdo);
 $message = '';
 $error = '';
 
+// Which term/year this whole page is scoped to -- both which term's
+// ledger is shown AND which term a new fee-structure save or payment
+// gets tagged with. Same $_GET-with-current-term-fallback convention
+// bulk_report_print.php already uses. Read from GET first (so a saved
+// form's own hidden fields -- which mirror this same selector -- survive
+// a redirect-free POST-then-redisplay) with POST as a fallback for the
+// form submissions themselves.
+$term = trim($_GET['term'] ?? $_POST['term'] ?? current_term());
+$year = trim((string) ($_GET['year'] ?? $_POST['year'] ?? current_year()));
+
 // ==========================================
 // 1. POST HANDLERS (Fee Structure & Payments)
 // ==========================================
@@ -73,7 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         intval($_POST['class_id'] ?? 0),
         floatval($_POST['day_tuition'] ?? 0),
         floatval($_POST['boarding_tuition'] ?? 0),
-        floatval($_POST['entry_fee'] ?? 0)
+        floatval($_POST['entry_fee'] ?? 0),
+        $term, $year
     );
     if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
 }
@@ -87,7 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         floatval($_POST['bursary_amount'] ?? 0),
         trim($_POST['residence_type'] ?? 'Day'),
         isset($_POST['is_new_student']),
-        trim($_POST['payment_notes'] ?? '')
+        trim($_POST['payment_notes'] ?? ''),
+        $term, $year
     );
     if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
 }
@@ -96,12 +108,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // 2. QUERY DATA FOR REPORTING & INTERFACE
 // ==========================================
 
-$fee_structures = admin_fees_fetch_structures($pdo, $school_id);
+$fee_structures = admin_fees_fetch_structures($pdo, $school_id, $term, $year);
 
 $search_query = trim($_GET['q'] ?? '');
 $filter_class = trim($_GET['class_id'] ?? '');
 
-$__ledger_raw = admin_fees_fetch_ledger($pdo, $school_id, $search_query, $filter_class);
+$__ledger_raw = admin_fees_fetch_ledger($pdo, $school_id, $search_query, $filter_class, $term, $year);
 $__annotated = admin_fees_annotate_ledger($__ledger_raw);
 $student_ledger = $__annotated['ledger'];
 $total_students = $__annotated['metrics']['total_students'];
@@ -180,6 +192,29 @@ $total_collected = $__annotated['metrics']['total_collected'];
             </button>
         </div>
     </div>
+
+    <!-- Term/year scope -- which term's ledger is shown, and which term a
+         new fee-structure save or payment gets tagged with. Fee rates and
+         payments are now scoped per term (see fees_term_scoping_migration.sql)
+         instead of one evergreen rate compared against every payment a
+         student has ever made, regardless of when the rate changed. -->
+    <form method="get" class="d-flex align-items-end gap-2 mb-4">
+        <div>
+            <label class="form-label small text-muted mb-1">Term</label>
+            <select name="term" class="form-select form-select-sm" onchange="this.form.submit()">
+                <?php foreach (['Term 1', 'Term 2', 'Term 3'] as $t): ?>
+                    <option value="<?= safe_text($t) ?>" <?= $t === $term ? 'selected' : '' ?>><?= safe_text($t) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div>
+            <label class="form-label small text-muted mb-1">Year</label>
+            <input type="text" name="year" value="<?= safe_text($year) ?>" class="form-control form-control-sm" style="width:100px;" onchange="this.form.submit()">
+        </div>
+        <button type="submit" class="btn btn-sm btn-outline-secondary">View</button>
+        <?php if ($search_query !== ''): ?><input type="hidden" name="q" value="<?= safe_text($search_query) ?>"><?php endif; ?>
+        <?php if ($filter_class !== ''): ?><input type="hidden" name="class_id" value="<?= safe_text($filter_class) ?>"><?php endif; ?>
+    </form>
 
     <!-- Alert Notifications -->
     <?php if ($message): ?>
@@ -334,9 +369,11 @@ $total_collected = $__annotated['metrics']['total_collected'];
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="fees.php">
             <input type="hidden" name="action" value="save_fee_structure">
+            <input type="hidden" name="term" value="<?= safe_text($term) ?>">
+            <input type="hidden" name="year" value="<?= safe_text($year) ?>">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold">Configure Class Fee Structure</h5>
+                    <h5 class="modal-title fw-bold">Configure Class Fee Structure — <?= safe_text($term) ?> <?= safe_text($year) ?></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -376,9 +413,11 @@ $total_collected = $__annotated['metrics']['total_collected'];
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="fees.php">
             <input type="hidden" name="action" value="record_payment">
+            <input type="hidden" name="term" value="<?= safe_text($term) ?>">
+            <input type="hidden" name="year" value="<?= safe_text($year) ?>">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold">Record Payment / Bursary Discount</h5>
+                    <h5 class="modal-title fw-bold">Record Payment / Bursary Discount — <?= safe_text($term) ?> <?= safe_text($year) ?></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">

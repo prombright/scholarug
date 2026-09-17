@@ -40,7 +40,7 @@ if (!$student) {
 // admin_fees_fetch_ledger_for_student() for why the old flat
 // day_tuition + entry_fee formula here didn't match the real ledger for
 // boarders, bursary recipients, or returning (non-new) students.
-$fee_row = admin_fees_fetch_ledger_for_student($pdo, $school_id, $student_id);
+$fee_row = admin_fees_fetch_ledger_for_student($pdo, $school_id, $student_id, current_term(), current_year());
 $expected = (float) ($fee_row['net_due'] ?? 0.0);
 $paid = (float) ($fee_row['total_paid'] ?? 0.0);
 

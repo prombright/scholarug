@@ -28,10 +28,10 @@ function admin_fees_json_error(string $message, int $code = 400): void
     exit;
 }
 
-function admin_fees_snapshot(PDO $pdo, int $schoolId, string $search, string $classFilter): array
+function admin_fees_snapshot(PDO $pdo, int $schoolId, string $search, string $classFilter, string $term, string $year): array
 {
-    $structures = admin_fees_fetch_structures($pdo, $schoolId);
-    $ledger_raw = admin_fees_fetch_ledger($pdo, $schoolId, $search, $classFilter);
+    $structures = admin_fees_fetch_structures($pdo, $schoolId, $term, $year);
+    $ledger_raw = admin_fees_fetch_ledger($pdo, $schoolId, $search, $classFilter, $term, $year);
     $annotated = admin_fees_annotate_ledger($ledger_raw);
 
     return [
@@ -39,6 +39,8 @@ function admin_fees_snapshot(PDO $pdo, int $schoolId, string $search, string $cl
         'fee_structures' => $structures,
         'ledger' => $annotated['ledger'],
         'metrics' => $annotated['metrics'],
+        'term' => $term,
+        'year' => $year,
     ];
 }
 
@@ -47,13 +49,17 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $search = trim($_GET['q'] ?? '');
     $classFilter = trim($_GET['class_id'] ?? '');
-    echo json_encode(admin_fees_snapshot($pdo, $school_id, $search, $classFilter), JSON_UNESCAPED_SLASHES);
+    $term = trim($_GET['term'] ?? current_term());
+    $year = trim((string) ($_GET['year'] ?? current_year()));
+    echo json_encode(admin_fees_snapshot($pdo, $school_id, $search, $classFilter, $term, $year), JSON_UNESCAPED_SLASHES);
     exit;
 }
 
 if ($method === 'POST') {
     $body = json_decode(file_get_contents('php://input'), true) ?: [];
     $action = $body['action'] ?? '';
+    $term = trim((string) ($body['term'] ?? current_term()));
+    $year = trim((string) ($body['year'] ?? current_year()));
     $result = null;
 
     if ($action === 'save_fee_structure') {
@@ -62,7 +68,8 @@ if ($method === 'POST') {
             (int) ($body['class_id'] ?? 0),
             (float) ($body['day_tuition'] ?? 0),
             (float) ($body['boarding_tuition'] ?? 0),
-            (float) ($body['entry_fee'] ?? 0)
+            (float) ($body['entry_fee'] ?? 0),
+            $term, $year
         );
     } elseif ($action === 'record_payment') {
         $result = admin_fees_record_payment(
@@ -72,7 +79,8 @@ if ($method === 'POST') {
             (float) ($body['bursary_amount'] ?? 0),
             trim((string) ($body['residence_type'] ?? 'Day')),
             (bool) ($body['is_new_student'] ?? false),
-            trim((string) ($body['payment_notes'] ?? ''))
+            trim((string) ($body['payment_notes'] ?? '')),
+            $term, $year
         );
     } else {
         admin_fees_json_error('Unknown action.');
@@ -82,7 +90,7 @@ if ($method === 'POST') {
         admin_fees_json_error($result['message']);
     }
 
-    $snapshot = admin_fees_snapshot($pdo, $school_id, '', '');
+    $snapshot = admin_fees_snapshot($pdo, $school_id, '', '', $term, $year);
     $snapshot['message'] = $result['message'];
     echo json_encode($snapshot, JSON_UNESCAPED_SLASHES);
     exit;

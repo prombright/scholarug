@@ -13,6 +13,16 @@ const metrics = ref({ fully_paid: 0, partial_paid: 0, unpaid: 0, total_collected
 const search = ref('')
 const classFilter = ref('')
 
+// Which term/year this page is scoped to -- both which term's ledger is
+// shown, and which term a new fee-structure save or payment gets tagged
+// with (see fees_term_scoping_migration.sql). Left blank until the first
+// load() response tells us what the server actually defaulted to
+// (current_term()/current_year()), so the dropdowns start on the real
+// current term without duplicating that default logic in JS.
+const term = ref('')
+const year = ref('')
+const termOptions = ['Term 1', 'Term 2', 'Term 3']
+
 const showStructureModal = ref(false)
 const showPaymentModal = ref(false)
 
@@ -22,10 +32,12 @@ const paymentForm = ref({ student_id: '', residence_type: 'Day', is_new_student:
 async function load() {
   loading.value = true
   try {
-    const { data } = await feesApi.get(search.value, classFilter.value)
+    const { data } = await feesApi.get(search.value, classFilter.value, term.value, year.value)
     feeStructures.value = data.fee_structures
     ledger.value = data.ledger
     metrics.value = data.metrics
+    term.value = data.term
+    year.value = data.year
   } catch (e) {
     message.value = { type: 'error', text: e.response?.data?.message || 'Could not load fee accounts.' }
   } finally {
@@ -33,7 +45,7 @@ async function load() {
   }
 }
 onMounted(load)
-watch([search, classFilter], load)
+watch([search, classFilter, term, year], load)
 
 async function runAction(payload) {
   busy.value = true
@@ -52,10 +64,10 @@ async function runAction(payload) {
 }
 
 function saveStructure() {
-  runAction({ action: 'save_fee_structure', ...structureForm.value })
+  runAction({ action: 'save_fee_structure', term: term.value, year: year.value, ...structureForm.value })
 }
 function recordPayment() {
-  runAction({ action: 'record_payment', ...paymentForm.value })
+  runAction({ action: 'record_payment', term: term.value, year: year.value, ...paymentForm.value })
 }
 
 const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
@@ -92,7 +104,15 @@ const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
       </div>
     </div>
 
+    <!-- Which term's ledger is shown, and which term a new fee-structure
+         save or payment gets tagged with. Fee rates and payments are
+         scoped per term now instead of one evergreen rate compared
+         against every payment a student has ever made. -->
     <div class="filter-bar">
+      <select v-model="term">
+        <option v-for="t in termOptions" :key="t" :value="t">{{ t }}</option>
+      </select>
+      <input type="text" v-model="year" style="max-width:100px;" placeholder="Year">
       <input type="text" v-model="search" placeholder="Search student by name...">
       <select v-model="classFilter">
         <option value="">All Classes</option>
@@ -128,7 +148,7 @@ const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
   <!-- Configure Fee Structure modal -->
   <div v-if="showStructureModal" class="modal-backdrop" @click.self="showStructureModal = false">
     <form class="modal-card" @submit.prevent="saveStructure">
-      <div class="modal-header">Configure Class Fee Structure</div>
+      <div class="modal-header">Configure Class Fee Structure — {{ term }} {{ year }}</div>
       <div class="modal-body">
         <label>Select Class</label>
         <select v-model="structureForm.class_id" required>
@@ -152,7 +172,7 @@ const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
   <!-- Record Payment modal -->
   <div v-if="showPaymentModal" class="modal-backdrop" @click.self="showPaymentModal = false">
     <form class="modal-card" @submit.prevent="recordPayment">
-      <div class="modal-header">Record Payment / Bursary Discount</div>
+      <div class="modal-header">Record Payment / Bursary Discount — {{ term }} {{ year }}</div>
       <div class="modal-body">
         <label>Student</label>
         <select v-model="paymentForm.student_id" required>
