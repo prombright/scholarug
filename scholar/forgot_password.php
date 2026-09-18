@@ -18,6 +18,7 @@ declare(strict_types=1);
 */
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/_password_toggle.php';
 
 $error = '';
 $success = '';
@@ -111,6 +112,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_reset'])) {
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--login-bg); color: var(--login-text); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box; }
         .login-card { background: var(--login-card); border: 1px solid var(--login-border); border-radius: 12px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4); }
         .form-control { width: 100%; background: var(--login-input); border: 1px solid var(--login-border); padding: 12px 14px; border-radius: 6px; color: var(--login-input-text); font-size: 0.875rem; box-sizing: border-box; transition: border-color 0.15s; }
+        .pw-wrap { position: relative; }
+        .pw-wrap .form-control { padding-right: 42px; }
+        .pw-toggle-btn { position: absolute; top: 0; bottom: 0; right: 6px; margin: auto; height: 18px; background: none; border: none; cursor: pointer; padding: 6px; display: flex; align-items: center; color: var(--login-muted, #64748b); }
+        .pw-toggle-btn:hover { color: #00A8A8; }
+        .pw-toggle-btn svg { width: 18px; height: 18px; }
         .form-control:focus { outline: none; border-color: #00A8A8; }
         .btn-access { width: 100%; background: #00A8A8; color: #04222a; border: none; padding: 14px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; border-radius: 6px; cursor: pointer; letter-spacing: 0.5px; margin-top: 10px; }
         .hint { color: var(--login-muted); font-size: 0.7rem; text-align: center; margin-top: 18px; line-height: 1.5; }
@@ -161,11 +167,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_reset'])) {
                 </div>
                 <div style="margin-bottom: 18px;">
                     <label style="display: block; font-size: 0.65rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px;">New Password</label>
-                    <input type="password" name="new_password" required class="form-control">
+                    <div class="pw-wrap">
+                        <input type="password" name="new_password" required class="form-control" id="fpNewPasswordField">
+                        <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('fpNewPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
+                    </div>
                 </div>
                 <div style="margin-bottom: 24px;">
                     <label style="display: block; font-size: 0.65rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px;">Confirm New Password</label>
-                    <input type="password" name="confirm_password" required class="form-control">
+                    <div class="pw-wrap">
+                        <input type="password" name="confirm_password" required class="form-control" id="fpConfirmPasswordField">
+                        <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('fpConfirmPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
+                    </div>
                 </div>
                 <button type="submit" class="btn-access">Update Password</button>
             </form>
@@ -177,5 +189,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_reset'])) {
         </div>
     </div>
 
+<script><?= SCHOLAR_PASSWORD_TOGGLE_JS ?></script>
 </body>
 </html>

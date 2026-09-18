@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php'; // for the shared role_destination()
+require_once __DIR__ . '/_password_toggle.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start([
@@ -75,6 +76,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--login-bg); color: var(--login-text); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box; padding: 16px; }
     .card { background: var(--login-card); border: 1px solid var(--login-border); border-radius: 12px; padding: 40px; width: 100%; max-width: 400px; box-sizing: border-box; }
     .form-control { width: 100%; background: var(--login-input); border: 1px solid var(--login-border); padding: 12px 14px; border-radius: 6px; color: var(--login-input-text); font-size: 0.875rem; box-sizing: border-box; margin-bottom: 14px; }
+    .pw-wrap { position: relative; }
+    .pw-wrap .form-control { padding-right: 42px; margin-bottom: 0; }
+    .pw-wrap-margin { margin-bottom: 14px; }
+    .pw-toggle-btn { position: absolute; top: 0; bottom: 0; right: 6px; margin: auto; height: 18px; background: none; border: none; cursor: pointer; padding: 6px; display: flex; align-items: center; color: var(--login-muted); }
+    .pw-toggle-btn:hover { color: #00A8A8; }
+    .pw-toggle-btn svg { width: 18px; height: 18px; }
     .btn { width: 100%; background: #00A8A8; color: #04222a; border: none; padding: 14px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; border-radius: 6px; cursor: pointer; }
     .alert { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 12px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 16px; }
     label { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--login-muted); font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px; }
@@ -96,11 +103,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <label>New Password</label>
-        <input type="password" name="new_password" class="form-control" required minlength="6">
+        <div class="pw-wrap pw-wrap-margin">
+            <input type="password" name="new_password" class="form-control" required minlength="6" id="newPasswordField">
+            <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('newPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
+        </div>
         <label>Confirm New Password</label>
-        <input type="password" name="confirm_password" class="form-control" required minlength="6">
+        <div class="pw-wrap pw-wrap-margin">
+            <input type="password" name="confirm_password" class="form-control" required minlength="6" id="confirmPasswordField">
+            <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('confirmPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
+        </div>
         <button type="submit" class="btn">Set Password &amp; Continue</button>
     </form>
 </div>
+<script><?= SCHOLAR_PASSWORD_TOGGLE_JS ?></script>
 </body>
 </html>

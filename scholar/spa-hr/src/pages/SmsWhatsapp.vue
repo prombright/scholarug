@@ -9,6 +9,7 @@ const error = ref('')
 
 const settings = ref(null)
 const form = ref({ sender_name: '', whatsapp_number: '', phone_number_id: '', access_token: '' })
+const showToken = ref(false)
 
 async function load() {
   loading.value = true
@@ -91,7 +92,13 @@ async function disable() {
         <div class="hint">From your Meta WhatsApp Business API app dashboard.</div>
 
         <label>Access Token</label>
-        <input type="password" v-model="form.access_token" :placeholder="settings ? 'Leave blank to keep the current token' : 'EAAG...'" autocomplete="off">
+        <div class="pw-wrap">
+          <input :type="showToken ? 'text' : 'password'" v-model="form.access_token" :placeholder="settings ? 'Leave blank to keep the current token' : 'EAAG...'" autocomplete="off">
+          <button type="button" class="pw-toggle-btn" :aria-label="showToken ? 'Hide token' : 'Show token'" @click="showToken = !showToken">
+            <svg v-if="!showToken" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.77 21.77 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.77 21.77 0 0 1-3.22 4.53M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
         <div class="hint">Stored encrypted. Only re-enter this if you're rotating the token.</div>
 
         <button type="submit" :disabled="busy">Save WhatsApp Settings</button>
@@ -124,6 +131,11 @@ async function disable() {
 .sms-section label{display:block;font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 6px;}
 .sms-section label:first-child{margin-top:0;}
 .sms-section input{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:6px;font-size:0.85rem;box-sizing:border-box;}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:38px;}
+.pw-toggle-btn{position:absolute;top:0;bottom:0;right:4px;margin:auto;height:16px;background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;color:var(--muted);}
+.pw-toggle-btn:hover{color:var(--cyan,#00A8A8);}
+.pw-toggle-btn svg{width:16px;height:16px;}
 .hint{color:var(--muted);font-size:0.75rem;margin-top:4px;}
 .sms-section button{cursor:pointer;border:none;border-radius:6px;padding:10px 18px;font-weight:700;font-size:0.85rem;background:var(--cyan);color:#04121a;margin-top:16px;}
 .sms-section button:disabled{opacity:0.6;cursor:default;}

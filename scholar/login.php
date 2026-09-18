@@ -20,6 +20,7 @@ session_start([
 
 require_once 'db.php';
 require_once __DIR__ . '/auth_guard.php'; // for role_destination() below
+require_once __DIR__ . '/_password_toggle.php';
 
 
 
@@ -599,6 +600,11 @@ $login_school_name = 'ScholarUg';
         .form-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 28px; }
         .form-control { width: 100%; background: var(--panel-dark-raised); border: 1px solid var(--border-dark); padding: 12px 14px; border-radius: 6px; color: #fff; font-size: 0.875rem; transition: border-color 0.15s; }
         .form-control:focus { outline: none; border-color: var(--cyan); }
+        .pw-wrap { position: relative; }
+        .pw-wrap .form-control { padding-right: 42px; }
+        .pw-toggle-btn { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 6px; display: flex; color: var(--muted-dark, #64748b); }
+        .pw-toggle-btn:hover { color: var(--cyan); }
+        .pw-toggle-btn svg { width: 18px; height: 18px; }
         .btn-access { width: 100%; background: var(--cyan); color: #04222a; border: none; padding: 14px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; border-radius: 6px; cursor: pointer; letter-spacing: 0.5px; margin-top: 10px; }
         .btn-access:hover { filter: brightness(1.08); }
         .hint { color: var(--muted-dark); font-size: 0.7rem; text-align: center; margin-top: 18px; line-height: 1.5; }
@@ -662,7 +668,10 @@ $login_school_name = 'ScholarUg';
 
                 <div class="field">
                     <label>Password / Access PIN</label>
-                    <input type="password" name="password" required class="form-control" placeholder="********">
+                    <div class="pw-wrap">
+                        <input type="password" name="password" required class="form-control" placeholder="********" id="loginPasswordField">
+                        <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('loginPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
+                    </div>
                     <div style="text-align:right;margin-top:6px;">
                         <a href="forgot_password.php" style="color:var(--muted-dark);font-size:0.7rem;">Forgot password?</a>
                     </div>
@@ -678,5 +687,6 @@ $login_school_name = 'ScholarUg';
     </div>
 </div>
 
+<script><?= SCHOLAR_PASSWORD_TOGGLE_JS ?></script>
 </body>
 </html>

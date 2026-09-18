@@ -12,6 +12,7 @@ declare(strict_types=1);
 */
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/_password_toggle.php';
 
 $token = $_GET['token'] ?? $_POST['token'] ?? '';
 $error = '';
@@ -76,6 +77,12 @@ h1{font-size:1.2rem;margin:0 0 6px;}
 p.sub{color:var(--muted);font-size:0.85rem;margin:0 0 20px;}
 label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:6px;}
 input{width:100%;padding:10px 12px;margin-bottom:16px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--text);}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:42px;margin-bottom:0;}
+.pw-wrap-margin{margin-bottom:16px;}
+.pw-toggle-btn{position:absolute;top:0;bottom:0;right:6px;margin:auto;height:18px;background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;color:var(--muted);}
+.pw-toggle-btn:hover{color:var(--cyan);}
+.pw-toggle-btn svg{width:18px;height:18px;}
 button{width:100%;padding:10px;border:none;border-radius:6px;background:var(--cyan);color:#04121a;font-weight:700;cursor:pointer;}
 .alert-danger{background:rgba(239,68,68,0.12);color:var(--danger);padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;}
 .alert-success{background:rgba(16,185,129,0.12);color:var(--green);padding:10px 14px;border-radius:8px;font-size:0.85rem;}
@@ -97,12 +104,19 @@ a{color:var(--cyan);}
         <form method="POST">
             <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES) ?>">
             <label>New Password</label>
-            <input type="password" name="new_password" minlength="8" required>
+            <div class="pw-wrap pw-wrap-margin">
+                <input type="password" name="new_password" minlength="8" required id="tvNewPasswordField">
+                <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('tvNewPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
+            </div>
             <label>Confirm Password</label>
-            <input type="password" name="confirm_password" minlength="8" required>
+            <div class="pw-wrap pw-wrap-margin">
+                <input type="password" name="confirm_password" minlength="8" required id="tvConfirmPasswordField">
+                <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('tvConfirmPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
+            </div>
             <button type="submit">Set Password &amp; Activate</button>
         </form>
     <?php endif; ?>
 </div>
+<script><?= SCHOLAR_PASSWORD_TOGGLE_JS ?></script>
 </body>
 </html>

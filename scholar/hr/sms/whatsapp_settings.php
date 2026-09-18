@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
+require_once __DIR__ . '/../../_password_toggle.php';
 require_once __DIR__ . '/_whatsapp_helpers.php';
 
 require_role(['school_admin', 'hr']);
@@ -75,6 +76,11 @@ if ($is_hr_role) {
 .sms-section label{display:block;font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 6px;}
 .sms-section label:first-child{margin-top:0;}
 .sms-section input{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:6px;font-size:0.85rem;box-sizing:border-box;}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:38px;}
+.pw-toggle-btn{position:absolute;top:0;bottom:0;right:4px;margin:auto;height:16px;background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;color:var(--muted);}
+.pw-toggle-btn:hover{color:var(--cyan,#00A8A8);}
+.pw-toggle-btn svg{width:16px;height:16px;}
 .sms-hint{color:var(--muted);font-size:0.75rem;margin-top:4px;}
 .sms-section button{cursor:pointer;border:none;border-radius:6px;padding:10px 18px;font-weight:700;font-size:0.85rem;background:var(--cyan);color:#04121a;margin-top:16px;}
 .sms-section button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:10px;}
@@ -122,7 +128,10 @@ if ($is_hr_role) {
         <div class="sms-hint">From your Meta WhatsApp Business API app dashboard.</div>
 
         <label>Access Token</label>
-        <input type="password" name="access_token" placeholder="<?= $settings ? 'Leave blank to keep the current token' : 'EAAG...' ?>" autocomplete="off">
+        <div class="pw-wrap">
+            <input type="password" name="access_token" placeholder="<?= $settings ? 'Leave blank to keep the current token' : 'EAAG...' ?>" autocomplete="off" id="whatsappTokenField">
+            <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('whatsappTokenField', this)" aria-label="Show token"><?= SCHOLAR_EYE_SVG ?></button>
+        </div>
         <div class="sms-hint">Stored encrypted. Only re-enter this if you're rotating the token.</div>
 
         <button type="submit">Save WhatsApp Settings</button>
@@ -139,6 +148,8 @@ if ($is_hr_role) {
 <div class="sms-alert info">
     Meta only allows free-form text outside approved templates within a 24-hour window after the recipient has messaged your WhatsApp number first. Outside that window, a recipient's message automatically falls back to SMS -- nothing is ever silently lost.
 </div>
+
+<script><?= SCHOLAR_PASSWORD_TOGGLE_JS ?></script>
 
 <?php if ($is_hr_role): ?>
         </div>

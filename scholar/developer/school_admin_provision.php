@@ -6,6 +6,7 @@ ini_set('display_startup_errors','1');
 error_reporting(E_ALL);
 
 require '../db.php';
+require_once __DIR__ . '/../_password_toggle.php';
 
 
 if(session_status() !== PHP_SESSION_ACTIVE){
@@ -469,6 +470,13 @@ margin-bottom:18px;
 
 }
 
+.pw-wrap{position:relative;}
+.pw-wrap input{box-sizing:border-box;padding-right:44px;margin-bottom:0;}
+.pw-wrap-margin{margin-bottom:18px;}
+.pw-toggle-btn{position:absolute;top:0;bottom:0;right:8px;margin:auto;height:18px;background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;color:var(--muted);}
+.pw-toggle-btn:hover{color:#06b6d4;}
+.pw-toggle-btn svg{width:18px;height:18px;}
+
 
 
 button{
@@ -659,11 +667,15 @@ Temporary Password
 </label>
 
 
+<div class="pw-wrap pw-wrap-margin">
 <input
 type="password"
 name="password"
+id="provisionPasswordField"
 placeholder="Minimum 8 characters"
 required>
+<button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('provisionPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
+</div>
 
 
 
@@ -757,7 +769,7 @@ href="school_profile.php?id=<?=$school_id?>">
 
 </div>
 
-
+<script><?= SCHOLAR_PASSWORD_TOGGLE_JS ?></script>
 </body>
 
 </html>
