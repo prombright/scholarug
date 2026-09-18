@@ -1164,13 +1164,13 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
         $skill_ratings = $skills_stmt->fetchAll(PDO::FETCH_ASSOC);
         ?>
         <?php if (!empty($skill_ratings)): ?>
-        <div class="summary-box" style="margin-top:18px;">
-            <div style="font-weight: bold; font-size:11px; color:#64748b; text-transform:uppercase; margin-bottom:10px;">Generic Skills</div>
-            <table style="width: 100%; border-collapse: collapse;">
+        <div class="summary-box rc-skills-box">
+            <div class="rc-skills-title">Generic Skills</div>
+            <table class="rc-skills-table">
                 <?php foreach ($skill_ratings as $sr): ?>
                 <tr>
-                    <td style="padding:4px 0; font-size:13px; color:#334155;"><?= htmlspecialchars($sr['skill_name']) ?></td>
-                    <td style="padding:4px 0; text-align:right; font-weight:700; color:#0284c7; font-size:13px;"><?= htmlspecialchars($sr['rating_grade']) ?></td>
+                    <td class="rc-skill-name"><?= htmlspecialchars($sr['skill_name']) ?></td>
+                    <td class="rc-skill-grade"><?= htmlspecialchars($sr['rating_grade']) ?></td>
                 </tr>
                 <?php endforeach; ?>
             </table>
@@ -1193,14 +1193,14 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
         </div>
         <?php endif; ?>
 
-        <div class="rc-signatures" style="margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end;">
-            <div style="text-align: center; width: 220px;">
-                <div style="border-bottom: 1px solid #64748b; height: 30px;"></div>
-                <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #64748b; margin-top: 6px; letter-spacing: 0.5px;">Class Teacher's Signature</div>
+        <div class="rc-signatures">
+            <div class="rc-sig-block">
+                <div class="rc-sig-line"></div>
+                <div class="rc-sig-label">Class Teacher's Signature</div>
             </div>
-            <div style="text-align: center; width: 220px;">
-                <div style="border-bottom: 1px solid #64748b; height: 30px; font-family: 'Courier New', monospace; font-size: 15px; color: #0284c7; font-weight: bold; line-height:35px;">CERTIFIED RECORD</div>
-                <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #64748b; margin-top: 6px; letter-spacing: 0.5px;">Headmaster's Seal / Stamp</div>
+            <div class="rc-sig-block">
+                <div class="rc-sig-line rc-sig-line-certified">CERTIFIED RECORD</div>
+                <div class="rc-sig-label">Headmaster's Seal / Stamp</div>
             </div>
         </div>
 

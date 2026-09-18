@@ -91,6 +91,24 @@ report-content rules that must look identical either way live here. */ ?>
 .grade-legend td { padding: 5px 8px; border: 1px solid #e2e8f0; color: #334155; }
 .grade-legend-letter { font-weight: 900; text-align: center; width: 40px; color: #0f172a; }
 
+.rc-skills-box { margin-top: 18px; }
+.rc-skills-title { font-weight: bold; font-size: 11px; color: #64748b; text-transform: uppercase; margin-bottom: 10px; }
+.rc-skills-table { width: 100%; border-collapse: collapse; }
+.rc-skill-name { padding: 4px 0; font-size: 13px; color: #334155; }
+.rc-skill-grade { padding: 4px 0; text-align: right; font-weight: 700; color: #0284c7; font-size: 13px; }
+
+/* Signatures -- previously all inline styles (50px top margin, 30px-tall
+   signature lines), which meant the print-fit block below couldn't touch
+   them at all. On a subject-heavy report this was consistently the exact
+   thing that pushed just the signatures + footer onto their own second
+   printed page -- confirmed by rendering an 8-subject report to PDF and
+   checking the actual page count, not just guessing at the CSS. */
+.rc-signatures { margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end; }
+.rc-sig-block { text-align: center; width: 220px; }
+.rc-sig-line { border-bottom: 1px solid #64748b; height: 30px; }
+.rc-sig-line-certified { font-family: 'Courier New', monospace; font-size: 15px; color: #0284c7; font-weight: bold; line-height: 35px; }
+.rc-sig-label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #64748b; margin-top: 6px; letter-spacing: 0.5px; }
+
 .rc-footer { text-align: center; font-size: 9.5px; color: #94a3b8; margin-top: 20px; letter-spacing: 0.3px; }
 
 /* Human-written remarks -- distinct from the auto-computed narrative
@@ -145,7 +163,7 @@ report-content rules that must look identical either way live here. */ ?>
        margin for print in their own @media print blocks (later in the
        cascade, so they win) -- not repeated here. */
     @page { size: A4; margin: 8mm; }
-    .rc-header { margin-bottom: 12px; }
+    .rc-header { margin-bottom: 10px; }
     .rc-header-spacer { width: 64px; }
     .rc-logo-ring { width: 64px; height: 64px; }
     .rc-logo-fallback { font-size: 24px; }
@@ -154,20 +172,20 @@ report-content rules that must look identical either way live here. */ ?>
     .school-meta { font-size: 9.5px; margin: 2px 0; }
     .rc-photo-corner { top: 18px; right: 18px; width: 58px; height: 58px; }
     .rc-title-bar { font-size: 11px; padding: 5px 0; margin-bottom: 14px; }
-    .bio-infomatrix { padding: 12px; gap: 10px 20px; margin-bottom: 16px; }
+    .bio-infomatrix { padding: 10px; gap: 8px 20px; margin-bottom: 12px; }
     .bio-item { font-size: 11px; margin-bottom: 2px; }
-    .matrix-table { margin-bottom: 16px; }
+    .matrix-table { margin-bottom: 10px; }
     .matrix-table th { font-size: 9px; padding: 6px 6px; }
     .matrix-table td { font-size: 10.5px; padding: 5px 6px; }
     .rc-grade-badge { font-size: 10px; padding: 2px 8px; }
     .rc-score-bar-track { margin-top: 3px; height: 4px; }
     .assessment-breakdown { font-size: 8.5px; margin-top: 1px; }
-    .rc-result-hero { padding: 12px 14px 14px; margin-top: 14px; }
+    .rc-result-hero { padding: 8px 14px 10px; margin-top: 10px; }
     .rc-result-topline { font-size: 8.5px; margin-bottom: 2px; }
-    .rc-result-average { font-size: 22px; }
-    .rc-result-average-caption { font-size: 10.5px; }
-    .summary-box { padding: 12px; margin-top: 10px; }
-    .grade-legend { margin-top: 12px; }
+    .rc-result-average { font-size: 20px; }
+    .rc-result-average-caption { font-size: 10px; }
+    .summary-box { padding: 10px; margin-top: 8px; }
+    .grade-legend { margin-top: 8px; }
     .grade-legend-title { font-size: 9.5px; margin-bottom: 5px; }
     .grade-legend th { font-size: 8.5px; padding: 4px 6px; }
     .grade-legend td { padding: 3px 6px; font-size: 9.5px; }
@@ -176,5 +194,16 @@ report-content rules that must look identical either way live here. */ ?>
     .rc-remark-text { font-size: 11px; line-height: 1.35; }
     .rc-qr-target svg { width: 58px; height: 58px; }
     .rc-qr-caption { font-size: 7.5px; }
-    .rc-footer { font-size: 8px; margin-top: 12px; }
+    .rc-skills-title { font-size: 9.5px; margin-bottom: 5px; }
+    .rc-skill-name, .rc-skill-grade { font-size: 11px; padding: 2px 0; }
+    /* The single biggest fix for the "one extra page just for the
+       signatures" overflow -- 50px/30px on screen (readable, meant for a
+       full-size monitor) is pure wasted space on a printed page that's
+       already tight after 8+ subjects each with their own assessment
+       breakdown. */
+    .rc-signatures { margin-top: 8px; }
+    .rc-sig-line { height: 10px; }
+    .rc-sig-line-certified { font-size: 10px; line-height: 13px; }
+    .rc-sig-label { font-size: 8.5px; margin-top: 2px; }
+    .rc-footer { font-size: 7.5px; margin-top: 6px; }
 }
