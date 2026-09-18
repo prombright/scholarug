@@ -71,6 +71,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_uace_defaults'])
     $message_type = 'success';
 }
 
+// ---- Grading bands: explicit opt-in reset to the Primary default scale ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_primary_defaults'])) {
+    admin_grading_seed_primary_defaults($pdo, $school_id);
+    $message = 'Primary scale reset to the default D1-F9 bands. Review the labels and cutoffs below.';
+    $message_type = 'success';
+}
+
 // ---- Generic skills: create ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_skill'])) {
     $result = admin_grading_create_skill($pdo, $school_id, trim($_POST['skill_name'] ?? ''));
@@ -99,26 +106,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['seed_default_skills']
     $message_type = 'success';
 }
 
-$levelSections = [
-    [
-        'level'        => 'O-Level',
-        'title'        => 'O-Level Grading Bands',
-        'desc'         => "A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.",
-        'bands'        => admin_grading_fetch_bands($pdo, $school_id, 'O-Level'),
-        'reset_field'  => 'seed_competency_defaults',
-        'reset_label'  => 'Reset to Competency-Based Defaults',
-        'reset_prompt' => 'This replaces ALL current O-Level grading bands with the competency-based defaults. Continue?',
-    ],
-    [
-        'level'        => 'A-Level',
-        'title'        => 'A-Level Grading Bands',
-        'desc'         => "Used for UACE points on A-Level report cards (principal subjects, General Paper, and the assigned Subsidiary). Needs a real F band so a fail is actually detected.",
-        'bands'        => admin_grading_fetch_bands($pdo, $school_id, 'A-Level'),
-        'reset_field'  => 'seed_uace_defaults',
-        'reset_label'  => 'Reset to UACE Standard Scale',
-        'reset_prompt' => 'This replaces ALL current A-Level grading bands with the UACE standard defaults. Continue?',
-    ],
-];
+// A Primary school has no O-Level/A-Level split at all -- showing both of
+// those sections (and letting an admin add/edit "A-Level" bands) never
+// made sense for one, and scholar_fetch_grading_scales() had no 'Primary'
+// level_type to look up anyway (see admin_grading_normalize_level()),
+// so a Primary report card's grade column always showed "N/A" until this.
+$school_type_stmt = $pdo->prepare("SELECT school_type FROM schools WHERE id = ?");
+$school_type_stmt->execute([$school_id]);
+$school_type = $school_type_stmt->fetchColumn() ?: 'Secondary';
+
+if ($school_type === 'Primary') {
+    $levelSections = [
+        [
+            'level'        => 'Primary',
+            'title'        => 'Primary Grading Bands',
+            'desc'         => "A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.",
+            'bands'        => admin_grading_fetch_bands($pdo, $school_id, 'Primary'),
+            'reset_field'  => 'seed_primary_defaults',
+            'reset_label'  => 'Reset to Default Scale',
+            'reset_prompt' => 'This replaces ALL current Primary grading bands with the default D1-F9 bands. Continue?',
+        ],
+    ];
+} else {
+    $levelSections = [
+        [
+            'level'        => 'O-Level',
+            'title'        => 'O-Level Grading Bands',
+            'desc'         => "A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.",
+            'bands'        => admin_grading_fetch_bands($pdo, $school_id, 'O-Level'),
+            'reset_field'  => 'seed_competency_defaults',
+            'reset_label'  => 'Reset to Competency-Based Defaults',
+            'reset_prompt' => 'This replaces ALL current O-Level grading bands with the competency-based defaults. Continue?',
+        ],
+        [
+            'level'        => 'A-Level',
+            'title'        => 'A-Level Grading Bands',
+            'desc'         => "Used for UACE points on A-Level report cards (principal subjects, General Paper, and the assigned Subsidiary). Needs a real F band so a fail is actually detected.",
+            'bands'        => admin_grading_fetch_bands($pdo, $school_id, 'A-Level'),
+            'reset_field'  => 'seed_uace_defaults',
+            'reset_label'  => 'Reset to UACE Standard Scale',
+            'reset_prompt' => 'This replaces ALL current A-Level grading bands with the UACE standard defaults. Continue?',
+        ],
+    ];
+}
 $skills = admin_grading_fetch_skills($pdo, $school_id);
 
 $SCHOLAR_BASE = '../';
@@ -161,6 +191,15 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 
     <?php if ($message): ?><div class="alert <?= $message_type ?>"><?= htmlspecialchars($message, ENT_QUOTES) ?></div><?php endif; ?>
 
+    <?php if ($school_type === 'Primary'): ?>
+    <div class="disclaimer">
+        <strong>Heads up:</strong> the default Primary scale (D1/D2 Distinction, C3-C6 Credit,
+        P7/P8 Pass, F9 Fail) follows the usual PLE aggregate-grade numbering, but its percentage
+        cutoffs are a reasonable starting point, not an official boundary — adjust them below if
+        your school's guidance differs. The default skills list is still a best-effort placeholder;
+        review it before relying on it for real report cards.
+    </div>
+    <?php else: ?>
     <div class="disclaimer">
         <strong>Heads up:</strong> the "reset to competency-based defaults" band labels
         (A - Exceptional through E - Elementary, no F) match Uganda's new lower-secondary
@@ -168,6 +207,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
         adjust them below if your school's guidance differs. The default skills list is still a
         best-effort placeholder; review it before relying on it for real report cards.
     </div>
+    <?php endif; ?>
 
     <?php foreach ($levelSections as $sec): ?>
     <div class="section">

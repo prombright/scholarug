@@ -22,7 +22,10 @@ function admin_grading_parse_color(array $input): ?string
  *  configuring this table is actually scoring. */
 function admin_grading_normalize_level(?string $levelType): string
 {
-    return $levelType === 'A-Level' ? 'A-Level' : 'O-Level';
+    if ($levelType === 'A-Level' || $levelType === 'Primary') {
+        return $levelType;
+    }
+    return 'O-Level';
 }
 
 /** @return array{ok:bool,message:string} */
@@ -123,6 +126,36 @@ function admin_grading_seed_uace_defaults(PDO $pdo, int $schoolId): void
         ['F', 0,  29.99, 'Fail.',                    0, '#fee2e2'],
     ];
     $ins = $pdo->prepare("INSERT INTO grading_scales (school_id, level_type, grade, min_mark, max_mark, remark, points, color) VALUES (?, 'A-Level', ?, ?, ?, ?, ?, ?)");
+    foreach ($defaults as $d) {
+        $ins->execute([$schoolId, $d[0], $d[1], $d[2], $d[3], $d[4], $d[5]]);
+    }
+    $pdo->commit();
+}
+
+/**
+ * Uganda primary-school convention: D1/D2 (Distinction), C3-C6 (Credit),
+ * P7/P8 (Pass), F9 (Fail) -- same digit-as-points numbering PLE aggregate
+ * scoring already uses (1 = best, 9 = worst), rather than inventing a
+ * points scale that disagrees with what the grade label itself says.
+ * Scoped to level_type='Primary' only -- resetting this never touches
+ * O-Level/A-Level.
+ */
+function admin_grading_seed_primary_defaults(PDO $pdo, int $schoolId): void
+{
+    $pdo->beginTransaction();
+    $pdo->prepare("DELETE FROM grading_scales WHERE school_id = ? AND level_type = 'Primary'")->execute([$schoolId]);
+    $defaults = [
+        ['D1', 90, 100,   'Distinction 1.', 1, '#dcfce7'],
+        ['D2', 80, 89.99, 'Distinction 2.', 2, '#dcfce7'],
+        ['C3', 70, 79.99, 'Credit 3.',      3, '#dbeafe'],
+        ['C4', 60, 69.99, 'Credit 4.',      4, '#dbeafe'],
+        ['C5', 50, 59.99, 'Credit 5.',      5, '#e0f2fe'],
+        ['C6', 45, 49.99, 'Credit 6.',      6, '#e0f2fe'],
+        ['P7', 40, 44.99, 'Pass 7.',        7, '#fef9c3'],
+        ['P8', 35, 39.99, 'Pass 8.',        8, '#ffedd5'],
+        ['F9', 0,  34.99, 'Fail 9.',        9, '#fee2e2'],
+    ];
+    $ins = $pdo->prepare("INSERT INTO grading_scales (school_id, level_type, grade, min_mark, max_mark, remark, points, color) VALUES (?, 'Primary', ?, ?, ?, ?, ?, ?)");
     foreach ($defaults as $d) {
         $ins->execute([$schoolId, $d[0], $d[1], $d[2], $d[3], $d[4], $d[5]]);
     }

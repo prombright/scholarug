@@ -36,6 +36,10 @@ $school_id = current_school_id();
 $is_teacher = $_SESSION['role'] === 'teacher';
 $error = '';
 
+$school_type_stmt = $pdo->prepare("SELECT school_type FROM schools WHERE id = ?");
+$school_type_stmt->execute([$school_id]);
+$school_type = $school_type_stmt->fetchColumn() ?: 'Secondary';
+
 if ($is_teacher) {
     $classesStmt = $pdo->prepare("
         SELECT id, class_name, stream_name FROM classes
@@ -73,11 +77,19 @@ if ($sel_class !== null) {
                 $sel_class_name = $c['class_name'];
             }
         }
-        // A class is level-homogeneous (S.1-S.4 vs S.5-S.6), so the whole
-        // batch fetches ONE grading scale, same as admin_student_level_type()
-        // decides at student-creation time -- keeps this in lockstep with
-        // whichever scale render_report_card_html() picks per student.
-        $class_level_type = admin_student_level_type($sel_class_name) === 'A-Level' ? 'A-Level' : 'O-Level';
+        // A class is level-homogeneous (S.1-S.4 vs S.5-S.6, or Primary),
+        // so the whole batch fetches ONE grading scale, same as
+        // admin_student_level_type() decides at student-creation time --
+        // keeps this in lockstep with whichever scale
+        // render_report_card_html() picks per student. That function
+        // returns '' (not 'A-Level'/'O-Level') for a Primary class name
+        // (P.1-P.7 never match its "^S" pattern), so coercing anything
+        // that isn't literally 'A-Level' to 'O-Level' silently graded
+        // every Primary class against the O-Level scale.
+        $class_level_type = admin_student_level_type($sel_class_name);
+        if (!in_array($class_level_type, ['A-Level', 'O-Level'], true)) {
+            $class_level_type = $school_type === 'Primary' ? 'Primary' : 'O-Level';
+        }
 
         $school_stmt = $pdo->prepare("SELECT school_name, school_badge, phone_contact, email_contact, address FROM schools WHERE id = ?");
         $school_stmt->execute([$school_id]);

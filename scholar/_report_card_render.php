@@ -35,16 +35,16 @@ function scholar_grade_for_score(array $gradingScales, float $score): array
 
 /**
  * Fetches one school's grading_scales table once, ordered to match the
- * original per-call SQL's implicit first-match behavior. O-Level and
- * A-Level keep independent band sets (grading_scales.level_type) -- a
- * report card must grade every subject against the scale matching that
- * student's own level_type, never the other one.
+ * original per-call SQL's implicit first-match behavior. O-Level, A-Level,
+ * and Primary each keep independent band sets (grading_scales.level_type)
+ * -- a report card must grade every subject against the scale matching
+ * that student's own level_type, never one of the other two.
  *
  * @return array<int,array{grade:string,points:mixed,remark:?string,min_mark:mixed,max_mark:mixed,color:?string}>
  */
 function scholar_fetch_grading_scales(PDO $pdo, int $school_id, string $level_type = 'O-Level'): array
 {
-    $level_type = $level_type === 'A-Level' ? 'A-Level' : 'O-Level';
+    $level_type = in_array($level_type, ['A-Level', 'Primary'], true) ? $level_type : 'O-Level';
     $stmt = $pdo->prepare("SELECT grade, points, remark, min_mark, max_mark, color FROM grading_scales WHERE school_id = ? AND level_type = ? ORDER BY min_mark ASC");
     $stmt->execute([$school_id, $level_type]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -454,7 +454,7 @@ function scholar_ordinal(int $n): string
  */
 function getCalculatedGradeAndComment(PDO $pdo, int $school_id, int $student_id, int $subject_id, string $term, int $year, ?array $classBatch = null, string $level_type = 'O-Level'): array
 {
-    $level_type = $level_type === 'A-Level' ? 'A-Level' : 'O-Level';
+    $level_type = in_array($level_type, ['A-Level', 'Primary'], true) ? $level_type : 'O-Level';
     if ($classBatch !== null) {
         $entry = $classBatch['weighted_scores'][$student_id][$subject_id] ?? null;
 
@@ -851,7 +851,7 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
             ]);
             $subjects = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $student_level = ($student['level_type'] ?? '') === 'A-Level' ? 'A-Level' : 'O-Level';
+            $student_level = in_array($student['level_type'] ?? '', ['A-Level', 'Primary'], true) ? $student['level_type'] : 'O-Level';
 
             foreach ($subjects as $sub) {
                 $eval = getCalculatedGradeAndComment(
@@ -878,7 +878,7 @@ function render_report_card_html(PDO $pdo, array $school, int $school_id, int $s
     // O-Level and A-Level keep independent grading_scales -- every lookup
     // below (subject cells, the legend, the overall summary band) must use
     // whichever one matches this student, never the other.
-    $student_level = ($student['level_type'] ?? '') === 'A-Level' ? 'A-Level' : 'O-Level';
+    $student_level = in_array($student['level_type'] ?? '', ['A-Level', 'Primary'], true) ? $student['level_type'] : 'O-Level';
 
     $student_name = $student['full_name'] ?? $student['student_name'] ?? 'Student';
 

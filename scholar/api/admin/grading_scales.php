@@ -22,6 +22,10 @@ header('Content-Type: application/json; charset=utf-8');
 
 $school_id = current_school_id();
 
+$school_type_stmt = $pdo->prepare("SELECT school_type FROM schools WHERE id = ?");
+$school_type_stmt->execute([$school_id]);
+$school_type = $school_type_stmt->fetchColumn() ?: 'Secondary';
+
 function admin_grading_json_error(string $message, int $code = 400): void
 {
     http_response_code($code);
@@ -29,14 +33,23 @@ function admin_grading_json_error(string $message, int $code = 400): void
     exit;
 }
 
-function admin_grading_snapshot(PDO $pdo, int $schoolId): array
+// A Primary school has no O-Level/A-Level split -- it gets its own single
+// 'Primary' band set instead of the two Secondary sections (see
+// admin_grading_normalize_level(), which previously coerced 'Primary' to
+// 'O-Level' and left grading_scales.level_type unable to even store the
+// value -- both fixed alongside this).
+function admin_grading_snapshot(PDO $pdo, int $schoolId, string $schoolType): array
 {
-    return [
-        'success' => true,
-        'bands' => [
+    $bands = $schoolType === 'Primary'
+        ? ['Primary' => admin_grading_fetch_bands($pdo, $schoolId, 'Primary')]
+        : [
             'O-Level' => admin_grading_fetch_bands($pdo, $schoolId, 'O-Level'),
             'A-Level' => admin_grading_fetch_bands($pdo, $schoolId, 'A-Level'),
-        ],
+        ];
+    return [
+        'success' => true,
+        'school_type' => $schoolType,
+        'bands' => $bands,
         'skills' => admin_grading_fetch_skills($pdo, $schoolId),
     ];
 }
@@ -44,7 +57,7 @@ function admin_grading_snapshot(PDO $pdo, int $schoolId): array
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    echo json_encode(admin_grading_snapshot($pdo, $school_id), JSON_UNESCAPED_SLASHES);
+    echo json_encode(admin_grading_snapshot($pdo, $school_id, $school_type), JSON_UNESCAPED_SLASHES);
     exit;
 }
 
@@ -72,6 +85,10 @@ if ($method === 'POST') {
             admin_grading_seed_uace_defaults($pdo, $school_id);
             $result = ['ok' => true, 'message' => 'A-Level scale reset to the UACE standard bands. Review the labels and cutoffs below.'];
             break;
+        case 'seed_primary_defaults':
+            admin_grading_seed_primary_defaults($pdo, $school_id);
+            $result = ['ok' => true, 'message' => 'Primary scale reset to the default D1-F9 bands. Review the labels and cutoffs below.'];
+            break;
         case 'create_skill':
             $result = admin_grading_create_skill($pdo, $school_id, trim((string) ($body['skill_name'] ?? '')));
             break;
@@ -95,7 +112,7 @@ if ($method === 'POST') {
         admin_grading_json_error($result['message']);
     }
 
-    $snapshot = admin_grading_snapshot($pdo, $school_id);
+    $snapshot = admin_grading_snapshot($pdo, $school_id, $school_type);
     $snapshot['message'] = $result['message'];
     echo json_encode($snapshot, JSON_UNESCAPED_SLASHES);
     exit;

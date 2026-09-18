@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { gradingScalesApi, scholarBase } from '../services/api'
 
 const SB = scholarBase()
@@ -8,47 +8,77 @@ const loading = ref(true)
 const busy = ref(false)
 const message = ref(null)
 
-const LEVELS = [
-  {
-    level: 'O-Level',
-    title: 'O-Level Grading Bands',
-    desc: "A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.",
-    resetAction: 'seed_competency_defaults',
-    resetLabel: 'Reset to Competency-Based Defaults',
-    resetPrompt: 'This replaces ALL current O-Level grading bands with the competency-based defaults. Continue?',
-  },
-  {
-    level: 'A-Level',
-    title: 'A-Level Grading Bands',
-    desc: 'Used for UACE points on A-Level report cards (principal subjects, General Paper, and the assigned Subsidiary). Needs a real F band so a fail is actually detected.',
-    resetAction: 'seed_uace_defaults',
-    resetLabel: 'Reset to UACE Standard Scale',
-    resetPrompt: 'This replaces ALL current A-Level grading bands with the UACE standard defaults. Continue?',
-  },
-]
+// A Primary school has no O-Level/A-Level split -- it gets one "Primary"
+// section instead of the two Secondary ones, populated once the GET
+// response reports school_type (schoolType starts null so LEVELS is
+// empty during that first load, rather than briefly showing the wrong
+// section for a Primary school before the real value arrives).
+const schoolType = ref(null)
+const LEVELS = computed(() => {
+  if (schoolType.value === 'Primary') {
+    return [
+      {
+        level: 'Primary',
+        title: 'Primary Grading Bands',
+        desc: "A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.",
+        resetAction: 'seed_primary_defaults',
+        resetLabel: 'Reset to Default Scale',
+        resetPrompt: 'This replaces ALL current Primary grading bands with the default D1-F9 bands. Continue?',
+      },
+    ]
+  }
+  if (schoolType.value === null) return []
+  return [
+    {
+      level: 'O-Level',
+      title: 'O-Level Grading Bands',
+      desc: "A student's weighted % score on each subject is matched against these bands to produce the grade/descriptor shown on the report card.",
+      resetAction: 'seed_competency_defaults',
+      resetLabel: 'Reset to Competency-Based Defaults',
+      resetPrompt: 'This replaces ALL current O-Level grading bands with the competency-based defaults. Continue?',
+    },
+    {
+      level: 'A-Level',
+      title: 'A-Level Grading Bands',
+      desc: 'Used for UACE points on A-Level report cards (principal subjects, General Paper, and the assigned Subsidiary). Needs a real F band so a fail is actually detected.',
+      resetAction: 'seed_uace_defaults',
+      resetLabel: 'Reset to UACE Standard Scale',
+      resetPrompt: 'This replaces ALL current A-Level grading bands with the UACE standard defaults. Continue?',
+    },
+  ]
+})
 
-const bands = ref({ 'O-Level': [], 'A-Level': [] })
+const bands = ref({})
 const skills = ref([])
 
 function blankBand() {
   return { grade: '', min_mark: '', max_mark: '', remark: '', points: '', use_color: false, color: '#ffffff' }
 }
-const newBand = ref({ 'O-Level': blankBand(), 'A-Level': blankBand() })
+const newBand = ref({})
+
+function ensureNewBandSlots() {
+  for (const sec of LEVELS.value) {
+    if (!newBand.value[sec.level]) newBand.value[sec.level] = blankBand()
+  }
+}
 const newSkillName = ref('')
 
 function decorateBands(raw) {
-  return {
-    'O-Level': (raw?.['O-Level'] || []).map((b) => ({ ...b, use_color: !!b.color, color: b.color || '#ffffff' })),
-    'A-Level': (raw?.['A-Level'] || []).map((b) => ({ ...b, use_color: !!b.color, color: b.color || '#ffffff' })),
+  const out = {}
+  for (const level of Object.keys(raw || {})) {
+    out[level] = (raw[level] || []).map((b) => ({ ...b, use_color: !!b.color, color: b.color || '#ffffff' }))
   }
+  return out
 }
 
 async function load() {
   loading.value = true
   try {
     const { data } = await gradingScalesApi.get()
+    schoolType.value = data.school_type
     bands.value = decorateBands(data.bands)
     skills.value = data.skills
+    ensureNewBandSlots()
   } catch (e) {
     message.value = { type: 'error', text: e.response?.data?.message || 'Could not load grading scale settings.' }
   } finally {
@@ -64,6 +94,7 @@ async function runAction(payload, successOverride) {
     const { data } = await gradingScalesApi.action(payload)
     bands.value = decorateBands(data.bands)
     skills.value = data.skills
+    ensureNewBandSlots()
     message.value = { type: 'success', text: successOverride || data.message }
   } catch (e) {
     message.value = { type: 'error', text: e.response?.data?.message || 'That action failed.' }
@@ -116,7 +147,13 @@ function seedDefaultSkills() {
 
   <div v-if="message" class="alert" :class="message.type">{{ message.text }}</div>
 
-  <div class="disclaimer">
+  <div class="disclaimer" v-if="schoolType === 'Primary'">
+    <strong>Heads up:</strong> the default Primary scale (D1/D2 Distinction, C3-C6 Credit, P7/P8 Pass,
+    F9 Fail) follows the usual PLE aggregate-grade numbering, but its percentage cutoffs are a
+    reasonable starting point, not an official boundary — adjust them below if your school's guidance
+    differs.
+  </div>
+  <div class="disclaimer" v-else>
     <strong>Heads up:</strong> O-Level and A-Level keep independent grading scales. The "reset to
     competency-based defaults" O-Level band labels (A - Exceptional through E - Elementary, no F) match
     Uganda's new lower-secondary curriculum; the A-Level "UACE Standard Scale" is the traditional A-F
@@ -133,8 +170,8 @@ function seedDefaultSkills() {
       <div class="table-wrap">
         <table class="bands-table">
           <tr><th>Grade / Descriptor</th><th>Min %</th><th>Max %</th><th>Remark</th><th>Points</th><th>Color</th><th></th><th></th></tr>
-          <tr v-if="!bands[sec.level].length"><td colspan="8" class="empty-cell">No {{ sec.level }} bands configured yet.</td></tr>
-          <tr v-for="b in bands[sec.level]" :key="b.id">
+          <tr v-if="!(bands[sec.level] || []).length"><td colspan="8" class="empty-cell">No {{ sec.level }} bands configured yet.</td></tr>
+          <tr v-for="b in (bands[sec.level] || [])" :key="b.id">
             <td style="min-width:130px;"><input type="text" v-model="b.grade"></td>
             <td style="max-width:90px;"><input type="number" step="0.01" v-model.number="b.min_mark"></td>
             <td style="max-width:90px;"><input type="number" step="0.01" v-model.number="b.max_mark"></td>
