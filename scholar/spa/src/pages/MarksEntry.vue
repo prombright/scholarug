@@ -242,4 +242,34 @@ tbody tr:last-child td{border-bottom:none;}
 .pick-card .progress-label{font-size:0.72rem;color:var(--muted);}
 .breadcrumb{color:var(--muted);font-size:0.82rem;margin-bottom:18px;}
 .breadcrumb a{color:var(--cyan);text-decoration:none;}
+
+/* Same mobile reflow as the classic teacher_marks_entry.php's roster table
+   -- see that file's matching comment. Kept in sync by hand since this is
+   a separate Vue copy of the exact same table markup/column order. */
+@media(max-width:640px){
+    .filters{flex-direction:column;align-items:stretch !important;}
+    .filters form{flex-wrap:wrap;}
+    a.btn-link{text-align:center;}
+    table{min-width:0;}
+    thead{display:none;}
+    tbody{display:block;}
+    tbody tr{
+        display:grid;
+        grid-template-columns:1fr auto;
+        grid-template-areas:"name name" "no status" "mark mark";
+        gap:8px;
+        background:var(--bg);border:1px solid var(--border);border-radius:10px;
+        padding:14px;margin-bottom:10px;
+    }
+    tbody tr:last-child{margin-bottom:0;}
+    tbody td{border-bottom:none;padding:0;}
+    tbody td:nth-child(1){display:none;}
+    tbody td:nth-child(2){grid-area:no;color:var(--muted);font-size:0.78rem;align-self:center;}
+    tbody td:nth-child(3){grid-area:name;font-weight:700;font-size:0.95rem;align-self:center;}
+    tbody td:nth-child(4){grid-area:mark;}
+    tbody td:nth-child(4) input{width:100%;padding:12px;font-size:16px;text-align:center;}
+    tbody td:nth-child(5){grid-area:status;justify-self:end;align-self:center;}
+    .section-footer{flex-direction:column;}
+    .section-footer button{width:100%;}
+}
 </style>
