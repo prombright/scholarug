@@ -12,24 +12,34 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 
+require_once __DIR__ . '/_report_card_render.php';
+
 /**
- * One combined (summed across papers) score per student per assessment,
- * for every submitted mark in $classId matching $subjectId (or every
- * subject the class takes, if $subjectId is null -- the class-teacher
- * view), scoped to the school's current term/year.
+ * One combined score per student per assessment, for every submitted mark
+ * in $classId matching $subjectId (or every subject the class takes, if
+ * $subjectId is null -- the class-teacher view), scoped to the school's
+ * current term/year. A two-paper subject's papers are combined via
+ * scholar_combine_paper_marks() -- the subject's configured contribution
+ * weights (subject_matrix.php), same as the report card -- rather than
+ * just summed, so a subject with two 0-100 papers doesn't score up to 200
+ * against the 0-100 scale every average/chart here assumes.
  *
  * @return array<int,array{student_id:int,full_name:string,sex:string,subject_id:int,subject_name:string,assessment_id:int,assessment_title:string,assessment_order:string,score:float}>
  */
 function analytics_fetch_scores(PDO $pdo, int $schoolId, int $classId, ?int $subjectId, string $term, int $year): array
 {
+    $weightCols = scholar_paper_weights_column_exists($pdo)
+        ? 'sub.paper1_weight_percentage, sub.paper2_weight_percentage'
+        : '50.00 AS paper1_weight_percentage, 50.00 AS paper2_weight_percentage';
+
     $sql = "
         SELECT st.id AS student_id, st.full_name, st.sex,
-               sm.subject_id, sub.subject_name,
-               sm.assessment_id, a.title AS assessment_title, a.created_at AS assessment_order,
-               SUM(sm.marks) AS score
+               sm.subject_id, sub.subject_name, sub.papers_count, {$weightCols},
+               sm.paper_number, sm.marks,
+               sm.assessment_id, a.title AS assessment_title, a.created_at AS assessment_order
         FROM student_marks sm
         JOIN students st ON st.id = sm.student_id AND st.school_id = sm.school_id
-        JOIN subjects sub ON sub.id = sm.subject_id
+        JOIN subjects sub ON sub.id = sm.subject_id AND sub.school_id = sm.school_id
         JOIN assessments a ON a.id = sm.assessment_id
         WHERE sm.school_id = ? AND sm.class_id = ? AND sm.submission_status = 'submitted'
           AND a.term = ? AND a.year = ?
@@ -39,11 +49,50 @@ function analytics_fetch_scores(PDO $pdo, int $schoolId, int $classId, ?int $sub
         $sql .= ' AND sm.subject_id = ?';
         $params[] = $subjectId;
     }
-    $sql .= ' GROUP BY st.id, sm.subject_id, sm.assessment_id ORDER BY a.created_at ASC';
+    $sql .= ' ORDER BY a.created_at ASC';
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Grouped by (student, subject, assessment) in PHP rather than
+    // aggregated in SQL -- scholar_combine_paper_marks() needs each paper's
+    // individual mark, not a pre-summed one, to apply the subject's own
+    // paper weights instead of always adding both papers together.
+    $byGroup = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $key = $row['student_id'] . ':' . $row['subject_id'] . ':' . $row['assessment_id'];
+        if (!isset($byGroup[$key])) {
+            $byGroup[$key] = [
+                'student_id'                => (int) $row['student_id'],
+                'full_name'                 => $row['full_name'],
+                'sex'                       => $row['sex'],
+                'subject_id'                => (int) $row['subject_id'],
+                'subject_name'              => $row['subject_name'],
+                'assessment_id'             => (int) $row['assessment_id'],
+                'assessment_title'          => $row['assessment_title'],
+                'assessment_order'          => $row['assessment_order'],
+                'papers_count'              => (int) $row['papers_count'],
+                'paper1_weight_percentage'  => (float) $row['paper1_weight_percentage'],
+                'paper2_weight_percentage'  => (float) $row['paper2_weight_percentage'],
+                'papers'                    => [],
+            ];
+        }
+        $byGroup[$key]['papers'][] = ['paper_number' => $row['paper_number'], 'marks' => $row['marks']];
+    }
+
+    $scores = [];
+    foreach ($byGroup as $g) {
+        $g['score'] = scholar_combine_paper_marks(
+            $g['papers'],
+            $g['papers_count'],
+            $g['paper1_weight_percentage'],
+            $g['paper2_weight_percentage']
+        );
+        unset($g['papers'], $g['papers_count'], $g['paper1_weight_percentage'], $g['paper2_weight_percentage']);
+        $scores[] = $g;
+    }
+    usort($scores, static fn($a, $b) => $a['assessment_order'] <=> $b['assessment_order']);
+    return $scores;
 }
 
 /**
