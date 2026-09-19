@@ -287,7 +287,7 @@ border-color:#06b6d4;
 
 .pw-wrap{ position:relative; }
 .pw-wrap input{ padding-right:42px; margin-bottom:0; }
-.pw-toggle-btn{ position:absolute; top:0; bottom:0; right:6px; margin:auto; height:18px; background:none; border:none; cursor:pointer; padding:6px; display:flex; align-items:center; color:var(--muted); }
+.pw-toggle-btn{ position:absolute; top:0; bottom:0; right:6px; margin:auto; width:30px; height:18px; background:none; border:none; cursor:pointer; padding:6px; display:flex; align-items:center; justify-content:center; color:var(--muted); }
 .pw-toggle-btn:hover{ color:#06b6d4; }
 .pw-toggle-btn svg{ width:18px; height:18px; }
 .pw-wrap-margin{ margin-bottom:20px; }

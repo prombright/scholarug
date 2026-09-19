@@ -78,9 +78,9 @@ if ($is_hr_role) {
 .sms-section input{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:6px;font-size:0.85rem;box-sizing:border-box;}
 .pw-wrap{position:relative;}
 .pw-wrap input{padding-right:38px;}
-.pw-toggle-btn{position:absolute;top:0;bottom:0;right:4px;margin:auto;height:16px;background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;color:var(--muted);}
-.pw-toggle-btn:hover{color:var(--cyan,#00A8A8);}
-.pw-toggle-btn svg{width:16px;height:16px;}
+.pw-wrap .pw-toggle-btn{position:absolute;top:0;bottom:0;right:4px;margin:auto;width:28px;height:16px;background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.pw-wrap .pw-toggle-btn:hover{color:var(--cyan,#00A8A8);}
+.pw-wrap .pw-toggle-btn svg{width:16px;height:16px;}
 .sms-hint{color:var(--muted);font-size:0.75rem;margin-top:4px;}
 .sms-section button{cursor:pointer;border:none;border-radius:6px;padding:10px 18px;font-weight:700;font-size:0.85rem;background:var(--cyan);color:#04121a;margin-top:16px;}
 .sms-section button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:10px;}
