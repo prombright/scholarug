@@ -29,7 +29,9 @@ final class XlsxReader
             throw new RuntimeException('That .xlsx file has no readable first worksheet.');
         }
 
-        $xml = simplexml_load_string($sheetXml);
+        // LIBXML_NONET blocks any external entity fetch a crafted workbook
+        // might reference -- this file only ever gets an untrusted upload.
+        $xml = simplexml_load_string($sheetXml, 'SimpleXMLElement', LIBXML_NONET);
         if ($xml === false) {
             throw new RuntimeException('That .xlsx worksheet could not be parsed.');
         }
@@ -68,7 +70,7 @@ final class XlsxReader
             return [];
         }
 
-        $xml = simplexml_load_string($xmlContent);
+        $xml = simplexml_load_string($xmlContent, 'SimpleXMLElement', LIBXML_NONET);
         if ($xml === false) {
             return [];
         }
