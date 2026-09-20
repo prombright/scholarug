@@ -641,7 +641,7 @@ if (!empty($__school_brand['school_badge']) && file_exists(__DIR__ . '/' . $__sc
     </div>
 
     <script>
-        const availableDrugs = <?= json_encode(array_map(fn($d) => ['id' => (int) $d['id'], 'name' => $d['drug_name'], 'stock' => (int) $d['available_stock'], 'price' => (float) $d['unit_price']], $drugs)); ?>;
+        const availableDrugs = <?= json_encode(array_map(fn($d) => ['id' => (int) $d['id'], 'name' => $d['drug_name'], 'stock' => (int) $d['available_stock'], 'price' => (float) $d['unit_price']], $drugs), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 
         function showTab(tab) {
             document.getElementById('paneStudent').style.display = tab === 'student' ? 'block' : 'none';

@@ -127,6 +127,15 @@ button{cursor:pointer;border:none;border-radius:6px;padding:8px 14px;font-weight
     api.addEventListener('readyToClose', function () { logAttendance('left'); });
 
     // --- Q&A: poll-based, same pattern as payments/subscription_status.php ---
+    // question_text/answer_text are free-typed by students/teachers and were
+    // going straight into innerHTML unescaped -- any classmate/teacher with
+    // this room open would run whatever script another student's "question"
+    // contained. escapeHtml() before it ever reaches innerHTML.
+    function escapeHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
     function renderQuestions(items) {
         var box = document.getElementById('qList');
         box.innerHTML = '';
@@ -134,9 +143,9 @@ button{cursor:pointer;border:none;border-radius:6px;padding:8px 14px;font-weight
             var div = document.createElement('div');
             div.className = 'qitem';
             var who = q.visibility === 'private' ? 'Private question' : 'Public question';
-            var html = '<div class="who">' + who + '</div><div>' + q.question_text + '</div>';
+            var html = '<div class="who">' + who + '</div><div>' + escapeHtml(q.question_text) + '</div>';
             if (q.answer_text) {
-                html += '<div class="ans">' + q.answer_text + '</div>';
+                html += '<div class="ans">' + escapeHtml(q.answer_text) + '</div>';
             } else if (isTeacher) {
                 html += '<div class="ansform"><input type="text" data-qid="' + q.id + '" placeholder="Answer..."><button type="button" class="ansBtn" data-qid="' + q.id + '">Send</button></div>';
             } else {
