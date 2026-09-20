@@ -347,11 +347,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = null;
 
                 foreach ($candidates as $candidate) {
-                    if (
-                        $password === $candidate['password']
-                        ||
-                        password_verify($password, $candidate['password'])
-                    ) {
+                    $password_ok = password_verify($password, (string) $candidate['password']);
+                    // A legacy plaintext row (never yet hashed) still gets in via
+                    // this fallback, but unlike before, it's a one-time bypass --
+                    // it immediately rehashes to bcrypt below, same self-healing
+                    // pattern developer/login.php already uses safely in prod.
+                    $password_ok_legacy_plaintext = !$password_ok && $password === $candidate['password'];
+
+                    if ($password_ok || $password_ok_legacy_plaintext) {
+                        if ($password_ok_legacy_plaintext) {
+                            $pdo->prepare('UPDATE users SET password = ? WHERE id = ?')
+                                ->execute([password_hash($password, PASSWORD_BCRYPT), $candidate['id']]);
+                        }
                         $user = $candidate;
                         break;
                     }
