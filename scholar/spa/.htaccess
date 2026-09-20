@@ -1,0 +1,13 @@
+# This is the Vite/Vue SOURCE tree for the teacher SPA pilot -- never
+# meant to be web-served. The actual served build lives under
+# scholar/assets/spa-teacher/ (see app_teacher.php). Without this, the
+# whole src/ tree, vite.config.js, package.json etc. were fetchable
+# directly by anyone who guessed/found a path (e.g. from a bundle's
+# sourcemap), leaking application source/structure.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>

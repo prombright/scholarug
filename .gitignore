@@ -1,6 +1,10 @@
 # Environment-specific overrides (contain real credentials on prod) -- never commit
 **/config.local.php
 
+# Local fallback encryption key ScholarSecrets.php generates when
+# SCHOLAR_CREDENTIAL_KEY isn't set in the environment -- never commit
+scholar/_secrets/credential.key
+
 # OS / editor cruft
 Thumbs.db
 .DS_Store

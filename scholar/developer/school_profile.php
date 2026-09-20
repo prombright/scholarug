@@ -1,10 +1,9 @@
 <?php
 declare(strict_types=1);
 
-ini_set('display_errors','1');
-ini_set('display_startup_errors','1');
-error_reporting(E_ALL);
-
+// display_errors is governed by config.php's SCHOLAR_ENV check (loaded via
+// db.php below) -- this used to force it on unconditionally regardless of
+// SCHOLAR_ENV before db.php even loaded, which is redundant now.
 require '../db.php';
 
 

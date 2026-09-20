@@ -11,8 +11,11 @@ require_once '../db.php';
 require_once __DIR__ . '/../auth_guard.php'; // for csrf_token()/require_csrf()/login_is_locked_out()/login_record_attempt()
 require_once __DIR__ . '/../_password_toggle.php';
 
-ini_set('display_errors', '1');
-error_reporting(E_ALL);
+// display_errors is already governed by config.php's SCHOLAR_ENV check
+// (loaded via db.php above) -- this used to unconditionally force it back
+// on afterward, which would leak a raw stack trace (file paths, possibly
+// query fragments) to any anonymous visitor on this, the app's only
+// unauthenticated developer-facing page, regardless of SCHOLAR_ENV.
 
 $error = '';
 
