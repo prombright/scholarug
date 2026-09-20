@@ -1,7 +1,11 @@
 <?php
 declare(strict_types=1);
 
-session_start();
+session_start([
+    'cookie_httponly' => true,
+    'cookie_samesite' => 'Strict',
+    'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+]);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/_timetable_helpers.php';
 

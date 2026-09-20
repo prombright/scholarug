@@ -14,7 +14,8 @@ declare(strict_types=1);
 
 session_start([
     'cookie_httponly' => true,
-    'cookie_samesite' => 'Strict'
+    'cookie_samesite' => 'Strict',
+    'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
 ]);
 
 
