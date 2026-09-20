@@ -260,8 +260,12 @@ run_statements($pdo, 'subject_paper_weights_migration', [
 // just a no-op -- so this always runs, not wrapped in run_statements()'s
 // SKIP logic. See that .sql file's header for the full reasoning.
 echo "== grading_scales_primary_level_migration ==\n";
-$pdo->exec("ALTER TABLE grading_scales MODIFY COLUMN level_type ENUM('O-Level','A-Level','Primary') NULL");
-echo "OK: grading_scales.level_type now allows 'Primary'\n";
+try {
+    $pdo->exec("ALTER TABLE grading_scales MODIFY COLUMN level_type ENUM('O-Level','A-Level','Primary') NULL");
+    echo "OK: grading_scales.level_type now allows 'Primary'\n";
+} catch (\PDOException $e) {
+    echo "FAILED: " . $e->getMessage() . "\n";
+}
 try {
     $pdo->prepare('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)')->execute(['grading_scales_primary_level_migration.sql']);
 } catch (\PDOException $e) {
@@ -279,8 +283,16 @@ echo "\n";
 // code to catch, so this always runs (re-applying the identical
 // definition is a no-op) rather than going through run_statements().
 echo "== access_pin_widen_migration ==\n";
-$pdo->exec("ALTER TABLE schools MODIFY COLUMN access_pin VARCHAR(255) NOT NULL");
-echo "OK: schools.access_pin now allows a bcrypt hash\n";
+try {
+    $pdo->exec("ALTER TABLE schools MODIFY COLUMN access_pin VARCHAR(255) NOT NULL");
+    echo "OK: schools.access_pin now allows a bcrypt hash\n";
+} catch (\PDOException $e) {
+    // Printed instead of left to crash the whole page (500 with no detail
+    // in production, since display_errors is correctly off there) -- this
+    // is the one migration in this file that previously had no try/catch
+    // around its ALTER, unlike every other migration here.
+    echo "FAILED: " . $e->getMessage() . "\n";
+}
 try {
     $pdo->prepare('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)')->execute(['access_pin_widen_migration.sql']);
 } catch (\PDOException $e) {
