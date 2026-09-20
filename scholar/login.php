@@ -146,6 +146,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
+                // access_pin used to be VARCHAR(5) -- just wide enough for
+                // the plain PIN, not wide enough for a bcrypt hash -- so it
+                // was always compared in plaintext. access_pin_widen_migration.sql
+                // widens the column; is_string()+password_verify() here is
+                // safe to run BEFORE that migration too (a short plaintext
+                // PIN just never matches password_verify(), same as
+                // developer/login.php's identical self-healing pattern), so
+                // this never throws or depends on migration timing.
+                $access_pin_ok = $school
+                    && is_string($school['access_pin'])
+                    && password_verify($password, $school['access_pin']);
+                $access_pin_ok_legacy_plaintext = $school
+                    && !$access_pin_ok
+                    && is_string($school['access_pin'])
+                    && $password === $school['access_pin'];
+
                 if($school){
 
 
@@ -164,8 +180,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                     elseif(
-                        $password ===
-                        $school['access_pin']
+                        $access_pin_ok
+                        ||
+                        $access_pin_ok_legacy_plaintext
                     ){
 
 
@@ -175,6 +192,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         | SCHOOL ADMIN SESSION
                         |
                         */
+
+                        // One-time self-heal, same pattern as
+                        // developer/login.php and the users-table login
+                        // below -- a plaintext PIN match immediately
+                        // rehashes to bcrypt so it never stays plaintext.
+                        if ($access_pin_ok_legacy_plaintext) {
+                            $pdo->prepare('UPDATE schools SET access_pin = ? WHERE id = ?')
+                                ->execute([password_hash($password, PASSWORD_BCRYPT), $school['id']]);
+                        }
 
                         // Regenerate the session ID on every successful
                         // login (same as developer_login.php) -- without

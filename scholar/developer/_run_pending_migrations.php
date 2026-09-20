@@ -9,8 +9,9 @@ declare(strict_types=1);
 | developer_messages_migration.sql, grading_scales_level_type_migration.sql,
 | attendance_late_status_migration.sql, fees_term_scoping_migration.sql,
 | login_lockout_migration.sql, password_reset_otp_attempts_migration.sql,
-| subject_paper_weights_migration.sql and
-| grading_scales_primary_level_migration.sql against the live database via the same
+| subject_paper_weights_migration.sql,
+| grading_scales_primary_level_migration.sql and
+| access_pin_widen_migration.sql against the live database via the same
 | db.php connection every other page uses (no direct DB CLI/phpMyAdmin
 | access needed from the deploying machine). Gated behind an active
 | developer session, same as every other scholar/developer/* page. Lives
@@ -263,6 +264,25 @@ $pdo->exec("ALTER TABLE grading_scales MODIFY COLUMN level_type ENUM('O-Level','
 echo "OK: grading_scales.level_type now allows 'Primary'\n";
 try {
     $pdo->prepare('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)')->execute(['grading_scales_primary_level_migration.sql']);
+} catch (\PDOException $e) {
+    echo "(not recorded in schema_migrations -- run schema_migrations_tracking.sql first)\n";
+}
+echo "\n";
+
+// access_pin_widen_migration -- schools.access_pin was VARCHAR(5), just
+// wide enough for the plain 5-digit PIN it's always stored as and NOT
+// wide enough for a bcrypt hash (~60 chars) -- the reason an earlier
+// attempt to hash it broke login in production. Widening it does not
+// touch any existing data; every school's current PIN keeps working
+// exactly as before until login.php's self-healing rehash upgrades it on
+// next successful login. MODIFY COLUMN has no "already applied" error
+// code to catch, so this always runs (re-applying the identical
+// definition is a no-op) rather than going through run_statements().
+echo "== access_pin_widen_migration ==\n";
+$pdo->exec("ALTER TABLE schools MODIFY COLUMN access_pin VARCHAR(255) NOT NULL");
+echo "OK: schools.access_pin now allows a bcrypt hash\n";
+try {
+    $pdo->prepare('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)')->execute(['access_pin_widen_migration.sql']);
 } catch (\PDOException $e) {
     echo "(not recorded in schema_migrations -- run schema_migrations_tracking.sql first)\n";
 }
