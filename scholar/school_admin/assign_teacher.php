@@ -37,11 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_departments'])) 
     $success = 'Departments updated.';
 }
 
-// ---- Add a subject+class assignment ----
+// ---- Add a subject+class assignment (one or several classes/streams at once) ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_assignment'])) {
-    $result = admin_assign_add_assignment(
+    $result = admin_assign_add_assignments_bulk(
         $pdo, $school_id, $selected_staff_id,
-        (int) ($_POST['subject_id'] ?? 0), (int) ($_POST['class_id'] ?? 0),
+        trim((string) ($_POST['subject_name'] ?? '')), array_map('intval', $_POST['class_ids'] ?? []),
         (int) ($_POST['periods_per_week'] ?? 5), (int) ($_POST['paper_number'] ?? 1)
     );
     if ($result['ok']) { $success = $result['message']; } else { $error = $result['message']; }
@@ -113,9 +113,16 @@ button{margin-top:16px;background:var(--cyan);color:#04222a;font-weight:700;bord
 table{width:100%;border-collapse:collapse;font-size:0.85rem;}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);}
 th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
-.row{display:flex;gap:12px;}
-.row > div{flex:1;}
+.row{display:flex;gap:12px;flex-wrap:wrap;}
+.row > div{flex:1;min-width:160px;}
 .empty{color:var(--muted);font-size:0.85rem;}
+.muted{color:var(--muted);font-size:0.85rem;}
+.class-picker{display:flex;flex-wrap:wrap;gap:14px;background:var(--bg,rgba(255,255,255,0.02));border:1px solid var(--border);border-radius:6px;padding:10px 12px;max-height:220px;overflow-y:auto;}
+.class-picker-group{min-width:140px;}
+.class-picker-group-head{font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.select-all-link{background:none;border:none;padding:0;margin:0;font-size:0.68rem;font-weight:600;color:var(--cyan);cursor:pointer;text-decoration:underline;}
+.class-picker-item{display:flex;align-items:center;gap:6px;font-size:0.8rem;padding:2px 0;font-weight:400;}
+.class-picker-item input{width:auto;}
 </style>
     <main class="main-content">
     <div class="page-inner">
@@ -184,24 +191,21 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                 <?php if (!$their_assignments): ?><tr><td colspan="6" class="empty">No teaching assignments yet.</td></tr><?php endif; ?>
             </table>
 
-            <form method="post"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+            <form method="post" onsubmit="return assignFormHasAClassChecked();"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="staff_id" value="<?= $selected_staff_id ?>">
                 <div class="row">
                     <div>
                         <label>Subject</label>
-                        <select id="assignSubjectNameSelect" required onchange="onAssignSubjectNameChange()">
+                        <select name="subject_name" id="assignSubjectNameSelect" required onchange="onAssignSubjectNameChange()">
                             <option value="">-- Choose --</option>
                             <?php foreach ($subject_names as $name): ?>
                                 <option value="<?= htmlspecialchars($name, ENT_QUOTES) ?>"><?= htmlspecialchars($name, ENT_QUOTES) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <input type="hidden" name="subject_id" id="assignSubjectIdHidden">
                     </div>
-                    <div>
-                        <label>Class</label>
-                        <select name="class_id" id="assignClassSelect" required disabled onchange="onAssignClassChange()">
-                            <option value="">-- Choose subject first --</option>
-                        </select>
+                    <div style="flex:2;min-width:260px;">
+                        <label>Class(es) — tick every stream you want in one go</label>
+                        <div id="assignClassPicker" class="class-picker"><span class="muted">Choose a subject first.</span></div>
                     </div>
                     <div id="assignPaperPickerWrap" style="display:none;">
                         <label>Paper</label>
@@ -216,35 +220,76 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                 const ASSIGN_SUBJECTS_BY_NAME = <?= json_encode($subjects_by_name, JSON_HEX_TAG) ?>;
                 const ASSIGN_ALL_CLASSES = <?= json_encode($classes, JSON_HEX_TAG) ?>;
 
+                // Rebuilds the checkbox picker grouped by class name -- every
+                // stream of a class sits together with a one-click "select
+                // all" for that class, instead of forcing one submit per
+                // stream the way a single <select> used to.
                 function onAssignSubjectNameChange() {
                     var subjectName = document.getElementById('assignSubjectNameSelect').value;
-                    var classSel = document.getElementById('assignClassSelect');
+                    var picker = document.getElementById('assignClassPicker');
                     var byClassName = ASSIGN_SUBJECTS_BY_NAME[subjectName] || {};
+                    picker.innerHTML = '';
 
-                    classSel.innerHTML = '<option value="">-- Choose --</option>';
-                    classSel.disabled = !subjectName;
+                    if (!subjectName) {
+                        picker.innerHTML = '<span class="muted">Choose a subject first.</span>';
+                        updateAssignPaperPicker(1);
+                        return;
+                    }
 
+                    var groups = {};
+                    var groupOrder = [];
+                    var maxPapers = 1;
                     ASSIGN_ALL_CLASSES.forEach(function (c) {
-                        if (!byClassName[c.class_name]) return; // this class doesn't offer the subject
-                        var o = document.createElement('option');
-                        o.value = c.id;
-                        o.setAttribute('data-class-name', c.class_name);
-                        o.textContent = c.class_name + (c.stream_name ? ' ' + c.stream_name : '');
-                        classSel.appendChild(o);
+                        var entry = byClassName[c.class_name];
+                        if (!entry) return; // this class doesn't offer the subject
+                        if (!groups[c.class_name]) { groups[c.class_name] = []; groupOrder.push(c.class_name); }
+                        groups[c.class_name].push(c);
+                        if (entry.papers_count > maxPapers) maxPapers = entry.papers_count;
                     });
 
-                    onAssignClassChange();
-                }
+                    if (!groupOrder.length) {
+                        picker.innerHTML = '<span class="muted">No classes offer this subject.</span>';
+                        updateAssignPaperPicker(1);
+                        return;
+                    }
 
-                function onAssignClassChange() {
-                    var subjectName = document.getElementById('assignSubjectNameSelect').value;
-                    var classSel = document.getElementById('assignClassSelect');
-                    var opt = classSel.options[classSel.selectedIndex];
-                    var className = opt ? opt.getAttribute('data-class-name') : null;
-                    var entry = (subjectName && className && ASSIGN_SUBJECTS_BY_NAME[subjectName]) ? ASSIGN_SUBJECTS_BY_NAME[subjectName][className] : null;
+                    groupOrder.forEach(function (className) {
+                        var rows = groups[className];
+                        var groupDiv = document.createElement('div');
+                        groupDiv.className = 'class-picker-group';
 
-                    document.getElementById('assignSubjectIdHidden').value = entry ? entry.id : '';
-                    updateAssignPaperPicker(entry ? entry.papers_count : 1);
+                        var head = document.createElement('div');
+                        head.className = 'class-picker-group-head';
+                        head.appendChild(document.createTextNode(className));
+                        if (rows.length > 1) {
+                            var allBtn = document.createElement('button');
+                            allBtn.type = 'button';
+                            allBtn.className = 'select-all-link';
+                            allBtn.textContent = 'select all streams';
+                            allBtn.onclick = function () {
+                                rows.forEach(function (c) { document.getElementById('assignClassCb' + c.id).checked = true; });
+                            };
+                            head.appendChild(allBtn);
+                        }
+                        groupDiv.appendChild(head);
+
+                        rows.forEach(function (c) {
+                            var label = document.createElement('label');
+                            label.className = 'class-picker-item';
+                            var cb = document.createElement('input');
+                            cb.type = 'checkbox';
+                            cb.name = 'class_ids[]';
+                            cb.value = c.id;
+                            cb.id = 'assignClassCb' + c.id;
+                            label.appendChild(cb);
+                            label.appendChild(document.createTextNode(' ' + (c.stream_name || 'Whole class (no streams)')));
+                            groupDiv.appendChild(label);
+                        });
+
+                        picker.appendChild(groupDiv);
+                    });
+
+                    updateAssignPaperPicker(maxPapers);
                 }
 
                 function updateAssignPaperPicker(papersCount) {
@@ -263,6 +308,15 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
                         wrap.style.display = 'none';
                         picker.innerHTML = '';
                     }
+                }
+
+                function assignFormHasAClassChecked() {
+                    var checked = document.querySelectorAll('#assignClassPicker input[type=checkbox]:checked');
+                    if (!checked.length) {
+                        alert('Tick at least one class/stream.');
+                        return false;
+                    }
+                    return true;
                 }
                 </script>
                 <button type="submit" name="add_assignment" value="1">Add Assignment</button>

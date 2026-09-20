@@ -137,6 +137,59 @@ function admin_assign_add_assignment(PDO $pdo, int $schoolId, int $staffId, int 
     }
 }
 
+/**
+ * Same rules as admin_assign_add_assignment(), applied to several classes
+ * (streams) at once -- a school admin assigning e.g. Biology to a teacher
+ * across S.3 A/B/C shouldn't need a separate "Add Assignment" submit per
+ * stream. Each class is resolved to its own subjects row independently
+ * (papers_count/paper_number can genuinely differ per class), so a
+ * heterogeneous selection is still handled correctly per row.
+ *
+ * @param int[] $classIds
+ * @return array{ok:bool,message:string}
+ */
+function admin_assign_add_assignments_bulk(PDO $pdo, int $schoolId, int $staffId, string $subjectName, array $classIds, int $periodsPerWeek, int $requestedPaper): array
+{
+    $classIds = array_values(array_unique(array_filter(array_map('intval', $classIds))));
+    if ($subjectName === '' || !$classIds) {
+        return ['ok' => false, 'message' => 'Pick a subject and at least one class.'];
+    }
+
+    $byClassName = admin_assign_subjects_by_name(admin_assign_fetch_subjects($pdo, $schoolId))[$subjectName] ?? null;
+    if (!$byClassName) {
+        return ['ok' => false, 'message' => 'That subject was not found.'];
+    }
+    $classNameById = [];
+    foreach (admin_assign_fetch_classes($pdo, $schoolId) as $c) {
+        $classNameById[(int) $c['id']] = $c['class_name'];
+    }
+
+    $added = 0;
+    $skipped = 0;
+    foreach ($classIds as $classId) {
+        $className = $classNameById[$classId] ?? null;
+        $subjectId = $className !== null ? ($byClassName[$className]['id'] ?? null) : null;
+        if ($subjectId === null) {
+            // This class doesn't actually offer the subject -- ignore
+            // rather than error, since the picker shouldn't have shown it
+            // checked in the first place; defensive only.
+            $skipped++;
+            continue;
+        }
+        $result = admin_assign_add_assignment($pdo, $schoolId, $staffId, $subjectId, $classId, $periodsPerWeek, $requestedPaper);
+        if ($result['ok']) { $added++; } else { $skipped++; }
+    }
+
+    if ($added === 0) {
+        return ['ok' => false, 'message' => "No assignments added -- {$skipped} already existed or were invalid."];
+    }
+    $message = $added === 1 ? '1 assignment added.' : "{$added} assignments added.";
+    if ($skipped > 0) {
+        $message .= " ({$skipped} skipped -- already existed.)";
+    }
+    return ['ok' => true, 'message' => $message];
+}
+
 function admin_assign_update_periods(PDO $pdo, int $schoolId, int $staffId, int $assignmentId, int $periodsPerWeek): void
 {
     $periodsPerWeek = max(1, min(15, $periodsPerWeek));

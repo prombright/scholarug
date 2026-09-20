@@ -124,7 +124,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 
     <div class="section">
         <h2 style="font-size:1rem;margin:0;">Streams</h2>
-        <p class="muted">Every class from <?= htmlspecialchars(reset($ALL_CLASS_NAMES), ENT_QUOTES) ?> to <?= htmlspecialchars(end($ALL_CLASS_NAMES), ENT_QUOTES) ?> already exists below — only add a stream here if this school actually splits a class into more than one (e.g. S.1 A / S.1 B). No streams means the class stays as one group.</p>
+        <p class="muted">Every class from <?= htmlspecialchars(reset($ALL_CLASS_NAMES), ENT_QUOTES) ?> to <?= htmlspecialchars(end($ALL_CLASS_NAMES), ENT_QUOTES) ?> already exists below — only add a stream here if this school actually splits a class into more than one (e.g. S.1 A / S.1 B). No streams means the class stays as one group. Adding several at once? Separate them with commas, e.g. "A, B, C".</p>
 
         <?php foreach ($ALL_CLASS_NAMES as $cn): ?>
         <div class="stream-block">
@@ -139,7 +139,7 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 
             <form method="post" style="display:inline-flex;gap:6px;align-items:center;margin-left:10px;"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="stream_class_name" value="<?= $cn ?>">
-                <input type="text" name="stream_name" placeholder="e.g. A, Blue, Sciences" style="width:150px;padding:6px 8px;margin:0;" required>
+                <input type="text" name="stream_name" placeholder="e.g. A, B, C" title="Separate multiple streams with commas to add them all at once" style="width:190px;padding:6px 8px;margin:0;" required>
                 <button type="submit" name="add_stream" value="1" style="margin-top:0;padding:6px 12px;font-size:0.78rem;">+ Add Stream</button>
             </form>
 

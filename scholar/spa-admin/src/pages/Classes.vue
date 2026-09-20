@@ -88,7 +88,7 @@ function isAlevel(className) {
 
     <div class="section">
       <h2>Streams</h2>
-      <p class="muted">Every class from {{ allClassNames[0] }} to {{ allClassNames[allClassNames.length - 1] }} already exists below — only add a stream here if this school actually splits a class into more than one (e.g. S.1 A / S.1 B). No streams means the class stays as one group.</p>
+      <p class="muted">Every class from {{ allClassNames[0] }} to {{ allClassNames[allClassNames.length - 1] }} already exists below — only add a stream here if this school actually splits a class into more than one (e.g. S.1 A / S.1 B). No streams means the class stays as one group. Adding several at once? Separate them with commas, e.g. "A, B, C".</p>
 
       <div v-for="cn in allClassNames" :key="cn" class="stream-block">
         <strong>{{ cn }}</strong>
@@ -98,7 +98,7 @@ function isAlevel(className) {
         <span v-else class="muted">No streams.</span>
 
         <form class="inline-form" @submit.prevent="addStream(cn)">
-          <input type="text" v-model="newStreamName[cn]" placeholder="e.g. A, Blue, Sciences" required>
+          <input type="text" v-model="newStreamName[cn]" placeholder="e.g. A, B, C" title="Separate multiple streams with commas to add them all at once" required>
           <button type="submit" :disabled="busy" class="small-btn">+ Add Stream</button>
         </form>
 

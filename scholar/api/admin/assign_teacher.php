@@ -66,7 +66,10 @@ if ($method === 'POST') {
             $message = 'Departments updated.';
             break;
         case 'add_assignment':
-            $result = admin_assign_add_assignment($pdo, $school_id, $staff_id, (int) ($body['subject_id'] ?? 0), (int) ($body['class_id'] ?? 0), (int) ($body['periods_per_week'] ?? 5), (int) ($body['paper_number'] ?? 1));
+            // class_ids is an array so one submit can cover several
+            // streams of a class at once -- see
+            // admin_assign_add_assignments_bulk()'s own header comment.
+            $result = admin_assign_add_assignments_bulk($pdo, $school_id, $staff_id, trim((string) ($body['subject_name'] ?? '')), array_map('intval', $body['class_ids'] ?? []), (int) ($body['periods_per_week'] ?? 5), (int) ($body['paper_number'] ?? 1));
             if (!$result['ok']) admin_assign_json_error($result['message']);
             $message = $result['message'];
             break;

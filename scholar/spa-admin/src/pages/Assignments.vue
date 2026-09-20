@@ -17,7 +17,7 @@ const selectedStaffId = ref('')
 const deptChecked = ref(new Set())
 
 const newSubjectName = ref('')
-const newClassId = ref('')
+const newClassIds = ref(new Set()) // one submit can cover several streams at once
 const newPaperNumber = ref(1)
 const newPeriodsPerWeek = ref(5)
 const roleChoice = ref('teacher')
@@ -59,12 +59,36 @@ const classOptionsForSubject = computed(() => {
   const entry = subjectsByName.value[newSubjectName.value] || {}
   return classes.value.filter((c) => entry[c.class_name])
 })
-const currentSubjectEntry = computed(() => {
-  const entry = subjectsByName.value[newSubjectName.value] || {}
-  const cls = classes.value.find((c) => c.id === Number(newClassId.value))
-  return cls ? entry[cls.class_name] : null
+// Grouped by class name so every stream of a class sits together with a
+// one-click "select all streams", instead of a single-choice dropdown that
+// forced one Add-Assignment submit per stream.
+const classGroupsForSubject = computed(() => {
+  const groups = {}
+  const order = []
+  classOptionsForSubject.value.forEach((c) => {
+    if (!groups[c.class_name]) { groups[c.class_name] = []; order.push(c.class_name) }
+    groups[c.class_name].push(c)
+  })
+  return order.map((className) => ({ className, rows: groups[className] }))
 })
-watch(newSubjectName, () => { newClassId.value = '' })
+const maxPapersForSubject = computed(() => {
+  const entry = subjectsByName.value[newSubjectName.value] || {}
+  const counts = Object.values(entry).map((e) => e.papers_count || 1)
+  return counts.length ? Math.max(...counts) : 1
+})
+watch(newSubjectName, () => { newClassIds.value = new Set() })
+
+function isClassChecked(id) { return newClassIds.value.has(id) }
+function toggleClassId(id) {
+  const s = new Set(newClassIds.value)
+  if (s.has(id)) s.delete(id); else s.add(id)
+  newClassIds.value = s
+}
+function selectAllInGroup(rows) {
+  const s = new Set(newClassIds.value)
+  rows.forEach((c) => s.add(c.id))
+  newClassIds.value = s
+}
 
 async function runAction(payload, successMsgOverride) {
   busy.value = true
@@ -95,16 +119,20 @@ function saveDepartments() {
   runAction({ action: 'save_departments', department_ids: Array.from(deptChecked.value) })
 }
 function addAssignment() {
-  if (!currentSubjectEntry.value || !newClassId.value) return
+  if (!newSubjectName.value) return
+  if (newClassIds.value.size === 0) {
+    error.value = 'Tick at least one class/stream.'
+    return
+  }
   runAction({
     action: 'add_assignment',
-    subject_id: currentSubjectEntry.value.id,
-    class_id: newClassId.value,
+    subject_name: newSubjectName.value,
+    class_ids: Array.from(newClassIds.value),
     paper_number: newPaperNumber.value,
     periods_per_week: newPeriodsPerWeek.value
   })
   newSubjectName.value = ''
-  newClassId.value = ''
+  newClassIds.value = new Set()
 }
 function updatePeriods(a) {
   runAction({ action: 'update_periods', assignment_id: a.id, periods_per_week: a.periods_per_week })
@@ -175,17 +203,27 @@ function changeRole() {
               <option v-for="name in Object.keys(subjectsByName).sort()" :key="name" :value="name">{{ name }}</option>
             </select>
           </div>
-          <div>
-            <label>Class</label>
-            <select v-model="newClassId" required :disabled="!newSubjectName">
-              <option value="">-- Choose {{ newSubjectName ? '' : 'subject first' }} --</option>
-              <option v-for="c in classOptionsForSubject" :key="c.id" :value="c.id">{{ c.class_name }}{{ c.stream_name ? ' ' + c.stream_name : '' }}</option>
-            </select>
+          <div style="flex:2;min-width:260px;">
+            <label>Class(es) — tick every stream you want in one go</label>
+            <div class="class-picker">
+              <span v-if="!newSubjectName" class="empty">Choose a subject first.</span>
+              <span v-else-if="!classGroupsForSubject.length" class="empty">No classes offer this subject.</span>
+              <div v-for="g in classGroupsForSubject" :key="g.className" class="class-picker-group">
+                <div class="class-picker-group-head">
+                  {{ g.className }}
+                  <button v-if="g.rows.length > 1" type="button" class="select-all-link" @click="selectAllInGroup(g.rows)">select all streams</button>
+                </div>
+                <label v-for="c in g.rows" :key="c.id" class="class-picker-item">
+                  <input type="checkbox" :checked="isClassChecked(c.id)" @change="toggleClassId(c.id)">
+                  {{ c.stream_name || 'Whole class (no streams)' }}
+                </label>
+              </div>
+            </div>
           </div>
-          <div v-if="currentSubjectEntry && currentSubjectEntry.papers_count > 1">
+          <div v-if="maxPapersForSubject > 1">
             <label>Paper</label>
             <select v-model.number="newPaperNumber">
-              <option v-for="n in currentSubjectEntry.papers_count" :key="n" :value="n">Paper {{ n }}</option>
+              <option v-for="n in maxPapersForSubject" :key="n" :value="n">Paper {{ n }}</option>
             </select>
           </div>
           <div>
@@ -236,4 +274,10 @@ th{color:var(--muted);text-transform:uppercase;font-size:0.7rem;}
 .row > div{flex:1;min-width:160px;}
 .empty{color:var(--muted);font-size:0.85rem;}
 .table-wrap{overflow-x:auto;}
+.class-picker{display:flex;flex-wrap:wrap;gap:14px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;padding:10px 12px;max-height:220px;overflow-y:auto;box-sizing:border-box;}
+.class-picker-group{min-width:140px;}
+.class-picker-group-head{font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.select-all-link{background:none;border:none;margin:0;padding:0;font-size:0.68rem;font-weight:600;color:var(--cyan);cursor:pointer;text-decoration:underline;}
+.class-picker-item{display:flex;align-items:center;gap:6px;font-size:0.8rem;padding:2px 0;font-weight:400;}
+.class-picker-item input{width:auto;}
 </style>

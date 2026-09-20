@@ -98,20 +98,49 @@ function admin_classes_fetch_all(PDO $pdo, int $schoolId, array $allClassNames):
     ];
 }
 
-/** @return array{ok:bool,message:string} */
-function admin_classes_add_stream(PDO $pdo, int $schoolId, array $allClassNames, string $className, string $streamName): array
+/**
+ * Accepts one stream name ("A") or several at once, comma-separated
+ * ("A, B, C, D") -- a school with many streams shouldn't need a separate
+ * submit+reload per stream. Duplicates within the same class are skipped
+ * (not an error) so re-submitting a partially-applied list is harmless.
+ *
+ * @return array{ok:bool,message:string}
+ */
+function admin_classes_add_stream(PDO $pdo, int $schoolId, array $allClassNames, string $className, string $streamNamesRaw): array
 {
-    if (!in_array($className, $allClassNames, true) || $streamName === '') {
+    if (!in_array($className, $allClassNames, true)) {
+        return ['ok' => false, 'message' => 'Pick a valid class.'];
+    }
+    $streamNames = array_values(array_unique(array_filter(array_map('trim', explode(',', $streamNamesRaw)))));
+    if (!$streamNames) {
         return ['ok' => false, 'message' => 'Enter a stream name.'];
     }
-    $dup = $pdo->prepare('SELECT id FROM classes WHERE school_id = ? AND class_name = ? AND stream_name = ?');
-    $dup->execute([$schoolId, $className, $streamName]);
-    if ($dup->fetchColumn()) {
-        return ['ok' => false, 'message' => "{$className} {$streamName} already exists."];
+
+    $dup_stmt = $pdo->prepare('SELECT id FROM classes WHERE school_id = ? AND class_name = ? AND stream_name = ?');
+    $added = [];
+    $skipped = [];
+    foreach ($streamNames as $streamName) {
+        $dup_stmt->execute([$schoolId, $className, $streamName]);
+        if ($dup_stmt->fetchColumn()) {
+            $skipped[] = $streamName;
+            continue;
+        }
+        scholar_add_class_stream($pdo, $schoolId, $className, $streamName);
+        $added[] = $streamName;
     }
-    scholar_add_class_stream($pdo, $schoolId, $className, $streamName);
-    scholar_ensure_compulsory_subjects($pdo, $schoolId, $className);
-    return ['ok' => true, 'message' => "{$className} {$streamName} added."];
+    if ($added) {
+        // Only needs doing once per class name, not once per stream added.
+        scholar_ensure_compulsory_subjects($pdo, $schoolId, $className);
+    }
+
+    if (!$added) {
+        return ['ok' => false, 'message' => "{$className} " . implode(', ', $skipped) . ' already ' . (count($skipped) > 1 ? 'exist' : 'exists') . '.'];
+    }
+    $message = "{$className} " . implode(', ', $added) . ' added.';
+    if ($skipped) {
+        $message .= ' (' . implode(', ', $skipped) . ' already existed, skipped.)';
+    }
+    return ['ok' => true, 'message' => $message];
 }
 
 /** @return array{ok:bool,message:string} */
