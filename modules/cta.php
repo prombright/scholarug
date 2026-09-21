@@ -19,8 +19,7 @@ Ready To Put Scholar In Your School?
 
 <p>
 
-Talk to us about setting your school up on Scholar, or ask about custom
-software built for how your organization actually works.
+Talk to us about setting your school up on Scholar.
 
 </p>
 

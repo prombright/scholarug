@@ -6,9 +6,6 @@
 <?php include "modules/hero.php"; ?>
 
 
-<?php include "modules/services.php"; ?>
-
-
 <?php include "modules/solutions.php"; ?>
 
 

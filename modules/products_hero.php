@@ -5,7 +5,7 @@
 
 
 <h1>
-Our Software Platforms
+The Scholar Platform
 </h1>
 
 

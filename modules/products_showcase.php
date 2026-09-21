@@ -9,7 +9,6 @@
 
 
 
-
 <!-- SCHOLAR -->
 
 <div class="platform-card">
@@ -88,103 +87,6 @@ Open Scholar
 
 
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- BULK SMS -->
-
-
-<div class="platform-card">
-
-
-
-<div class="platform-image">
-
-<img src="assets/images/products/scholar.png"
-alt="Bulk SMS">
-
-</div>
-
-
-
-
-<div class="platform-content">
-
-
-<h2>
-Bulk SMS
-</h2>
-
-
-<span>
-Communication Platform · Coming Soon
-</span>
-
-
-
-<p>
-
-A reliable messaging solution for schools
-to reach parents and students instantly.
-
-</p>
-
-
-
-<div class="features">
-
-
-<span>
-Messages
-</span>
-
-
-<span>
-Contacts
-</span>
-
-
-<span>
-Campaigns
-</span>
-
-
-<span>
-Reports
-</span>
-
-
-</div>
-
-
-
-
-<a href="contact.php"
-class="btn btn-primary">
-
-Get Notified
-
-</a>
-
-
-</div>
-
-
-</div>
-
-
-
-
 
 
 </div>

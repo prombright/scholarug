@@ -73,6 +73,11 @@ Company
 </h3>
 
 
+<a href="products.php">
+Scholar
+</a>
+
+
 <a href="about.php">
 About ScholarUg
 </a>
@@ -94,39 +99,6 @@ User Manual
 
 
 </div>
-
-
-
-
-
-<!-- PRODUCTS -->
-
-
-<div class="footer-links">
-
-
-<h3>
-Our Products
-</h3>
-
-
-<a href="products.php">
-Scholar
-</a>
-
-
-<a href="products.php">
-Bulk SMS (Coming Soon)
-</a>
-
-
-<a href="products.php">
-Custom Software
-</a>
-
-
-</div>
-
 
 
 

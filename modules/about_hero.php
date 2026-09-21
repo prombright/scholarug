@@ -1,17 +1,3 @@
-<section class="about_hero">
-
-    <div class="container">
-
-
-        <h1>
-            About ScholarUg
-        </h1>
-
-
-        <p>
-            Empowering organizations through innovative
-            and reliable technology solutions.
-        </p>
 <section class="about-hero">
 
 
@@ -28,8 +14,8 @@ About ScholarUg
 
 <p>
 
-Building innovative digital solutions that empower
-organizations through technology.
+Building Scholar, the school management platform helping schools
+across Uganda run day to day operations end to end.
 
 </p>
 
@@ -39,9 +25,5 @@ organizations through technology.
 
 </div>
 
-
-</section>
-
-    </div>
 
 </section>
