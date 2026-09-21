@@ -6,6 +6,9 @@
 <?php include "modules/hero.php"; ?>
 
 
+<?php include "modules/role_highlights.php"; ?>
+
+
 <?php include "modules/solutions.php"; ?>
 
 
