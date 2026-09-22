@@ -97,32 +97,46 @@ Talk To Us
 </section>
 
 <style>
-/* #00B5AC -- the exact teal from the new book/screen icon (not the
-   slightly different --secondary: #00A8A8 brand token), requested
-   specifically for this section. Text/badge go white (requested) rather
-   than dark, so the site-wide teal-fill .btn-primary still needs its own
-   dark override below -- white text on it would otherwise sit on a teal
-   button that itself blends into this teal section. */
-.hero { position: relative; padding: 100px 0 90px; background: #00B5AC; color: #fff; }
+/* Was a flat #00B5AC teal fill -- swapped for a light "cover photo" style:
+   the students-with-laptops illustration as the section background. A flat
+   translucent tint over the WHOLE image (the first thing tried) either
+   washed the image out to nothing or, once visible, sat directly behind
+   the heading/buttons and made both illegible -- an illustration this
+   detailed can't share space with dense text. Fixed with a left-to-right
+   scrim instead: solid page-color behind the text column (same trick a
+   photo-background hero with overlaid text always needs), fading out
+   toward the right so the image is fully visible there, around and behind
+   the dashboard card. Text/buttons flip from white to dark to match --
+   see the light-background button overrides below. */
+.hero {
+    position: relative;
+    padding: 100px 0 90px;
+    background-color: #EAF6F5;
+    background-image:
+        linear-gradient(90deg, #EAF6F5 0%, #EAF6F5 34%, rgba(234,246,245,.88) 44%, rgba(234,246,245,.4) 58%, rgba(234,246,245,.08) 72%),
+        url('assets/images/hero-students.svg');
+    background-size: cover, auto 150%;
+    background-position: center, 82% 58%;
+    background-repeat: no-repeat, no-repeat;
+    color: var(--primary);
+}
 .hero .container { position: relative; z-index: 1; }
 .hero-content { display: grid; grid-template-columns: 1.05fr 0.95fr; align-items: center; gap: 56px; }
 
-.hero-eyebrow { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #fff; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.4); padding: 6px 16px; border-radius: 30px; margin-bottom: 20px; }
-.hero-text h1 { font-size: 48px; font-weight: 800; line-height: 1.16; margin: 0; color: #fff; text-wrap: balance; }
-.hero-text p { font-size: 17px; line-height: 1.75; margin: 22px 0 30px; max-width: 540px; color: rgba(255,255,255,.92); }
+.hero-eyebrow { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--primary); background: #fff; border: 1px solid rgba(10,61,98,.15); padding: 6px 16px; border-radius: 30px; margin-bottom: 20px; box-shadow: 0 4px 14px rgba(10,61,98,.08); }
+.hero-text h1 { font-size: 48px; font-weight: 800; line-height: 1.16; margin: 0; color: var(--primary); text-wrap: balance; }
+.hero-text p { font-size: 17px; line-height: 1.75; margin: 22px 0 30px; max-width: 540px; color: #445; }
 .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
-/* The site-wide .btn-primary is a teal fill -- invisible on this bright
-   teal section -- so the hero gets its own dark-fill override instead of
-   changing that global button everywhere else (header CTA, footer CTA). */
-.hero .btn-primary { background: #04302E; color: #fff; }
-.hero .btn-primary:hover { background: #06423F; }
-.hero .btn-outline { border-color: #fff; color: #fff; }
-.hero .btn-outline:hover { background: #fff; color: #04302E; }
+/* Global .btn-primary (teal fill) already reads fine on this light
+   background, so no override needed there -- only .btn-outline, whose
+   site-wide default (white border/text) is built for dark sections. */
+.hero .btn-outline { border-color: var(--primary); color: var(--primary); }
+.hero .btn-outline:hover { background: var(--primary); color: #fff; }
 
 /* Modules inside Scholar, named plainly -- no stats, no marketing sentence
    per item, just what's actually in the product. */
 .hero-modules { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 36px; max-width: 520px; }
-.hero-module { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--dark); background: #fff; padding: 9px 16px; border-radius: 30px; }
+.hero-module { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--dark); background: #fff; border: 1px solid rgba(10,61,98,.08); padding: 9px 16px; border-radius: 30px; box-shadow: 0 4px 14px rgba(10,61,98,.06); }
 .hero-module i { color: var(--secondary); font-size: 15px; }
 
 /* Right-hand visual: a stylized miniature of Scholar's own dashboard --
@@ -148,7 +162,12 @@ Talk To Us
 .mock-bars span { flex: 1; background: var(--secondary); border-radius: 4px 4px 0 0; }
 
 @media (max-width: 900px) {
-    .hero { padding: 70px 0 60px; text-align: center; }
+    /* The left-solid/right-reveal scrim only works with the 2-column
+       layout -- single column here means the text spans full width, so
+       the "reveal" zone would sit directly behind it again. Flatten to
+       the solid panel color alone rather than fighting the same
+       text-vs-image clash at a width with no room to solve it cleanly. */
+    .hero { padding: 70px 0 60px; text-align: center; background-image: none; }
     .hero-content { grid-template-columns: 1fr; gap: 40px; }
     .hero-text h1 { font-size: 34px; }
     .hero-text p { margin-left: auto; margin-right: auto; }
