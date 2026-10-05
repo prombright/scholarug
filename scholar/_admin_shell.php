@@ -451,23 +451,32 @@ table{
     overflow-x:auto;
 }
 
-/* Collapses to a slim rail by default, expanding on hover to reveal full
-   labels -- gives the page more room when the sidebar isn't actively being
-   used to navigate. This sidebar's nav items have no icons (unlike the
-   teacher/student/HR shells), so collapsing all the way to icon-only would
-   leave an unreadable blank rail -- truncated/ellipsized text instead,
-   which stays at least partially readable, then expands to the full label
-   on hover. Nested nav-group sub-items hide entirely while collapsed
-   (nothing useful to show them in ~90px anyway) and reappear with the
-   group's own [open] state once expanded. Desktop-only: hover has no
-   meaning on the touch/off-canvas mobile sidebar below. */
+.sidebar-collapse-toggle{display:none;width:100%;align-items:center;gap:10px;padding:12px;color:var(--muted);background:none;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sidebar-collapse-toggle:hover{background:var(--panel);color:var(--text);}
+
+/* Collapses to a slim rail by default; a small chevron toggle (added as
+   the last sidebar-nav item below) switches it to the full labeled width
+   on click. Used to expand on :hover instead -- distracting, since the
+   whole rail resized itself just from the pointer passing near it, not
+   from the user actually wanting it open. This sidebar's nav items have
+   no icons (unlike the teacher/student/HR shells), so collapsing all the
+   way to icon-only would leave an unreadable blank rail -- truncated/
+   ellipsized text instead, which stays at least partially readable, then
+   expands to the full label once toggled open. Nested nav-group sub-items
+   hide entirely while collapsed (nothing useful to show them in ~90px
+   anyway) and reappear with the group's own [open] state once expanded.
+   Desktop-only: the touch/off-canvas mobile sidebar below has its own
+   open/close toggle already and isn't affected by any of this. */
 @media (min-width:861px){
     .sidebar{width:92px;transition:width .22s ease;}
-    .sidebar:hover{width:230px;}
+    .sidebar.expanded{width:230px;}
     .sidebar-brand .text{overflow:hidden;}
     .sidebar-nav a,.nav-group summary{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .nav-group nav{display:none;}
-    .sidebar:hover .nav-group nav{display:flex;}
+    .sidebar.expanded .nav-group nav{display:flex;}
+    .sidebar-collapse-toggle{display:flex;}
+    .sidebar-collapse-toggle i{transition:transform .22s ease;}
+    .sidebar.expanded .sidebar-collapse-toggle i{transform:rotate(180deg);}
 }
 @media (max-width:860px){
     .app-shell{ padding:0; gap:0; }
@@ -550,6 +559,32 @@ document.addEventListener('DOMContentLoaded', function () {
         backdrop.addEventListener('click', close);
     })();
 
+    // Click-to-expand replaces the old hover-to-expand -- resizing the
+    // whole rail just because the pointer passed near it was the actual
+    // complaint. Remembered across pages via localStorage since this is a
+    // classic full-reload shell, not a SPA -- without that, every single
+    // navigation would silently re-collapse it. Same storage key as the
+    // other three role shells, so the preference carries over between them.
+    (function () {
+        var sidebar = document.getElementById('appSidebar');
+        var collapseToggle = document.querySelector('.sidebar-collapse-toggle');
+        if (!sidebar || !collapseToggle) return;
+        var STORAGE_KEY = 'scholarSidebarExpanded';
+        function apply(expanded) {
+            sidebar.classList.toggle('expanded', expanded);
+            collapseToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            collapseToggle.setAttribute('aria-label', expanded ? 'Collapse sidebar' : 'Expand sidebar');
+        }
+        var saved = '0';
+        try { saved = localStorage.getItem(STORAGE_KEY) || '0'; } catch (e) {}
+        apply(saved === '1');
+        collapseToggle.addEventListener('click', function () {
+            var expanded = !sidebar.classList.contains('expanded');
+            apply(expanded);
+            try { localStorage.setItem(STORAGE_KEY, expanded ? '1' : '0'); } catch (e) {}
+        });
+    })();
+
     // Flag every sidebar-triggered navigation as "internal" so
     // preloader.php can skip its splash replay on the next load -- the
     // click itself is left as a completely normal link navigation (no
@@ -629,6 +664,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 <?php endif; ?>
 
             <?php endforeach; ?>
+
+            <button type="button" class="sidebar-collapse-toggle" aria-label="Expand sidebar" aria-expanded="false">
+                <i class="bi bi-chevron-double-right"></i>
+                <span>Collapse Sidebar</span>
+            </button>
 
         </nav>
 

@@ -59,19 +59,25 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI
 .main-col{flex:1;min-width:0;display:flex;flex-direction:column;}
 .topbar{display:flex;justify-content:flex-end;align-items:center;padding:16px 28px;border-bottom:1px solid var(--border);}
 .page-inner{padding:28px;width:100%;margin:0;}
-/* Collapses to a slim icon rail by default, expanding on hover to reveal
-   labels -- gives the page more room when the sidebar isn't actively being
-   used to navigate, without losing the full labeled nav the moment it's
-   needed. Desktop-only (min-width guard): hover has no meaning on a touch
-   screen, where the sidebar already has its own off-canvas open/close
-   toggle below -- this doesn't touch that behavior at all. */
+.sidebar-collapse-toggle{display:none;width:100%;align-items:center;gap:12px;padding:11px 12px;border-radius:8px;color:var(--muted);background:none;border:none;font-size:0.86rem;font-weight:500;font-family:inherit;cursor:pointer;text-align:left;}
+.sidebar-collapse-toggle:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+.sidebar-collapse-toggle i{font-size:1.05rem;width:20px;text-align:center;transition:transform .22s ease;}
+/* Collapses to a slim icon rail by default; a small chevron toggle (added
+   as the last sidebar-nav item below) switches it to the full labeled
+   width on click. Used to expand on :hover instead -- distracting, since
+   the whole rail resized itself just from the pointer passing near it,
+   not from the user actually wanting it open. Desktop-only (min-width
+   guard): the sidebar already has its own off-canvas open/close toggle
+   for touch screens below -- this doesn't touch that behavior at all. */
 @media(min-width:861px){
     .sidebar{width:76px;border-radius:0 18px 18px 0;overflow:hidden;transition:width .22s ease;z-index:40;}
-    .sidebar:hover{width:230px;}
+    .sidebar.expanded{width:230px;}
     .sidebar-brand .name{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .18s ease,opacity .12s ease;}
-    .sidebar:hover .sidebar-brand .name{max-width:160px;opacity:1;transition-delay:.05s;}
-    .sidebar-nav a span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .18s ease,opacity .12s ease;}
-    .sidebar:hover .sidebar-nav a span{max-width:160px;opacity:1;transition-delay:.05s;}
+    .sidebar.expanded .sidebar-brand .name{max-width:160px;opacity:1;transition-delay:.05s;}
+    .sidebar-nav a span,.sidebar-collapse-toggle span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .18s ease,opacity .12s ease;}
+    .sidebar.expanded .sidebar-nav a span,.sidebar.expanded .sidebar-collapse-toggle span{max-width:160px;opacity:1;transition-delay:.05s;}
+    .sidebar-collapse-toggle{display:flex;}
+    .sidebar.expanded .sidebar-collapse-toggle i{transform:rotate(180deg);}
 }
 @media(max-width:860px){
     .sidebar{position:fixed;left:-230px;z-index:50;transition:left .2s;}
@@ -114,8 +120,38 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI
                     <span><?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
             <?php endforeach; ?>
+            <button type="button" class="sidebar-collapse-toggle" aria-label="Expand sidebar" aria-expanded="false">
+                <i class="bi bi-chevron-double-right"></i>
+                <span>Collapse</span>
+            </button>
         </nav>
     </aside>
+    <script>
+    // Click-to-expand replaces the old hover-to-expand -- resizing the
+    // whole rail just because the pointer passed near it was the actual
+    // complaint. Remembered across pages via localStorage since this is a
+    // classic full-reload shell, not a SPA -- without that, every single
+    // navigation would silently re-collapse it.
+    (function () {
+        var sidebar = document.querySelector('.sidebar');
+        var toggle = document.querySelector('.sidebar-collapse-toggle');
+        if (!sidebar || !toggle) return;
+        var STORAGE_KEY = 'scholarSidebarExpanded';
+        function apply(expanded) {
+            sidebar.classList.toggle('expanded', expanded);
+            toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            toggle.setAttribute('aria-label', expanded ? 'Collapse sidebar' : 'Expand sidebar');
+        }
+        var saved = '0';
+        try { saved = localStorage.getItem(STORAGE_KEY) || '0'; } catch (e) {}
+        apply(saved === '1');
+        toggle.addEventListener('click', function () {
+            var expanded = !sidebar.classList.contains('expanded');
+            apply(expanded);
+            try { localStorage.setItem(STORAGE_KEY, expanded ? '1' : '0'); } catch (e) {}
+        });
+    })();
+    </script>
     <div class="main-col">
         <div class="topbar">
             <button class="mobile-nav-toggle" onclick="document.getElementById('hrSidebar').classList.toggle('open');document.getElementById('hrSidebarBackdrop').classList.toggle('open');"><i class="bi bi-list"></i></button>
