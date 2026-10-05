@@ -61,6 +61,20 @@ const route = useRoute()
 const brand = inject('brand', ref({ school_name: 'Scholar', badge_url: null }))
 const mobileOpen = ref(false)
 
+// Click-to-expand replaces the old hover-to-expand -- resizing the whole
+// rail just because the pointer passed near it was the actual complaint.
+// Same localStorage key the classic (non-SPA) shells use, so the
+// preference carries over between this SPA and any classic page a user
+// lands on.
+const STORAGE_KEY = 'scholarSidebarExpanded'
+let savedExpanded = false
+try { savedExpanded = localStorage.getItem(STORAGE_KEY) === '1' } catch (e) {}
+const sidebarExpanded = ref(savedExpanded)
+function toggleSidebar() {
+  sidebarExpanded.value = !sidebarExpanded.value
+  try { localStorage.setItem(STORAGE_KEY, sidebarExpanded.value ? '1' : '0') } catch (e) {}
+}
+
 function isActive(item) {
   return item.route ? route.path === item.route : false
 }
@@ -74,7 +88,7 @@ function groupActive(group) {
 
   <div class="sidebar-backdrop" :class="{ open: mobileOpen }" @click="mobileOpen = false"></div>
   <div class="app-shell">
-    <aside class="sidebar" :class="{ open: mobileOpen }">
+    <aside class="sidebar" :class="{ open: mobileOpen, expanded: sidebarExpanded }">
       <div class="sidebar-brand">
         <img v-if="brand.badge_url" class="badge" :src="brand.badge_url" alt="">
         <div v-else class="badge-fallback">{{ (brand.school_name || 'S').charAt(0).toUpperCase() }}</div>
@@ -97,6 +111,10 @@ function groupActive(group) {
           <router-link v-else-if="group.route" :to="group.route" :class="{ active: isActive(group) }"><i class="bi" :class="group.icon"></i><span>{{ group.label }}</span></router-link>
           <a v-else :href="group.href"><i class="bi" :class="group.icon"></i><span>{{ group.label }}</span></a>
         </template>
+        <button type="button" class="sidebar-collapse-toggle" :aria-expanded="sidebarExpanded" :aria-label="sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'" @click="toggleSidebar">
+          <i class="bi bi-chevron-double-right"></i>
+          <span>Collapse</span>
+        </button>
       </nav>
       <div class="sidebar-foot">
         <a :href="logoutHref" class="logout-btn">
@@ -144,25 +162,35 @@ function groupActive(group) {
 .topbar{display:flex;align-items:center;gap:14px;padding:8px 0 16px;}
 .page-inner{width:100%;}
 .mobile-nav-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:1.1rem;cursor:pointer;}
+.sidebar-collapse-toggle{display:none;width:100%;align-items:center;gap:10px;padding:12px;color:var(--muted);background:none;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left;}
+.sidebar-collapse-toggle:hover{background:var(--panel-raised);color:var(--text);}
+.sidebar-collapse-toggle i{font-size:1.05rem;width:20px;text-align:center;flex-shrink:0;transition:transform .22s ease;}
 
+/* Collapses to a slim icon rail by default; the chevron toggle above
+   switches it to the full labeled width on click. Used to expand on
+   :hover instead -- distracting, since the whole rail resized itself
+   just from the pointer passing near it, not from the user actually
+   wanting it open. */
 @media (min-width:861px){
   .sidebar{width:76px;border-radius:0 18px 18px 0;overflow:hidden;transition:width .22s ease;}
-  .sidebar:hover{width:230px;}
+  .sidebar.expanded{width:230px;}
   .sidebar-brand{padding:16px 8px;transition:padding .22s ease;}
-  .sidebar:hover .sidebar-brand{padding:24px 20px;}
+  .sidebar.expanded .sidebar-brand{padding:24px 20px;}
   .sidebar-brand .badge,.sidebar-brand .badge-fallback{width:40px;height:40px;font-size:16px;transition:width .22s ease,height .22s ease;}
-  .sidebar:hover .sidebar-brand .badge,.sidebar:hover .sidebar-brand .badge-fallback{width:56px;height:56px;font-size:22px;}
+  .sidebar.expanded .sidebar-brand .badge,.sidebar.expanded .sidebar-brand .badge-fallback{width:56px;height:56px;font-size:22px;}
   .sidebar-brand .text{overflow:hidden;}
   .sidebar-brand .name{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .18s ease,opacity .12s ease;}
-  .sidebar:hover .sidebar-brand .name{max-width:160px;opacity:1;transition-delay:.05s;}
+  .sidebar.expanded .sidebar-brand .name{max-width:160px;opacity:1;transition-delay:.05s;}
   .sidebar-brand .tag{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .18s ease,opacity .12s ease;}
-  .sidebar:hover .sidebar-brand .tag{max-width:160px;opacity:1;transition-delay:.05s;}
-  .sidebar-nav a span,.nav-group summary span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .18s ease,opacity .12s ease;}
-  .sidebar:hover .sidebar-nav a span,.sidebar:hover .nav-group summary span{max-width:160px;opacity:1;transition-delay:.05s;}
+  .sidebar.expanded .sidebar-brand .tag{max-width:160px;opacity:1;transition-delay:.05s;}
+  .sidebar-nav a span,.nav-group summary span,.sidebar-collapse-toggle span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .18s ease,opacity .12s ease;}
+  .sidebar.expanded .sidebar-nav a span,.sidebar.expanded .nav-group summary span,.sidebar.expanded .sidebar-collapse-toggle span{max-width:160px;opacity:1;transition-delay:.05s;}
   .nav-group summary::after{opacity:0;transition:opacity .12s ease;}
-  .sidebar:hover .nav-group summary::after{opacity:1;transition-delay:.05s;}
+  .sidebar.expanded .nav-group summary::after{opacity:1;transition-delay:.05s;}
   .nav-group nav{display:none;}
-  .sidebar:hover .nav-group nav{display:flex;}
+  .sidebar.expanded .nav-group nav{display:flex;}
+  .sidebar-collapse-toggle{display:flex;}
+  .sidebar.expanded .sidebar-collapse-toggle i{transform:rotate(180deg);}
 }
 @media (max-width:860px){
   .app-shell{padding:0;gap:0;}
