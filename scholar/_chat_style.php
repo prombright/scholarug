@@ -58,7 +58,14 @@ declare(strict_types=1);
     font-size:0.88rem;line-height:1.4;word-wrap:break-word;
 }
 .msg-row.out .msg{background:var(--cyan);color:#04222a;border-bottom-right-radius:3px;}
-.msg-row.in .msg{background:#1c2536;color:var(--text);border-bottom-left-radius:3px;}
+/* Was a hardcoded #1c2536 -- fine against dark mode's own --text, but
+   light mode redefines --text to a dark color while this stayed the same
+   hardcoded dark background, so the incoming bubble's text went dark-on-
+   dark and became unreadable. var(--border) already gives a "one step
+   off the ambient panel" tone in both themes (a lighter navy in dark
+   mode, a soft light grey in light mode), which is exactly the
+   convention this bubble wants either way. */
+.msg-row.in .msg{background:var(--border);color:var(--text);border-bottom-left-radius:3px;}
 
 .msg .meta{position:absolute;right:10px;bottom:4px;font-size:0.65rem;opacity:0.65;white-space:nowrap;}
 
