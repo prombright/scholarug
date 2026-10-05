@@ -128,6 +128,36 @@ Digital Transformation
 </div>
 
 
+<!-- CO-FOUNDER -->
+
+<div class="board-grid" style="margin-top:30px;">
+
+<div class="board-profile">
+
+<img src="assets/images/team/Natalie.jpg"
+alt="Natalie Tukamushaba">
+
+<div>
+
+<h3>
+Natalie Tukamushaba
+</h3>
+
+<span>
+Co-Founder &amp; Marketing Lead
+</span>
+
+<p>
+Leads marketing and outreach for ScholarUg, helping schools across
+Uganda discover and adopt the platform.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
 
 </div>
 
