@@ -1,7 +1,8 @@
 <script setup>
 import { ref, inject, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { notificationsApi } from '../services/api'
+import { notificationsApi, searchApi } from '../services/api'
+import { useRouter } from 'vue-router'
 
 const SB = window.__SCHOLAR_BASE__ || '/ScholarUg/scholar/'
 const role = inject('role', 'school_admin')
@@ -59,6 +60,7 @@ const NAV_GROUPS = ROLE_NAV_GROUPS[role] || ADMIN_NAV_GROUPS
 const logoutHref = SB + 'logout.php'
 
 const route = useRoute()
+const router = useRouter()
 const brand = inject('brand', ref({ school_name: 'Scholar', badge_url: null }))
 const mobileOpen = ref(false)
 
@@ -81,6 +83,49 @@ function isActive(item) {
 }
 function groupActive(group) {
   return (group.children || []).some(isActive)
+}
+
+// Global search -- students link straight to their SPA profile route;
+// staff has no individual profile page in this app yet, so results just
+// go to the staff list, already filtered down by name in the result label.
+const searchQuery = ref('')
+const searchResults = ref({ students: [], staff: [] })
+const searchOpen = ref(false)
+const searching = ref(false)
+let searchDebounce = null
+
+function onSearchInput() {
+  clearTimeout(searchDebounce)
+  const q = searchQuery.value.trim()
+  if (q.length < 2) {
+    searchResults.value = { students: [], staff: [] }
+    searchOpen.value = q.length > 0
+    return
+  }
+  searchDebounce = setTimeout(async () => {
+    searching.value = true
+    try {
+      const { data } = await searchApi.get(q)
+      searchResults.value = { students: data.students, staff: data.staff }
+      searchOpen.value = true
+    } catch (e) {
+      // Search is a convenience, not critical path -- fail silently.
+    } finally {
+      searching.value = false
+    }
+  }, 250)
+}
+
+function goToStudent(student) {
+  searchOpen.value = false
+  searchQuery.value = ''
+  router.push(`/students/${student.id}`)
+}
+
+function goToStaffList() {
+  searchOpen.value = false
+  searchQuery.value = ''
+  window.location.href = SB + 'staff_manager.php'
 }
 
 // Notification bell -- only rendered for school_admin/dos/headteacher/bursar
@@ -169,6 +214,34 @@ onMounted(fetchNotifications)
       <div class="topbar">
         <button class="mobile-nav-toggle" @click="mobileOpen = !mobileOpen"><i class="bi bi-list"></i></button>
         <div class="topbar-right">
+          <div class="search-wrap">
+            <i class="bi bi-search search-icon"></i>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search students or staff..."
+              v-model="searchQuery"
+              @input="onSearchInput"
+              @focus="searchOpen = searchQuery.trim().length > 0"
+            >
+            <div v-if="searchOpen" class="bell-backdrop" @click="searchOpen = false"></div>
+            <div v-if="searchOpen" class="search-panel">
+              <div v-if="searching" class="bell-empty">Searching...</div>
+              <template v-else-if="searchResults.students.length || searchResults.staff.length">
+                <div v-if="searchResults.students.length" class="search-group-label">Students</div>
+                <button v-for="s in searchResults.students" :key="'s' + s.id" type="button" class="search-item" @click="goToStudent(s)">
+                  <div class="search-item-title">{{ s.full_name }}</div>
+                  <div class="search-item-sub">{{ s.student_no }} &middot; {{ s.class_name }}{{ s.stream_name ? ' - ' + s.stream_name : '' }}</div>
+                </button>
+                <div v-if="searchResults.staff.length" class="search-group-label">Staff</div>
+                <button v-for="st in searchResults.staff" :key="'t' + st.id" type="button" class="search-item" @click="goToStaffList">
+                  <div class="search-item-title">{{ st.first_name }} {{ st.last_name }}</div>
+                  <div class="search-item-sub">{{ st.staff_code }} &middot; {{ st.role }}</div>
+                </button>
+              </template>
+              <div v-else class="bell-empty">No matches for "{{ searchQuery }}".</div>
+            </div>
+          </div>
           <div class="bell-wrap">
             <button type="button" class="bell-btn" :class="{ active: bellOpen }" :aria-expanded="bellOpen" aria-label="Notifications" @click="toggleBell">
               <i class="bi bi-bell"></i>
@@ -228,6 +301,18 @@ onMounted(fetchNotifications)
 .page-inner{width:100%;}
 .mobile-nav-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:1.1rem;cursor:pointer;}
 
+.search-wrap{position:relative;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:0.9rem;pointer-events:none;}
+.search-input{width:220px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:0.82rem;font-family:inherit;padding:0 12px 0 34px;}
+.search-input:focus{outline:none;border-color:var(--cyan);}
+.search-input::placeholder{color:var(--muted);}
+.search-panel{position:absolute;top:calc(100% + 10px);left:0;width:320px;max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.25);z-index:25;overflow:hidden;max-height:380px;overflow-y:auto;}
+.search-group-label{padding:10px 16px 6px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);}
+.search-item{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--border);padding:10px 16px;cursor:pointer;font-family:inherit;}
+.search-item:hover{background:var(--panel-raised);}
+.search-item-title{font-size:0.82rem;font-weight:700;color:var(--text);}
+.search-item-sub{font-size:0.75rem;color:var(--muted);margin-top:2px;}
+@media (max-width:860px){.search-input{width:150px;}}
 .bell-wrap{position:relative;}
 .bell-btn{position:relative;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:1.05rem;cursor:pointer;}
 .bell-btn:hover,.bell-btn.active{border-color:var(--cyan);color:var(--cyan);}

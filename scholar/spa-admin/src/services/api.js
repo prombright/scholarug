@@ -41,6 +41,7 @@ export const notificationsApi = {
   get: () => api.get('admin/notifications.php'),
   action: (payload) => api.post('admin/notifications.php', payload)
 }
+export const searchApi = { get: (q) => api.get('admin/search.php', { params: { q } }) }
 export const brandApi = { get: () => api.get('admin/brand.php') }
 export const classesApi = {
   get: () => api.get('admin/classes.php'),
