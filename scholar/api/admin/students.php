@@ -17,6 +17,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../_subject_helpers.php';
 require_once __DIR__ . '/../../school_admin/_students_helpers.php';
+require_once __DIR__ . '/../../_audit_log.php';
 require_role(['school_admin']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_json();
@@ -91,7 +92,14 @@ if ($method === 'POST') {
                 : ['ok' => false, 'message' => $r['error']];
             break;
         case 'regenerate_student_password':
-            $result = admin_students_regenerate_password($pdo, $school_id, (int) ($body['student_id'] ?? 0));
+            $reset_student_id = (int) ($body['student_id'] ?? 0);
+            $result = admin_students_regenerate_password($pdo, $school_id, $reset_student_id);
+            if ($result['ok']) {
+                scholar_audit_log(
+                    $pdo, $school_id, $_SESSION['user_id'] ?? null, 'student_password_reset', 'students', $reset_student_id,
+                    "Reset portal login password for student #{$reset_student_id}."
+                );
+            }
             break;
         default:
             admin_students_json_error('Unknown action.');

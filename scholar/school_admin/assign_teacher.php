@@ -19,6 +19,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../auth_guard.php';
 require_once __DIR__ . '/_assign_teacher_helpers.php';
+require_once __DIR__ . '/../_audit_log.php';
 
 require_role(['school_admin']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -62,7 +63,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_assignment']))
 // ---- Change primary role (e.g. promote to DOS) ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_role'])) {
     $result = admin_assign_change_role($pdo, $school_id, $selected_staff_id, $_POST['role'] ?? '');
-    if ($result['ok']) { $success = $result['message']; }
+    if ($result['ok']) {
+        $success = $result['message'];
+        scholar_audit_log(
+            $pdo, $school_id, $_SESSION['user_id'] ?? null, 'staff_role_changed', 'staff', $selected_staff_id,
+            "Changed staff #{$selected_staff_id}'s role to \"" . ($_POST['role'] ?? '') . "\"."
+        );
+    }
 }
 
 // ---- Data for the page ----

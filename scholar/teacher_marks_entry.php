@@ -24,6 +24,7 @@ session_start([
 require_once 'db.php';
 require_once __DIR__ . '/auth_guard.php'; // for csrf_token()/require_csrf()
 require_once __DIR__ . '/_marks_entry_helpers.php';
+require_once __DIR__ . '/_audit_log.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header("Location: login.php");
@@ -242,6 +243,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $posted_action !== null) {
             $message = $out_of_range_notice . ($posted_action === 'submitted'
                 ? "<div class='alert alert-success'>{$touched} mark(s) submitted — now counted on the report card.</div>"
                 : "<div class='alert alert-success'>{$touched} mark(s) saved as draft — not yet on the report. Submit when ready.</div>");
+
+            if ($posted_action === 'submitted' && $touched > 0) {
+                scholar_audit_log(
+                    $pdo, $school_id, $_SESSION['user_id'] ?? null, 'marks_submitted', 'student_marks', $assessment_id,
+                    "Submitted {$touched} mark(s) for class #{$class_id}, subject #{$subject_id}, paper {$paper_number}, assessment #{$assessment_id} (now counted on the report card)."
+                );
+            }
         } catch (Exception $e) {
             $message = "<div class='alert alert-danger'>Error saving marks: " . htmlspecialchars($e->getMessage()) . "</div>";
         }

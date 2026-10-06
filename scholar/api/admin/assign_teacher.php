@@ -13,6 +13,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../school_admin/_assign_teacher_helpers.php';
+require_once __DIR__ . '/../../_audit_log.php';
 require_role(['school_admin']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_json();
@@ -85,6 +86,10 @@ if ($method === 'POST') {
             $result = admin_assign_change_role($pdo, $school_id, $staff_id, $body['role'] ?? '');
             if (!$result['ok']) admin_assign_json_error($result['message']);
             $message = $result['message'];
+            scholar_audit_log(
+                $pdo, $school_id, $_SESSION['user_id'] ?? null, 'staff_role_changed', 'staff', $staff_id,
+                "Changed staff #{$staff_id}'s role to \"" . ($body['role'] ?? '') . "\"."
+            );
             break;
         default:
             admin_assign_json_error('Unknown action.');

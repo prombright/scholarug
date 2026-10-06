@@ -60,6 +60,7 @@ if (!$school_id) {
 }
 
 require_once __DIR__ . '/_fees_helpers.php';
+require_once __DIR__ . '/../_audit_log.php';
 admin_fees_ensure_schema($pdo);
 
 $message = '';
@@ -89,7 +90,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         floatval($_POST['entry_fee'] ?? 0),
         $term, $year
     );
-    if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
+    if ($result['ok']) {
+        $message = $result['message'];
+        scholar_audit_log(
+            $pdo, $school_id, $_SESSION['user_id'] ?? null, 'fee_structure_saved', 'fee_structures',
+            intval($_POST['class_id'] ?? 0),
+            "Set fee structure for class #{$_POST['class_id']} ({$term} {$year}): day=" . floatval($_POST['day_tuition'] ?? 0)
+                . ", boarding=" . floatval($_POST['boarding_tuition'] ?? 0) . ", entry=" . floatval($_POST['entry_fee'] ?? 0) . "."
+        );
+    } else { $error = $result['message']; }
 }
 
 // B. Record Student Payment / Bursary Discount
@@ -104,7 +113,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         trim($_POST['payment_notes'] ?? ''),
         $term, $year
     );
-    if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
+    if ($result['ok']) {
+        $message = $result['message'];
+        scholar_audit_log(
+            $pdo, $school_id, $_SESSION['user_id'] ?? null, 'fee_payment_recorded', 'fee_payments',
+            intval($_POST['student_id'] ?? 0),
+            "Recorded payment of " . floatval($_POST['amount_paid'] ?? 0) . " (bursary " . floatval($_POST['bursary_amount'] ?? 0)
+                . ") for student #{$_POST['student_id']}, {$term} {$year}."
+        );
+    } else { $error = $result['message']; }
 }
 
 // ==========================================

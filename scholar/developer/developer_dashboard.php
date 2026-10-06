@@ -1392,6 +1392,14 @@ td {
     </a>
 
     <a
+        href="audit_log.php"
+        class="logout"
+        style="color:#f59e0b;border-color:rgba(245,158,11,.25);margin-right:10px;"
+    >
+        Audit Log
+    </a>
+
+    <a
         href="migrations_status.php"
         class="logout"
         style="color:#a855f7;border-color:rgba(168,85,247,.25);margin-right:10px;"

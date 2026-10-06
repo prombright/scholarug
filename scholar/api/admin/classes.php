@@ -15,6 +15,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../_subject_helpers.php';
 require_once __DIR__ . '/../../school_admin/_classes_helpers.php';
+require_once __DIR__ . '/../../_audit_log.php';
 require_role(['school_admin']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_json();
@@ -74,8 +75,17 @@ if ($method === 'POST') {
             $result = admin_classes_seed_alevel($pdo, $school_id, $school_type, $LEVEL_CLASSES, trim((string) ($body['class_name'] ?? '')));
             break;
         case 'delete_class':
-            admin_classes_delete($pdo, $school_id, (int) ($body['class_id'] ?? 0));
+            $delete_class_id = (int) ($body['class_id'] ?? 0);
+            $deleted_class_name_stmt = $pdo->prepare("SELECT class_name FROM classes WHERE id = ? AND school_id = ?");
+            $deleted_class_name_stmt->execute([$delete_class_id, $school_id]);
+            $deleted_class_name = $deleted_class_name_stmt->fetchColumn() ?: "#{$delete_class_id}";
+
+            admin_classes_delete($pdo, $school_id, $delete_class_id);
             $result = ['ok' => true, 'message' => 'Class deleted. Students in it are now unassigned rather than deleted.'];
+            scholar_audit_log(
+                $pdo, $school_id, $_SESSION['user_id'] ?? null, 'class_deleted', 'classes', $delete_class_id,
+                "Deleted class \"{$deleted_class_name}\". Students in it were unassigned, not deleted."
+            );
             break;
         case 'assign_class_teacher':
             $result = admin_classes_assign_teacher($pdo, $school_id, (int) ($body['class_id'] ?? 0), (int) ($body['teacher_staff_id'] ?? 0));

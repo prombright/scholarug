@@ -78,6 +78,7 @@ if (!function_exists('safe_text')) {
 }
 
 require_once $base_dir . '/_students_helpers.php';
+require_once $base_dir . '/../_audit_log.php';
 
 // scholar_generate_student_no() lives in auth_guard.php (already required
 // above) -- shared with the one-off _setup/backfill_missing_student_numbers.php
@@ -226,8 +227,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // access, and clears any pending reset_requested flag from a class
     // teacher (see teacher_class_logins.php).
     if ($_POST['action'] === 'regenerate_student_password') {
-        $result = admin_students_regenerate_password($pdo, $school_id, (int) ($_POST['student_id'] ?? 0));
-        if ($result['ok']) { $message = $result['message']; } else { $error = $result['message']; }
+        $reset_student_id = (int) ($_POST['student_id'] ?? 0);
+        $result = admin_students_regenerate_password($pdo, $school_id, $reset_student_id);
+        if ($result['ok']) {
+            $message = $result['message'];
+            scholar_audit_log(
+                $pdo, $school_id, $_SESSION['user_id'] ?? null, 'student_password_reset', 'students', $reset_student_id,
+                "Reset portal login password for student #{$reset_student_id}."
+            );
+        } else { $error = $result['message']; }
     }
 }
 

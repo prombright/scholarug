@@ -21,6 +21,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../_marks_entry_helpers.php';
+require_once __DIR__ . '/../../_audit_log.php';
 require_role(['teacher']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_json();
@@ -120,6 +121,13 @@ if ($method === 'POST') {
         $result = marks_save($pdo, $school_id, $staff_id, $class_id, $subject_id, $paper_number, $assessment_id, $marks_input, $action);
     } catch (Exception $e) {
         marks_json_error('Error saving marks: ' . $e->getMessage(), 500);
+    }
+
+    if ($action === 'submitted' && $result['touched'] > 0) {
+        scholar_audit_log(
+            $pdo, $school_id, $_SESSION['user_id'] ?? null, 'marks_submitted', 'student_marks', $assessment_id,
+            "Submitted {$result['touched']} mark(s) for class #{$class_id}, subject #{$subject_id}, paper {$paper_number}, assessment #{$assessment_id} (now counted on the report card)."
+        );
     }
 
     echo json_encode([

@@ -22,6 +22,7 @@ require_role(['school_admin', 'hr']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
 }
+require_once __DIR__ . '/_audit_log.php';
 
 $school_id = current_school_id();
 
@@ -60,10 +61,11 @@ if (!is_dir('uploads/staff')) {
 if (isset($_GET['delete_id'])) {
     $delete_id = (int)$_GET['delete_id'];
     
-    $img_stmt = $pdo->prepare("SELECT photo FROM staff WHERE staff_id = ? AND school_id = ?");
+    $img_stmt = $pdo->prepare("SELECT photo, first_name, last_name FROM staff WHERE staff_id = ? AND school_id = ?");
     $img_stmt->execute([$delete_id, $school_id]);
-    $old_photo = $img_stmt->fetchColumn();
-    
+    $deleted_staff = $img_stmt->fetch();
+    $old_photo = $deleted_staff['photo'] ?? null;
+
     $pdo->beginTransaction();
     try {
         $del_roles = $pdo->prepare("DELETE FROM staff_responsibilities WHERE staff_id = ?");
@@ -83,7 +85,18 @@ if (isset($_GET['delete_id'])) {
         if ($old_photo && file_exists($old_photo) && !str_contains($old_photo, 'default_avatar.png')) {
             unlink($old_photo);
         }
-        
+
+        $staff_name = trim(($deleted_staff['first_name'] ?? '') . ' ' . ($deleted_staff['last_name'] ?? ''));
+        scholar_audit_log(
+            $pdo,
+            $school_id,
+            $_SESSION['user_id'] ?? null,
+            'staff_deleted',
+            'staff',
+            $delete_id,
+            "Deleted staff \"{$staff_name}\" (ID {$delete_id}) and their login."
+        );
+
         $pdo->commit();
         header("Location: staff_manager.php?status=purged");
         exit;
@@ -229,6 +242,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_staff_record'
                     }
                 }
             } else if ($action === 'update' && $staff_row_id) {
+                $old_role_stmt = $pdo->prepare("SELECT role FROM staff WHERE staff_id = ? AND school_id = ?");
+                $old_role_stmt->execute([$staff_row_id, $school_id]);
+                $old_role = $old_role_stmt->fetchColumn();
+
                 $upd = $pdo->prepare("UPDATE staff SET first_name = ?, last_name = ?, email = ?, phone = ?, nin = ?, photo = ?, staff_category = ?, role = ?, staff_type = ?, assign_class = ?, assign_stream = ? WHERE staff_id = ? AND school_id = ?");
                 $upd->execute([$first_name, $last_name, $email, $phone, $nin, $photo_path, $staff_category, $role, strtolower($staff_category), $assign_class, $assign_stream, $staff_row_id, $school_id]);
 
@@ -243,6 +260,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['persist_staff_record'
                 // exists; editing a staff member never creates one.
                 $pdo->prepare("UPDATE users SET role = ? WHERE staff_id = ? AND school_id = ?")
                     ->execute([staff_login_role($role), $staff_row_id, $school_id]);
+
+                if ($old_role !== false && $old_role !== $role) {
+                    scholar_audit_log(
+                        $pdo,
+                        $school_id,
+                        $_SESSION['user_id'] ?? null,
+                        'staff_role_changed',
+                        'staff',
+                        $staff_row_id,
+                        "Changed {$first_name} {$last_name}'s role from \"{$old_role}\" to \"{$role}\"."
+                    );
+                }
 
                 $msg = "SUCCESS: Profile records modified systematically.";
             }

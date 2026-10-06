@@ -14,6 +14,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../auth_guard.php';
 require_once __DIR__ . '/../../school_admin/_fees_helpers.php';
+require_once __DIR__ . '/../../_audit_log.php';
 require_role(['school_admin', 'bursar']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_json();
@@ -98,6 +99,22 @@ if ($method === 'POST') {
 
     if (!$result['ok']) {
         admin_fees_json_error($result['message']);
+    }
+
+    if ($action === 'save_fee_structure') {
+        scholar_audit_log(
+            $pdo, $school_id, $_SESSION['user_id'] ?? null, 'fee_structure_saved', 'fee_structures',
+            (int) ($body['class_id'] ?? 0),
+            "Set fee structure for class #" . (int) ($body['class_id'] ?? 0) . " ({$term} {$year}): day=" . (float) ($body['day_tuition'] ?? 0)
+                . ", boarding=" . (float) ($body['boarding_tuition'] ?? 0) . ", entry=" . (float) ($body['entry_fee'] ?? 0) . "."
+        );
+    } elseif ($action === 'record_payment') {
+        scholar_audit_log(
+            $pdo, $school_id, $_SESSION['user_id'] ?? null, 'fee_payment_recorded', 'fee_payments',
+            (int) ($body['student_id'] ?? 0),
+            "Recorded payment of " . (float) ($body['amount_paid'] ?? 0) . " (bursary " . (float) ($body['bursary_amount'] ?? 0)
+                . ") for student #" . (int) ($body['student_id'] ?? 0) . ", {$term} {$year}."
+        );
     }
 
     $snapshot = admin_fees_snapshot($pdo, $school_id, '', '', $term, $year);
