@@ -13,6 +13,7 @@ const classCount = ref(0)
 const pendingFeedback = ref(0)
 const classDistribution = ref([])
 const gender = ref({ male: 0, female: 0 })
+const setupChecklist = ref([])
 
 onMounted(async () => {
   try {
@@ -24,6 +25,7 @@ onMounted(async () => {
     pendingFeedback.value = data.pending_feedback
     classDistribution.value = data.class_distribution
     gender.value = data.gender
+    setupChecklist.value = data.setup_checklist || []
   } catch (e) {
     error.value = e.response?.data?.message || 'Could not load the dashboard.'
   } finally {
@@ -35,6 +37,8 @@ const classDistMax = computed(() => Math.max(1, ...classDistribution.value.map((
 const genderTotal = computed(() => gender.value.male + gender.value.female)
 const genderMalePct = computed(() => (genderTotal.value ? Math.round((gender.value.male / genderTotal.value) * 100) : 0))
 const genderFemalePct = computed(() => (genderTotal.value ? 100 - genderMalePct.value : 0))
+const pendingSetupItems = computed(() => setupChecklist.value.filter((item) => !item.done))
+const setupDoneCount = computed(() => setupChecklist.value.length - pendingSetupItems.value.length)
 
 // `route:` items are migrated; `href:` still classic PHP.
 const modules = [
@@ -68,6 +72,23 @@ const modules = [
       <a :href="SB + 'staff_manager.php'" class="stat-card staff"><div class="stat-icon"><i class="bi bi-person-badge"></i></div><div><div class="n">{{ staffCount }}</div><div class="label">Staff</div></div></a>
       <router-link to="/classes" class="stat-card classes"><div class="stat-icon"><i class="bi bi-diagram-3"></i></div><div><div class="n">{{ classCount }}</div><div class="label">Classes</div></div></router-link>
       <router-link to="/parent-feedback" class="stat-card messages" :class="{ alert: pendingFeedback > 0 }"><div class="stat-icon"><i class="bi bi-chat-dots"></i></div><div><div class="n">{{ pendingFeedback }}</div><div class="label">New Parent Messages</div></div></router-link>
+    </div>
+
+    <div v-if="pendingSetupItems.length" class="setup-card">
+      <div class="setup-head">
+        <div>
+          <div class="setup-title">Finish setting up your school</div>
+          <div class="setup-sub">{{ setupDoneCount }} of {{ setupChecklist.length }} done -- a few things still need your attention.</div>
+        </div>
+      </div>
+      <ul class="setup-list">
+        <li v-for="item in pendingSetupItems" :key="item.key">
+          <component :is="item.route ? 'router-link' : 'a'" :to="item.route" :href="item.href ? (SB + item.href) : null">
+            <i class="bi bi-arrow-right-circle"></i>
+            <span>{{ item.label }}</span>
+          </component>
+        </li>
+      </ul>
     </div>
 
     <div class="section-label">Functionalities</div>
@@ -122,6 +143,14 @@ h1{font-size:1.4rem;margin:0 0 4px;}
 .stat-card.messages.alert .stat-icon{background:rgba(239,68,68,.15);color:var(--danger);}
 .stat-card .n{font-size:1.7rem;font-weight:700;line-height:1.1;}
 .stat-card .label{color:var(--muted);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+.setup-card{background:var(--panel);border:1px solid var(--amber);border-radius:14px;padding:22px 24px;margin-bottom:32px;}
+.setup-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+.setup-title{font-weight:700;font-size:1rem;}
+.setup-sub{color:var(--muted);font-size:0.8rem;margin-top:3px;}
+.setup-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;}
+.setup-list li a{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-size:0.85rem;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);transition:border-color .15s;}
+.setup-list li a:hover{border-color:var(--amber);}
+.setup-list li a i{color:var(--amber);font-size:1rem;flex-shrink:0;}
 .section-label{font-size:0.95rem;font-weight:700;margin:36px 0 16px;}
 .module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
 .module-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;text-decoration:none;color:var(--text);display:block;transition:border-color .15s;}
