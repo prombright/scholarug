@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/track_visit.php';
+
 // Single source of truth for the <head> block on every marketing page --
 // previously includes/header.php ALSO opened its own competing
 // <!DOCTYPE html><html><head>, so index.php/products.php (which include

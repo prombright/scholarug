@@ -10,8 +10,9 @@ declare(strict_types=1);
 | attendance_late_status_migration.sql, fees_term_scoping_migration.sql,
 | login_lockout_migration.sql, password_reset_otp_attempts_migration.sql,
 | subject_paper_weights_migration.sql,
-| grading_scales_primary_level_migration.sql and
-| access_pin_widen_migration.sql against the live database via the same
+| grading_scales_primary_level_migration.sql,
+| access_pin_widen_migration.sql and
+| page_views_migration.sql against the live database via the same
 | db.php connection every other page uses (no direct DB CLI/phpMyAdmin
 | access needed from the deploying machine). Gated behind an active
 | developer session, same as every other scholar/developer/* page. Lives
@@ -299,5 +300,24 @@ try {
     echo "(not recorded in schema_migrations -- run schema_migrations_tracking.sql first)\n";
 }
 echo "\n";
+
+// page_views_migration -- backs the new developer/analytics.php page.
+// CREATE TABLE IF NOT EXISTS is naturally idempotent, so this goes
+// through run_statements() like the other simple migrations.
+run_statements($pdo, 'page_views_migration', [
+    "CREATE TABLE IF NOT EXISTS page_views (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        system VARCHAR(20) NOT NULL,
+        path VARCHAR(255) NOT NULL,
+        school_id INT NULL,
+        role VARCHAR(30) NULL,
+        ip_hash CHAR(64) NULL,
+        referrer VARCHAR(255) NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_page_views_created (created_at),
+        INDEX idx_page_views_system (system),
+        INDEX idx_page_views_school (school_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+], 'page_views_migration.sql');
 
 echo "DONE. Verify the output above, then delete this file from the server.\n";

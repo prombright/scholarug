@@ -9,30 +9,22 @@
 |--------------------------------------------------------------------------
 */
 
-// Best-effort page-view log into the shared abn_platform.page_views table
-// -- same "second PDO connection to abn_platform, same MySQL server"
-// pattern sso_login.php already uses. DB_HOST/DB_USER/DB_PASS are always
-// already defined by the time this file runs (every caller loads
-// config.php via db.php/auth_guard.php first). Never throws.
-if (!function_exists('scholar_track_visit')) {
-    function scholar_track_visit(): void
-    {
-        try {
-            $pdo = new PDO(
-                "mysql:host=" . DB_HOST . ";dbname=abn_platform;charset=utf8mb4",
-                DB_USER,
-                DB_PASS,
-                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 2]
-            );
-            $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-            $stmt = $pdo->prepare("INSERT INTO page_views (system, path) VALUES ('scholar', ?)");
-            $stmt->execute([$path]);
-        } catch (Throwable $e) {
-            // Analytics is never allowed to break the page.
-        }
-    }
+// Page-view log, in this same `scholar` database -- used to write into a
+// *separate* abn_platform database that was never actually provisioned on
+// this hosting account, so every call silently failed and zero visit data
+// was ever collected. See page_views_migration.sql and
+// _visit_tracking.php for the full story and the shared insert logic.
+// $pdo is already connected (every caller loads db.php before this file),
+// and current_school_id()/$_SESSION are already in scope too.
+require_once __DIR__ . '/_visit_tracking.php';
+if (isset($pdo) && $pdo instanceof PDO) {
+    scholar_track_page_view(
+        $pdo,
+        'scholar',
+        isset($_SESSION['school_id']) ? (int) $_SESSION['school_id'] : null,
+        $_SESSION['role'] ?? null
+    );
 }
-scholar_track_visit();
 ?>
 <div id="abn-preloader" aria-hidden="true">
     <div class="abn-preloader-word">Scholar<span>Ug</span></div>

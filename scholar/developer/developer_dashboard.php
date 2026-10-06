@@ -1384,6 +1384,14 @@ td {
     </div>
 
     <a
+        href="analytics.php"
+        class="logout"
+        style="color:#10b981;border-color:rgba(16,185,129,.25);margin-right:10px;"
+    >
+        Analytics
+    </a>
+
+    <a
         href="migrations_status.php"
         class="logout"
         style="color:#a855f7;border-color:rgba(168,85,247,.25);margin-right:10px;"
