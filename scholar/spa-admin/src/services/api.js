@@ -37,6 +37,10 @@ api.interceptors.response.use(
 export const scholarBase = () => window.__SCHOLAR_BASE__ || '/ScholarUg/scholar/'
 
 export const dashboardApi = { get: () => api.get('admin/dashboard.php') }
+export const notificationsApi = {
+  get: () => api.get('admin/notifications.php'),
+  action: (payload) => api.post('admin/notifications.php', payload)
+}
 export const brandApi = { get: () => api.get('admin/brand.php') }
 export const classesApi = {
   get: () => api.get('admin/classes.php'),

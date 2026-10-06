@@ -1,6 +1,7 @@
 <script setup>
-import { ref, inject } from 'vue'
+import { ref, inject, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { notificationsApi } from '../services/api'
 
 const SB = window.__SCHOLAR_BASE__ || '/ScholarUg/scholar/'
 const role = inject('role', 'school_admin')
@@ -81,6 +82,47 @@ function isActive(item) {
 function groupActive(group) {
   return (group.children || []).some(isActive)
 }
+
+// Notification bell -- only rendered for school_admin/dos/headteacher/bursar
+// (api/admin/notifications.php is gated the same way), so it's hidden
+// outright for any other injected role rather than fetching and failing.
+const notifications = ref([])
+const unreadCount = ref(0)
+const bellOpen = ref(false)
+
+async function fetchNotifications() {
+  try {
+    const { data } = await notificationsApi.get()
+    notifications.value = data.items
+    unreadCount.value = data.unread_count
+  } catch (e) {
+    // The bell is a convenience, not critical path -- fail silently.
+  }
+}
+
+function toggleBell() {
+  bellOpen.value = !bellOpen.value
+}
+
+async function markAllRead() {
+  if (unreadCount.value === 0) return
+  notifications.value = notifications.value.map((n) => ({ ...n, is_read: 1 }))
+  unreadCount.value = 0
+  try {
+    await notificationsApi.action({ action: 'mark_all_read' })
+  } catch (e) {}
+}
+
+async function markRead(item) {
+  if (item.is_read) return
+  item.is_read = 1
+  unreadCount.value = Math.max(0, unreadCount.value - 1)
+  try {
+    await notificationsApi.action({ action: 'mark_read', id: item.id })
+  } catch (e) {}
+}
+
+onMounted(fetchNotifications)
 </script>
 
 <template>
@@ -126,6 +168,28 @@ function groupActive(group) {
     <div class="main-col">
       <div class="topbar">
         <button class="mobile-nav-toggle" @click="mobileOpen = !mobileOpen"><i class="bi bi-list"></i></button>
+        <div class="topbar-right">
+          <div class="bell-wrap">
+            <button type="button" class="bell-btn" :class="{ active: bellOpen }" :aria-expanded="bellOpen" aria-label="Notifications" @click="toggleBell">
+              <i class="bi bi-bell"></i>
+              <span v-if="unreadCount > 0" class="bell-badge">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+            </button>
+            <div v-if="bellOpen" class="bell-backdrop" @click="bellOpen = false"></div>
+            <div v-if="bellOpen" class="bell-panel">
+              <div class="bell-head">
+                <span>Notifications</span>
+                <button v-if="unreadCount > 0" type="button" class="bell-mark-all" @click="markAllRead">Mark all read</button>
+              </div>
+              <div v-if="!notifications.length" class="bell-empty">You're all caught up.</div>
+              <div v-else class="bell-list">
+                <button v-for="n in notifications" :key="n.id" type="button" class="bell-item" :class="{ unread: !n.is_read }" @click="markRead(n)">
+                  <div class="bell-item-title">{{ n.title }}</div>
+                  <div class="bell-item-msg">{{ n.message }}</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="page-inner">
         <router-view />
@@ -160,8 +224,27 @@ function groupActive(group) {
 .logout-btn{display:flex;align-items:center;gap:6px;color:var(--danger);text-decoration:none;font-size:0.85rem;font-weight:700;justify-content:center;}
 .main-col{flex:1;min-width:0;overflow:auto;}
 .topbar{display:flex;align-items:center;gap:14px;padding:8px 0 16px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;}
 .page-inner{width:100%;}
 .mobile-nav-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:1.1rem;cursor:pointer;}
+
+.bell-wrap{position:relative;}
+.bell-btn{position:relative;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:1.05rem;cursor:pointer;}
+.bell-btn:hover,.bell-btn.active{border-color:var(--cyan);color:var(--cyan);}
+.bell-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:0.62rem;font-weight:800;line-height:1;padding:3px 5px;border-radius:20px;min-width:16px;text-align:center;}
+.bell-backdrop{position:fixed;inset:0;z-index:24;background:transparent;}
+.bell-panel{position:absolute;top:calc(100% + 10px);right:0;width:330px;max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.25);z-index:25;overflow:hidden;}
+.bell-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:0.88rem;}
+.bell-mark-all{background:none;border:none;color:var(--cyan);font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.bell-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:0.82rem;}
+.bell-list{max-height:360px;overflow-y:auto;}
+.bell-item{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--border);padding:12px 16px;cursor:pointer;font-family:inherit;}
+.bell-item:last-child{border-bottom:none;}
+.bell-item:hover{background:var(--panel-raised);}
+.bell-item.unread{background:rgba(0,168,168,.06);}
+.bell-item-title{font-size:0.82rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;}
+.bell-item.unread .bell-item-title::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--cyan);flex-shrink:0;}
+.bell-item-msg{font-size:0.78rem;color:var(--muted);margin-top:3px;line-height:1.4;}
 .sidebar-collapse-toggle{display:none;width:100%;align-items:center;gap:10px;padding:12px;color:var(--muted);background:none;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left;}
 .sidebar-collapse-toggle:hover{background:var(--panel-raised);color:var(--text);}
 .sidebar-collapse-toggle i{font-size:1.05rem;width:20px;text-align:center;flex-shrink:0;transition:transform .22s ease;}
