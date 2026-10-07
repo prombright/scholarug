@@ -102,12 +102,14 @@ function regeneratePassword(row) {
 const templateUrl = `${SB}school_admin/students.php?download_template=csv`
 const printCredentialsUrl = `${SB}school_admin/print_student_credentials.php`
 const csvImportAction = `${SB}school_admin/students.php`
+const exportUrl = `${SB}school_admin/export_students.php`
 </script>
 
 <template>
   <div class="page-header">
     <div><h1>Student Management</h1></div>
     <div class="header-actions">
+      <a :href="exportUrl" class="btn btn-ghost btn-sm"><i class="bi bi-download"></i> Export CSV</a>
       <a :href="templateUrl" class="btn btn-ghost btn-sm">Download CSV Template</a>
       <a :href="printCredentialsUrl" class="btn btn-ghost btn-sm">Print Class Credentials</a>
     </div>

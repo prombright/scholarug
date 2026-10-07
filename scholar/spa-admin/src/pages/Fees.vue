@@ -1,6 +1,8 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
-import { feesApi } from '../services/api'
+import { ref, computed, watch, onMounted } from 'vue'
+import { feesApi, scholarBase } from '../services/api'
+
+const SB = scholarBase()
 
 const loading = ref(true)
 const busy = ref(false)
@@ -71,6 +73,7 @@ function recordPayment() {
 }
 
 const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
+const exportUrl = computed(() => `${SB}school_admin/export_fees.php?term=${encodeURIComponent(term.value)}&year=${encodeURIComponent(year.value)}`)
 </script>
 
 <template>
@@ -80,6 +83,7 @@ const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
       <p>ScholarUg &bull; School Fee Ledger &amp; Collections</p>
     </div>
     <div class="header-actions">
+      <a :href="exportUrl" class="btn-light"><i class="bi bi-download"></i> Export CSV</a>
       <button type="button" class="btn-light" @click="showStructureModal = true"><i class="bi bi-gear-fill"></i> Fee Structures</button>
       <button type="button" class="btn-primary" @click="showPaymentModal = true"><i class="bi bi-plus-circle-fill"></i> Record Payment</button>
     </div>
@@ -212,7 +216,7 @@ const fmt = (n) => 'UGX ' + Math.round(n).toLocaleString()
 .header-banner h2{margin:0 0 4px;font-size:1.2rem;color:var(--text);}
 .header-banner p{margin:0;color:var(--muted);}
 .header-actions{display:flex;gap:10px;}
-.header-actions button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;}
+.header-actions button,.header-actions a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;text-decoration:none;}
 .btn-light{background:var(--panel);color:var(--text);}
 .btn-primary{background:var(--cyan);color:#04222a;border-color:transparent;}
 .alert{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;}

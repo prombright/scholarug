@@ -828,9 +828,12 @@ if ($is_hr_role) {
                 <h3 style="margin: 0 0 6px 0; font-size: 1.35rem; color:var(--text); font-weight: 700; letter-spacing: -0.5px;">Staff Management Portal</h3>
                 <p style="color:var(--muted); font-size:0.85rem; margin:0;">Organize school human resource records, system access tracking tags, and academic class distribution tables.</p>
             </div>
-           <button type="button" onclick="openStaffModal('add')" class="btn-primary">
-                <span style="font-size: 1.1rem; line-height: 0;">+</span> Register Staff Member
-           </button>
+           <div style="display:flex; gap:10px; flex-wrap:wrap;">
+               <a href="export_staff.php" style="display:inline-flex; align-items:center; gap:6px; padding:10px 16px; border-radius:8px; background:var(--panel); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:0.85rem; font-weight:600;"><i class="bi bi-download"></i> Export CSV</a>
+               <button type="button" onclick="openStaffModal('add')" class="btn-primary">
+                    <span style="font-size: 1.1rem; line-height: 0;">+</span> Register Staff Member
+               </button>
+           </div>
         </div>
 
         <details style="background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin-bottom:24px;">
