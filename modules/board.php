@@ -35,13 +35,6 @@ The people guiding ScholarUg's vision, innovation and strategic growth.
 alt="Bright Arinaitwe">
 
 
-<div class="founder-badge">
-
-Founder, Developer & Proprietor
-
-</div>
-
-
 </div>
 
 
@@ -138,13 +131,6 @@ Digital Transformation
 
 <img src="assets/images/team/Natalie.jpg"
 alt="Natalie Tukamushaba">
-
-
-<div class="founder-badge">
-
-Co-Founder &amp; Marketing Lead
-
-</div>
 
 
 </div>
