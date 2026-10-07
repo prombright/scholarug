@@ -11,6 +11,7 @@
     --primary: #0A3D62;
     --secondary: #00A8A8;
     --accent: #38ada9;
+    --gold: #D4A24C;
 
     --dark: #071E26;
     --light: #f8fbfd;
@@ -18,12 +19,27 @@
     --white: #ffffff;
     --text: #444;
 
+    /* Fraunces for headings, Poppins for everything else -- loaded
+       together in includes/head.php's preload-then-swap link. Gives the
+       site a more editorial/academic voice on headlines without touching
+       body copy, buttons or UI chrome, which stay on Poppins. */
+    --font-display: 'Fraunces', Georgia, serif;
+
     --shadow:
         0 10px 30px rgba(0, 0, 0, 0.08);
 
     --transition:
         all .35s ease;
 
+}
+
+/* Applies everywhere a heading doesn't already set its own font-family --
+   deliberately a low-specificity base rule (not !important) so any
+   existing more-specific heading rule elsewhere in this file still wins
+   if it ever needs to opt out. */
+h1, h2, h3, .section-title h2 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
 }
 
 

@@ -94,6 +94,10 @@ Talk To Us
 
 </div>
 
+<div class="hero-illustration">
+<img src="assets/images/hero-students.svg" alt="Students learning on laptops with ScholarUg" loading="lazy">
+</div>
+
 </section>
 
 <style>
@@ -109,19 +113,37 @@ Talk To Us
    the dashboard card. Text/buttons flip from white to dark to match --
    see the light-background button overrides below. */
 .hero {
+    /* assets/css/style.css has two older, now-unused .hero rules
+       (min-height:90vh; display:flex; align-items:center) left over from
+       earlier hero designs -- previously invisible because this section's
+       old full-bleed cover background filled that whole 90vh box
+       regardless of actual content height. Removing that background
+       exposed it as a large dead gap above/below the content, centered
+       in a box taller than it needs to be. Explicitly overriding every
+       property that old rule sets (not just the ones this design needs)
+       so this rule -- loaded later, so it wins on equal specificity --
+       fully replaces it rather than merging with it.
+    */
     position: relative;
-    padding: 100px 0 90px;
+    display: block;
+    min-height: 0;
+    align-items: initial;
+    padding: 100px 0 0;
     background-color: #EAF6F5;
-    background-image:
-        linear-gradient(90deg, #EAF6F5 0%, #EAF6F5 34%, rgba(234,246,245,.88) 44%, rgba(234,246,245,.4) 58%, rgba(234,246,245,.08) 72%),
-        url('assets/images/hero-students.svg');
-    background-size: cover, auto 150%;
-    background-position: center, 82% 58%;
-    background-repeat: no-repeat, no-repeat;
+    overflow: hidden;
     color: var(--primary);
 }
+/* The students-at-a-desk illustration as a full-width band along the
+   hero's bottom edge, not cropped/zoomed behind the text -- it's a wide
+   (1600x700) scene meant to be seen whole, not as a photo-style cover
+   background (which is what reduced it to one giant cropped head
+   before). Sits below the two-column content instead, same idea as a
+   stage/desk the whole hero rests on. */
+.hero-illustration { width: 100%; line-height: 0; margin-top: 70px; }
+.hero-illustration img { width: 100%; height: auto; display: block; }
 .hero .container { position: relative; z-index: 1; }
-.hero-content { display: grid; grid-template-columns: 1.05fr 0.95fr; align-items: center; gap: 56px; }
+.hero-content { display: grid; grid-template-columns: 1.05fr 0.95fr; align-items: start; gap: 56px; }
+.hero-visual { padding-top: 10px; }
 
 .hero-eyebrow { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--primary); background: #fff; border: 1px solid rgba(10,61,98,.15); padding: 6px 16px; border-radius: 30px; margin-bottom: 20px; box-shadow: 0 4px 14px rgba(10,61,98,.08); }
 .hero-text h1 { font-size: 48px; font-weight: 800; line-height: 1.16; margin: 0; color: var(--primary); text-wrap: balance; }
