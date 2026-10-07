@@ -167,9 +167,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                     if(
+                        login_is_locked_out($pdo, $username)
+                    ){
+
+
+                        $error =
+                        "Too many failed attempts. Please try again in 15 minutes.";
+
+
+                    }
+
+
+
+                    elseif(
                         (int)$school['is_active'] !== 1
                     ){
 
+
+                        login_record_attempt($pdo, $username, false);
 
                         $error =
                         "School account is currently inactive.";
@@ -184,6 +199,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ||
                         $access_pin_ok_legacy_plaintext
                     ){
+
+
+                        login_record_attempt($pdo, $username, true);
 
 
 
@@ -279,6 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // against `users` and redirects by role, so
                         // there is only one routing table to keep in
                         // sync, not two.
+                        login_record_attempt($pdo, $username, false);
                         $error = "Invalid school code or access PIN. If you're staff or a student, log in with your username and password instead.";
                     }
 
@@ -370,6 +389,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $candidates =
                 $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                // Students are deliberately exempt from lockout/attempt-
+                // recording (see login_lockout_migration.sql's header) --
+                // a student's username AND password are both just their
+                // student number, with no self-service reset, and real
+                // students mistype it often. Only exempt when EVERY
+                // matching row is a student; an unknown identifier (zero
+                // candidates here) or any non-student candidate still
+                // gets full protection.
+                $apply_lockout = true;
+                if ($candidates) {
+                    $apply_lockout = false;
+                    foreach ($candidates as $candidate) {
+                        if (strtolower((string) $candidate['role']) !== 'student') {
+                            $apply_lockout = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($apply_lockout && login_is_locked_out($pdo, $username)) {
+
+                $error = "Too many failed attempts. Please try again in 15 minutes.";
+
+                } else {
+
                 $user = null;
 
                 foreach ($candidates as $candidate) {
@@ -404,6 +448,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 if($user){
+
+                    if ($apply_lockout) {
+                        login_record_attempt($pdo, $username, true);
+                    }
 
 
 
@@ -512,12 +560,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 else{
 
+                    if ($apply_lockout) {
+                        login_record_attempt($pdo, $username, false);
+                    }
 
                     $error =
                     "Invalid username or password.";
 
 
                 }
+
+                } // closes else (not locked out)
 
 
             }

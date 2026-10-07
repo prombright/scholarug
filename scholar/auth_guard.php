@@ -327,11 +327,33 @@ function login_is_locked_out(PDO $pdo, string $identifier): bool
     }
 }
 
-function login_record_attempt(PDO $pdo, string $identifier, bool $succeeded): void
+/**
+ * Best-effort real visitor IP behind Cloudflare -- REMOTE_ADDR alone would
+ * be Cloudflare's own edge IP on this Cloudflare-proxied domain, which
+ * would make every attempt look like it came from the same handful of
+ * IPs. CF-Connecting-IP is Cloudflare's own header carrying the real
+ * visitor IP; this is logging/visibility only, never used for the
+ * lockout threshold itself (which stays keyed by identifier, see above).
+ */
+function scholar_client_ip(): ?string
+{
+    foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'] as $key) {
+        if (!empty($_SERVER[$key])) {
+            $ip = trim(explode(',', (string) $_SERVER[$key])[0]);
+            if ($ip !== '') {
+                return substr($ip, 0, 45);
+            }
+        }
+    }
+    return null;
+}
+
+function login_record_attempt(PDO $pdo, string $identifier, bool $succeeded, ?string $ipAddress = null): void
 {
     try {
-        $pdo->prepare('INSERT INTO login_attempts (identifier, succeeded) VALUES (?, ?)')
-            ->execute([$identifier, $succeeded ? 1 : 0]);
+        $ipAddress = $ipAddress ?? scholar_client_ip();
+        $pdo->prepare('INSERT INTO login_attempts (identifier, succeeded, ip_address) VALUES (?, ?, ?)')
+            ->execute([$identifier, $succeeded ? 1 : 0, $ipAddress]);
     } catch (\PDOException $e) {
         // table not migrated yet -- nothing to record
     }

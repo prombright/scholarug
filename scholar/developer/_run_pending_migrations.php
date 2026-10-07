@@ -11,8 +11,9 @@ declare(strict_types=1);
 | login_lockout_migration.sql, password_reset_otp_attempts_migration.sql,
 | subject_paper_weights_migration.sql,
 | grading_scales_primary_level_migration.sql,
-| access_pin_widen_migration.sql and
-| page_views_migration.sql against the live database via the same
+| access_pin_widen_migration.sql,
+| page_views_migration.sql and
+| login_attempts_ip_migration.sql against the live database via the same
 | db.php connection every other page uses (no direct DB CLI/phpMyAdmin
 | access needed from the deploying machine). Gated behind an active
 | developer session, same as every other scholar/developer/* page. Lives
@@ -319,5 +320,13 @@ run_statements($pdo, 'page_views_migration', [
         INDEX idx_page_views_school (school_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 ], 'page_views_migration.sql');
+
+// login_attempts_ip_migration -- adds a logging-only ip_address column to
+// login_attempts (never used for the lockout decision itself, see that
+// .sql file's header). Backs developer/login_attempts.php.
+run_statements($pdo, 'login_attempts_ip_migration', [
+    "ALTER TABLE login_attempts ADD COLUMN ip_address VARCHAR(45) NULL AFTER succeeded",
+    "CREATE INDEX idx_login_attempts_ip ON login_attempts (ip_address)",
+], 'login_attempts_ip_migration.sql');
 
 echo "DONE. Verify the output above, then delete this file from the server.\n";

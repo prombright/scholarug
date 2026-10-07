@@ -1400,6 +1400,14 @@ td {
     </a>
 
     <a
+        href="login_attempts.php"
+        class="logout"
+        style="color:#ef4444;border-color:rgba(239,68,68,.25);margin-right:10px;"
+    >
+        Login Attempts
+    </a>
+
+    <a
         href="migrations_status.php"
         class="logout"
         style="color:#a855f7;border-color:rgba(168,85,247,.25);margin-right:10px;"
