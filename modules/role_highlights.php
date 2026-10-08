@@ -150,35 +150,39 @@ parent instantly with Bulk SMS and WhatsApp.
    the other page's grid.
 
    Two layered effects:
-   1. An automatic "taking turns" spotlight -- each card gets a brief
-      highlighted moment in a continuous loop, staggered so only one is
-      ever "active" at a time (4 cards x 2s = 8s full cycle).
+   1. An automatic "taking turns" exit -- each card, in order, drifts
+      out to the left and fades away, holds a beat offstage, then
+      drifts back in -- one at a time, slowly (4 cards x 5s = 20s full
+      cycle), rather than all four doing something at once.
    2. Hovering the grid pauses the auto-rotation and hands control to
-      the pointer -- the hovered card snaps to the highlighted look,
-      its siblings ease back and soften, same spotlight language as the
-      automatic version so the two feel like one continuous idea rather
-      than two different effects competing. */
+      the pointer with a separate "spotlight" look (lift + tilt the
+      hovered card, soften the rest) -- a different, faster gesture
+      from the slow automatic drift, since hovering is a deliberate
+      action and should answer immediately, not wait on the cycle. */
 .role-services .service-card {
-    animation: role-turn 8s infinite;
+    animation: role-exit-left 20s infinite;
     transform-origin: center;
 }
 .role-services .service-card:nth-child(1) { animation-delay: 0s; }
-.role-services .service-card:nth-child(2) { animation-delay: 2s; }
-.role-services .service-card:nth-child(3) { animation-delay: 4s; }
-.role-services .service-card:nth-child(4) { animation-delay: 6s; }
+.role-services .service-card:nth-child(2) { animation-delay: 5s; }
+.role-services .service-card:nth-child(3) { animation-delay: 10s; }
+.role-services .service-card:nth-child(4) { animation-delay: 15s; }
 
-@keyframes role-turn {
-    0%, 8% {
-        transform: scale(1.06) rotate(-1.5deg);
-        filter: blur(0);
+@keyframes role-exit-left {
+    0%, 60% {
+        transform: translateX(0);
         opacity: 1;
-        box-shadow: 0 28px 55px rgba(10,61,98,.18);
+        filter: blur(0);
     }
-    22%, 100% {
-        transform: scale(1) rotate(0deg);
-        filter: blur(.5px);
-        opacity: .82;
-        box-shadow: 0 10px 30px rgba(10,61,98,.06);
+    78%, 87% {
+        transform: translateX(-56px);
+        opacity: 0;
+        filter: blur(1px);
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+        filter: blur(0);
     }
 }
 
