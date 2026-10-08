@@ -1,4 +1,4 @@
-<section class="role-flow">
+<section class="services role-services">
 
 <div class="container">
 
@@ -17,115 +17,189 @@ From the admin's office to a parent's phone, everyone gets exactly what they nee
 
 
 
-<div class="role-grid">
+<div class="service-grid">
 
-<div class="role-card">
-<div class="role-icon">
+
+
+<div class="service-card">
+
+
+<div class="service-icon">
+
 <i class="bi bi-speedometer2"></i>
+
 </div>
+
+
 <h3>
 For School Admins
 </h3>
+
+
 <p>
+
 Enrol students, organize classes and streams, set fees, open
 assessments, and see the whole school's performance from one dashboard.
+
 </p>
+
+
 </div>
 
-<div class="role-card">
-<div class="role-icon">
+
+
+
+<div class="service-card">
+
+
+<div class="service-icon">
+
 <i class="bi bi-pencil-square"></i>
+
 </div>
+
+
 <h3>
 For Teachers
 </h3>
+
+
 <p>
+
 Enter marks by class or bulk-import them from a spreadsheet, generate
 report cards in one click, and see class and subject performance at a
 glance.
+
 </p>
+
+
 </div>
 
-<div class="role-card">
-<div class="role-icon">
+
+
+
+<div class="service-card">
+
+
+<div class="service-icon">
+
 <i class="bi bi-people-fill"></i>
+
 </div>
+
+
 <h3>
 For Students &amp; Parents
 </h3>
+
+
 <p>
+
 Students and parents each get their own login -- report cards, fee
 balances, timetables and direct messaging with teachers, all in one
 place.
+
 </p>
+
+
 </div>
 
-<div class="role-card">
-<div class="role-icon">
+
+
+
+<div class="service-card">
+
+
+<div class="service-icon">
+
 <i class="bi bi-briefcase-fill"></i>
+
 </div>
+
+
 <h3>
 For HR &amp; Support Staff
 </h3>
+
+
 <p>
+
 Manage staff records, payroll and leave requests, and reach every
 parent instantly with Bulk SMS and WhatsApp.
+
 </p>
+
+
 </div>
+
+
 
 </div>
 
 
 </div>
+
 
 </section>
 
 <style>
-/* Same 4 roles/same copy as always -- a "spotlight" hover instead of a
-   flat grid: hovering one card pulls it forward (lift + slight tilt)
-   while the rest ease back and soften, so attention follows the pointer
-   instead of all four competing equally for it. Falls back to the plain
-   static grid wherever hover doesn't really mean anything (touch), since
-   nothing here depends on the effect to be usable. */
-.role-flow { padding: 90px 0; }
-.role-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
+/* Back to the original .service-card grid (same markup/classes
+   scholar_features.php uses on products.php) -- this file now only adds
+   a scoped ".role-services" wrapper class so the effects below target
+   just these 4 cards, never touching the shared .service-card rules or
+   the other page's grid.
 
-.role-card {
-    background: #fff;
-    border-radius: 20px;
-    padding: 40px 28px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(10,61,98,.06);
-    transition: transform .45s cubic-bezier(.22,1,.36,1), filter .45s ease, opacity .45s ease, box-shadow .45s ease;
-    transform: scale(1) rotate(0deg);
-    filter: blur(0);
-    opacity: 1;
-    cursor: default;
+   Two layered effects:
+   1. An automatic "taking turns" spotlight -- each card gets a brief
+      highlighted moment in a continuous loop, staggered so only one is
+      ever "active" at a time (4 cards x 2s = 8s full cycle).
+   2. Hovering the grid pauses the auto-rotation and hands control to
+      the pointer -- the hovered card snaps to the highlighted look,
+      its siblings ease back and soften, same spotlight language as the
+      automatic version so the two feel like one continuous idea rather
+      than two different effects competing. */
+.role-services .service-card {
+    animation: role-turn 8s infinite;
+    transform-origin: center;
 }
+.role-services .service-card:nth-child(1) { animation-delay: 0s; }
+.role-services .service-card:nth-child(2) { animation-delay: 2s; }
+.role-services .service-card:nth-child(3) { animation-delay: 4s; }
+.role-services .service-card:nth-child(4) { animation-delay: 6s; }
 
-/* Only kicks in once a pointer that can actually hover is present --
-   @media(hover:hover) keeps touch devices on the plain static grid
-   instead of a hover state that could get stuck "on" after a tap. */
-@media (hover: hover) {
-    .role-grid:hover .role-card { filter: blur(2.5px); opacity: .55; transform: scale(.94); }
-    .role-grid:hover .role-card:hover {
+@keyframes role-turn {
+    0%, 8% {
+        transform: scale(1.06) rotate(-1.5deg);
         filter: blur(0);
         opacity: 1;
-        transform: scale(1.08) rotate(-1.5deg);
-        box-shadow: 0 30px 60px rgba(10,61,98,.2);
+        box-shadow: 0 28px 55px rgba(10,61,98,.18);
+    }
+    22%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: blur(.5px);
+        opacity: .82;
+        box-shadow: 0 10px 30px rgba(10,61,98,.06);
+    }
+}
+
+@media (hover: hover) {
+    .role-services .service-grid:hover .service-card { animation-play-state: paused; }
+    .role-services .service-grid:hover .service-card {
+        transform: scale(.95) rotate(0deg) !important;
+        filter: blur(2px) !important;
+        opacity: .6 !important;
+        box-shadow: 0 10px 30px rgba(10,61,98,.06) !important;
+    }
+    .role-services .service-grid:hover .service-card:hover {
+        transform: scale(1.08) rotate(-1.5deg) !important;
+        filter: blur(0) !important;
+        opacity: 1 !important;
+        box-shadow: 0 30px 60px rgba(10,61,98,.2) !important;
         z-index: 2;
     }
 }
 
-.role-icon { width: 76px; height: 76px; border-radius: 50%; background: var(--light); display: flex; align-items: center; justify-content: center; margin: 0 auto 22px; }
-.role-icon i { font-size: 32px; color: var(--secondary); }
-.role-card h3 { font-size: 21px; color: var(--primary); margin-bottom: 12px; }
-.role-card p { font-size: 15px; line-height: 1.7; color: var(--text); }
-
-@media (max-width: 1024px) {
-    .role-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 560px) {
-    .role-grid { grid-template-columns: 1fr; }
+@media (prefers-reduced-motion: reduce) {
+    .role-services .service-card { animation: none; }
 }
 </style>
