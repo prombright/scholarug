@@ -17,15 +17,12 @@ From the admin's office to a parent's phone, everyone gets exactly what they nee
 
 
 
-<div class="role-row">
+<div class="role-grid">
 
-<div class="role-panel">
+<div class="role-card">
 <div class="role-icon">
 <i class="bi bi-speedometer2"></i>
 </div>
-</div>
-
-<div class="role-copy">
 <h3>
 For School Admins
 </h3>
@@ -35,19 +32,10 @@ assessments, and see the whole school's performance from one dashboard.
 </p>
 </div>
 
-</div>
-
-
-
-<div class="role-row reverse">
-
-<div class="role-panel">
+<div class="role-card">
 <div class="role-icon">
 <i class="bi bi-pencil-square"></i>
 </div>
-</div>
-
-<div class="role-copy">
 <h3>
 For Teachers
 </h3>
@@ -58,19 +46,10 @@ glance.
 </p>
 </div>
 
-</div>
-
-
-
-<div class="role-row">
-
-<div class="role-panel">
+<div class="role-card">
 <div class="role-icon">
 <i class="bi bi-people-fill"></i>
 </div>
-</div>
-
-<div class="role-copy">
 <h3>
 For Students &amp; Parents
 </h3>
@@ -81,19 +60,10 @@ place.
 </p>
 </div>
 
-</div>
-
-
-
-<div class="role-row reverse">
-
-<div class="role-panel">
+<div class="role-card">
 <div class="role-icon">
 <i class="bi bi-briefcase-fill"></i>
 </div>
-</div>
-
-<div class="role-copy">
 <h3>
 For HR &amp; Support Staff
 </h3>
@@ -106,36 +76,56 @@ parent instantly with Bulk SMS and WhatsApp.
 </div>
 
 
-
 </div>
 
 </section>
 
 <style>
-/* Alternating, one-feature-per-row layout -- same 4 roles/same copy as
-   before, just given room to breathe instead of being squeezed into
-   equal-height grid cards. Own classes (not .service-card) so this
-   doesn't touch scholar_features.php's grid on products.php. */
+/* Same 4 roles/same copy as always -- a "spotlight" hover instead of a
+   flat grid: hovering one card pulls it forward (lift + slight tilt)
+   while the rest ease back and soften, so attention follows the pointer
+   instead of all four competing equally for it. Falls back to the plain
+   static grid wherever hover doesn't really mean anything (touch), since
+   nothing here depends on the effect to be usable. */
 .role-flow { padding: 90px 0; }
-.role-row { display: grid; grid-template-columns: 1fr 1.2fr; align-items: center; gap: 56px; margin-bottom: 64px; }
-.role-row:last-child { margin-bottom: 0; }
-.role-row.reverse { grid-template-columns: 1.2fr 1fr; }
-.role-row.reverse .role-panel { order: 2; }
-.role-row.reverse .role-copy { order: 1; }
+.role-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
 
-.role-panel { background: var(--light); border-radius: 24px; padding: 60px; display: flex; align-items: center; justify-content: center; }
-.role-icon { width: 140px; height: 140px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 45px rgba(10,61,98,.1); }
-.role-icon i { font-size: 56px; color: var(--secondary); }
+.role-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px 28px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(10,61,98,.06);
+    transition: transform .45s cubic-bezier(.22,1,.36,1), filter .45s ease, opacity .45s ease, box-shadow .45s ease;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+    opacity: 1;
+    cursor: default;
+}
 
-.role-copy h3 { font-size: 30px; color: var(--primary); margin-bottom: 16px; }
-.role-copy p { font-size: 17px; line-height: 1.8; color: var(--text); max-width: 480px; }
+/* Only kicks in once a pointer that can actually hover is present --
+   @media(hover:hover) keeps touch devices on the plain static grid
+   instead of a hover state that could get stuck "on" after a tap. */
+@media (hover: hover) {
+    .role-grid:hover .role-card { filter: blur(2.5px); opacity: .55; transform: scale(.94); }
+    .role-grid:hover .role-card:hover {
+        filter: blur(0);
+        opacity: 1;
+        transform: scale(1.08) rotate(-1.5deg);
+        box-shadow: 0 30px 60px rgba(10,61,98,.2);
+        z-index: 2;
+    }
+}
 
-@media (max-width: 860px) {
-    .role-row, .role-row.reverse { grid-template-columns: 1fr; gap: 28px; margin-bottom: 44px; }
-    .role-row.reverse .role-panel, .role-row.reverse .role-copy { order: initial; }
-    .role-panel { padding: 36px; }
-    .role-icon { width: 100px; height: 100px; }
-    .role-icon i { font-size: 40px; }
-    .role-copy p { max-width: none; }
+.role-icon { width: 76px; height: 76px; border-radius: 50%; background: var(--light); display: flex; align-items: center; justify-content: center; margin: 0 auto 22px; }
+.role-icon i { font-size: 32px; color: var(--secondary); }
+.role-card h3 { font-size: 21px; color: var(--primary); margin-bottom: 12px; }
+.role-card p { font-size: 15px; line-height: 1.7; color: var(--text); }
+
+@media (max-width: 1024px) {
+    .role-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+    .role-grid { grid-template-columns: 1fr; }
 }
 </style>
