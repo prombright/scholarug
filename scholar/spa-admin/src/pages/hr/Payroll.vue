@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { payrollApi, scholarBase } from '../services/api'
+import { payrollApi, scholarBase } from '../../services/api'
 
 const SB = scholarBase()
 

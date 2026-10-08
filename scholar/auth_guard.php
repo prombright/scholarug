@@ -446,7 +446,12 @@ function role_destination(string $role): string
         'parent'       => 'parent_portal.php',
         'student'      => 'app_student.php',
         'nurse'        => 'nurse_dashboard.php',
-        'hr'           => 'app_hr.php',
+        // HR used to be its own separate built Vue app (app_hr.php) --
+        // now merged into the admin SPA as routes (see AdminLayout.vue),
+        // same as how dos/headteacher/bursar land in app_admin.php and
+        // get redirected to their own scoped page by the SPA router's
+        // ROLE_HOME guard.
+        'hr'           => 'app_admin.php',
     ];
 
     return $map[$role] ?? 'index.php';

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { leaveApi } from '../services/api'
+import { leaveApi } from '../../services/api'
 
 const loading = ref(true)
 const busy = ref(false)

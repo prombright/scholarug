@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { dashboardApi, scholarBase } from '../services/api'
+import { hrDashboardApi, scholarBase } from '../../services/api'
 
 const SB = scholarBase()
 
@@ -16,7 +16,7 @@ const teachingPct = ref(0)
 
 onMounted(async () => {
   try {
-    const { data } = await dashboardApi.get()
+    const { data } = await hrDashboardApi.get()
     staffCount.value = data.staff_count
     pendingLeave.value = data.pending_leave
     smsBalance.value = data.sms_balance

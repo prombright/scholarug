@@ -10,9 +10,32 @@ const role = inject('role', 'school_admin')
 // `route:` items are migrated pages inside this SPA (router-link, no
 // reload); `href:` items still go to the classic PHP app. Mirrors
 // _admin_shell.php's $nav_items grouping exactly.
+//
+// HR used to be a single href out to app_hr.php -- a completely separate
+// built Vue app, so clicking it did a full browser reload (new JS/CSS
+// download, fresh app boot) instead of the instant in-app navigation
+// every other item gets. Its pages now live here as real routes (see
+// src/pages/hr/), so this is a normal nav group like Academics/Finance.
+// Staff stays an href -- same reasoning as ever (its form bundles a photo
+// upload with a dozen other fields, kept classic) -- that part of the
+// old disconnect is intentional, not a bug.
+const HR_GROUP = {
+  key: 'hr', label: 'Human Resources', icon: 'bi-briefcase', children: [
+    { key: 'hr_dashboard', label: 'HR Dashboard', icon: 'bi-grid-1x2', route: '/hr' },
+    { key: 'hr_staff', label: 'Staff', icon: 'bi-people', href: SB + 'staff_manager.php' },
+    { key: 'hr_leave', label: 'Leave Management', icon: 'bi-calendar2-week', route: '/hr/leave' },
+    { key: 'hr_payroll', label: 'Payroll', icon: 'bi-cash-stack', route: '/hr/payroll' },
+    { key: 'hr_sms_wallet', label: 'SMS Wallet', icon: 'bi-wallet2', route: '/hr/sms/wallet' },
+    { key: 'hr_sms_contacts', label: 'SMS Contacts', icon: 'bi-person-lines-fill', route: '/hr/sms/contacts' },
+    { key: 'hr_sms_send', label: 'Send SMS', icon: 'bi-send', route: '/hr/sms/send' },
+    { key: 'hr_sms_history', label: 'SMS History', icon: 'bi-clock-history', route: '/hr/sms/history' },
+    { key: 'hr_sms_whatsapp', label: 'WhatsApp', icon: 'bi-whatsapp', route: '/hr/sms/whatsapp' }
+  ]
+}
+
 const ADMIN_NAV_GROUPS = [
   { key: 'home', label: 'Home', icon: 'bi-grid-1x2', route: '/' },
-  { key: 'hr', label: 'Human Resources', icon: 'bi-briefcase', href: SB + 'app_hr.php' },
+  HR_GROUP,
   {
     key: 'academics', label: 'Academics', icon: 'bi-mortarboard', children: [
       { key: 'students', label: 'Students', icon: 'bi-people', route: '/students' },
@@ -54,7 +77,11 @@ const ROLE_NAV_GROUPS = {
   bursar: [
     { key: 'home', label: 'My Dashboard', icon: 'bi-grid-1x2', href: SB + 'bursar_dashboard.php' },
     { key: 'fees', label: 'Fees', icon: 'bi-cash-coin', route: '/fees' }
-  ]
+  ],
+  // hr gets its whole section (dashboard + staff + leave + payroll + sms),
+  // unlike dos/headteacher/bursar's one-page scope -- it's a role built
+  // around several related tasks, not a single feature.
+  hr: HR_GROUP.children
 }
 const NAV_GROUPS = ROLE_NAV_GROUPS[role] || ADMIN_NAV_GROUPS
 const logoutHref = SB + 'logout.php'

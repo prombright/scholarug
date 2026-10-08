@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { smsContactsApi } from '../services/api'
+import { smsContactsApi } from '../../services/api'
 
 const loading = ref(true)
 const busy = ref(false)

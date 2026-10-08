@@ -16,7 +16,10 @@ require_once __DIR__ . '/auth_guard.php';
 // Fees), same reasoning as reusing bulk_report_print.php/remarks.php
 // across roles instead of forking a copy per role. AdminLayout.vue reads
 // window.__SCHOLAR_ROLE__ below to show only what each role can reach.
-require_role(['school_admin', 'dos', 'headteacher', 'bursar']);
+// hr used to have its own separate SPA (app_hr.php) -- now merged in here
+// too, scoped the same way (see AdminLayout.vue's ROLE_NAV_GROUPS.hr and
+// router/index.js's ROLE_HOME).
+require_role(['school_admin', 'dos', 'headteacher', 'bursar', 'hr']);
 
 $indexPath = __DIR__ . '/assets/spa-admin/index.html';
 if (!file_exists($indexPath)) {

@@ -3,11 +3,22 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| SCHOLAR — HR SPA ENTRY POINT
+| SCHOLAR — HR SPA ENTRY POINT (superseded)
 |--------------------------------------------------------------------------
-| Same pattern as app_admin.php / app_teacher.php / app_student.php.
-| Reachable by both 'hr' and 'school_admin' (same dual-role access as the
-| classic hr_dashboard.php/staff_manager.php/hr/*.php pages).
+| HR used to be its own separate built Vue app (scholar/spa-hr), reached
+| by a full browser page reload from the admin dashboard's "Human
+| Resources" link -- the entire reason this file existed was to serve
+| that separate bundle. Its pages (Dashboard/Leave/Payroll/SMS) now live
+| as real routes inside the admin SPA itself (see spa-admin's
+| src/pages/hr/, router/index.js, and AdminLayout.vue's HR_GROUP), so
+| clicking into HR is instant in-app navigation like everything else,
+| not a reload into a second app.
+|
+| Kept only as a redirect so old bookmarks/links still land somewhere
+| useful -- same pattern as hr_dashboard.php's own redirect to this file
+| (which now just forwards again). The #/hr hash lands directly on the
+| HR dashboard inside the admin SPA (Vue Router's hash mode, same as
+| every other deep link in this app).
 |--------------------------------------------------------------------------
 */
 
@@ -15,25 +26,5 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth_guard.php';
 require_role(['school_admin', 'hr']);
 
-$indexPath = __DIR__ . '/assets/spa-hr/index.html';
-if (!file_exists($indexPath)) {
-    http_response_code(503);
-    echo 'The HR portal has not been built yet. Run `npm run build` in scholar/spa-hr/.';
-    exit;
-}
-
-$scholarBase = rtrim(SCHOLAR_BASE, '/') . '/';
-$inject = '<base href="assets/spa-hr/">'
-    . '<script>'
-    . 'window.__SCHOLAR_BASE__ = ' . json_encode($scholarBase) . ';'
-    . 'window.__SCHOLAR_API_BASE__ = ' . json_encode($scholarBase . 'api/') . ';'
-    . 'window.__CSRF_TOKEN__ = ' . json_encode(csrf_token()) . ';'
-    // Same "scholar-theme" localStorage key preloader.php's site-wide
-    // toggle uses, applied before Vue mounts (and before the bundle's own
-    // stylesheet is even requested) so there's no flash of the wrong theme.
-    . 'if (localStorage.getItem("scholar-theme") === "light") { document.documentElement.setAttribute("data-theme", "light"); }'
-    . '</script>';
-
-$html = file_get_contents($indexPath);
-$html = str_replace('<head>', '<head>' . $inject, $html);
-echo $html;
+header("Location: " . SCHOLAR_BASE . "/app_admin.php#/hr");
+exit;

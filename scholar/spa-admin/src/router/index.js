@@ -28,6 +28,14 @@ import ElectionCandidates from '../pages/ElectionCandidates.vue'
 import ElectionResults from '../pages/ElectionResults.vue'
 import Projects from '../pages/Projects.vue'
 import ParentFeedback from '../pages/ParentFeedback.vue'
+import HrDashboard from '../pages/hr/HrDashboard.vue'
+import HrLeave from '../pages/hr/Leave.vue'
+import HrPayroll from '../pages/hr/Payroll.vue'
+import HrSmsWallet from '../pages/hr/SmsWallet.vue'
+import HrSmsContacts from '../pages/hr/SmsContacts.vue'
+import HrSmsSend from '../pages/hr/SmsSend.vue'
+import HrSmsHistory from '../pages/hr/SmsHistory.vue'
+import HrSmsWhatsapp from '../pages/hr/SmsWhatsapp.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -63,7 +71,15 @@ const router = createRouter({
         { path: 'elections/:id/candidates', name: 'election-candidates', component: ElectionCandidates },
         { path: 'elections/:id/results', name: 'election-results', component: ElectionResults },
         { path: 'projects', name: 'projects', component: Projects },
-        { path: 'parent-feedback', name: 'parent-feedback', component: ParentFeedback }
+        { path: 'parent-feedback', name: 'parent-feedback', component: ParentFeedback },
+        { path: 'hr', name: 'hr-dashboard', component: HrDashboard },
+        { path: 'hr/leave', name: 'hr-leave', component: HrLeave },
+        { path: 'hr/payroll', name: 'hr-payroll', component: HrPayroll },
+        { path: 'hr/sms/wallet', name: 'hr-sms-wallet', component: HrSmsWallet },
+        { path: 'hr/sms/contacts', name: 'hr-sms-contacts', component: HrSmsContacts },
+        { path: 'hr/sms/send', name: 'hr-sms-send', component: HrSmsSend },
+        { path: 'hr/sms/history', name: 'hr-sms-history', component: HrSmsHistory },
+        { path: 'hr/sms/whatsapp', name: 'hr-sms-whatsapp', component: HrSmsWhatsapp }
       ]
     }
   ]
@@ -73,7 +89,10 @@ const router = createRouter({
 // require_role and AdminLayout.vue's nav filtering) -- Dashboard.vue calls
 // the school_admin-only dashboard.php endpoint, so send these roles
 // straight to their one page instead of a 403 on the landing route.
-const ROLE_HOME = { dos: 'assessments', headteacher: 'library', bursar: 'fees' }
+// 'hr' used to be its own separate SPA (app_hr.php) with its own landing
+// page -- now merged in as routes here, so hr lands on its own dashboard
+// the same way, not the school-wide admin Dashboard.vue it has no access to.
+const ROLE_HOME = { dos: 'assessments', headteacher: 'library', bursar: 'fees', hr: 'hr-dashboard' }
 router.beforeEach((to) => {
   const home = ROLE_HOME[window.__SCHOLAR_ROLE__]
   if (home && to.name === 'dashboard') {

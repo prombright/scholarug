@@ -7,9 +7,11 @@ require_once __DIR__ . '/_hr_dashboard_helpers.php';
 
 require_role(['school_admin', 'hr']);
 
-// Superseded by the Vue HR SPA (app_hr.php) -- kept only so old
-// bookmarks/links to this URL still land somewhere useful.
-header("Location: " . SCHOLAR_BASE . "/app_hr.php");
+// Superseded by the HR section of the admin SPA -- kept only so old
+// bookmarks/links to this URL still land somewhere useful. Points
+// straight at app_admin.php now (app_hr.php itself is just another
+// redirect to the same place) rather than bouncing through it.
+header("Location: " . SCHOLAR_BASE . "/app_admin.php#/hr");
 exit;
 
 $school_id = current_school_id();

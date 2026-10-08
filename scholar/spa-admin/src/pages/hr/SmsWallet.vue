@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { smsWalletApi } from '../services/api'
+import { smsWalletApi } from '../../services/api'
 
 const loading = ref(true)
 const balance = ref(0)

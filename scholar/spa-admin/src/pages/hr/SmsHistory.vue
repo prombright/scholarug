@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { smsHistoryApi } from '../services/api'
+import { smsHistoryApi } from '../../services/api'
 
 const route = useRoute()
 const router = useRouter()
