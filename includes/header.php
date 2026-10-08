@@ -7,6 +7,31 @@
 // (and per-page <title>/meta); every page includes head.php then this
 // file, so this is just the <header><nav> markup.
 ?>
+<div class="topbar-utility">
+
+<div class="container">
+
+<div class="topbar-contact">
+
+<a href="mailto:info@scholarug.com"><i class="bi bi-envelope"></i> info@scholarug.com</a>
+<a href="tel:+256759815047"><i class="bi bi-telephone"></i> 0759 815047 | 0788 643794</a>
+<span><i class="bi bi-geo-alt"></i> Uganda</span>
+
+</div>
+
+<div class="topbar-social">
+
+<a href="https://x.com/home" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+<a href="https://www.linkedin.com/feed" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+<a href="https://github.com/dashboard" aria-label="GitHub"><i class="bi bi-github"></i></a>
+
+</div>
+
+</div>
+
+</div>
+
+
 <header>
 
 

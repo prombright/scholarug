@@ -171,6 +171,65 @@ img {
    =============================== */
 
 
+/* Scrolls away with the page (not sticky) -- only the nav below it stays
+   put, same split real estate convention as other professional business
+   sites: quick contact info + social proof above the fold, permanently,
+   without competing with the sticky nav for space on scroll. */
+.topbar-utility {
+    background: var(--primary);
+    color: rgba(255,255,255,.85);
+    font-size: 13px;
+    padding: 9px 0;
+}
+.topbar-utility .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-width: 0;
+}
+.topbar-contact {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+.topbar-contact a, .topbar-contact span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: inherit;
+    text-decoration: none;
+    min-width: 0;
+    white-space: nowrap;
+}
+.topbar-contact a:hover { color: var(--accent); }
+.topbar-social {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+.topbar-social a {
+    color: rgba(255,255,255,.85);
+    font-size: 15px;
+}
+.topbar-social a:hover { color: var(--accent); }
+/* Below ~600px there isn't room for "email · phone · location" on one
+   row even wrapped -- a long phone number as a single nowrap unit
+   (needed so "0759 815047" itself never breaks mid-number) was forcing
+   the whole bar, and with it every other `width:90%` .container on the
+   page, wider than the viewport. Stack instead of wrapping, and drop
+   the least essential item (location) entirely. */
+@media (max-width: 600px) {
+    .topbar-utility .container { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .topbar-contact { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .topbar-contact span { display: none; }
+    .topbar-utility { font-size: 12px; }
+}
+
 header {
 
     background: white;
