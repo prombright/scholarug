@@ -6,6 +6,8 @@ import { useRouter } from 'vue-router'
 
 const SB = window.__SCHOLAR_BASE__ || '/ScholarUg/scholar/'
 const role = inject('role', 'school_admin')
+const theme = inject('theme', ref('dark'))
+const toggleTheme = inject('toggleTheme', () => {})
 
 // `route:` items are migrated pages inside this SPA (router-link, no
 // reload); `href:` items still go to the classic PHP app. Mirrors
@@ -290,6 +292,10 @@ onMounted(fetchNotifications)
               </div>
             </div>
           </div>
+          <button type="button" class="theme-toggle-btn" aria-label="Toggle dark mode" @click="toggleTheme">
+            <svg v-if="theme === 'light'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 1020.354 15.354z" /></svg>
+            <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>
+          </button>
         </div>
       </div>
       <div class="page-inner">
@@ -325,7 +331,7 @@ onMounted(fetchNotifications)
 .logout-btn{display:flex;align-items:center;gap:6px;color:var(--danger);text-decoration:none;font-size:0.85rem;font-weight:700;justify-content:center;}
 .main-col{flex:1;min-width:0;overflow:auto;}
 .topbar{display:flex;align-items:center;gap:14px;padding:8px 0 16px;}
-.topbar-right{margin-left:auto;display:flex;align-items:center;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
 .page-inner{width:100%;}
 .mobile-nav-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:1.1rem;cursor:pointer;}
 
@@ -343,6 +349,8 @@ onMounted(fetchNotifications)
 @media (max-width:860px){.search-input{width:150px;}}
 .bell-wrap{position:relative;}
 .bell-btn{position:relative;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:1.05rem;cursor:pointer;}
+.theme-toggle-btn{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;}
+.theme-toggle-btn:hover{border-color:var(--cyan);color:var(--cyan);}
 .bell-btn:hover,.bell-btn.active{border-color:var(--cyan);color:var(--cyan);}
 .bell-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:0.62rem;font-weight:800;line-height:1;padding:3px 5px;border-radius:20px;min-width:16px;text-align:center;}
 .bell-backdrop{position:fixed;inset:0;z-index:24;background:transparent;}
