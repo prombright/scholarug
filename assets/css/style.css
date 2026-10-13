@@ -224,8 +224,8 @@ img {
    page, wider than the viewport. Stack instead of wrapping, and drop
    the least essential item (location) entirely. */
 @media (max-width: 600px) {
-    .topbar-utility .container { flex-direction: column; align-items: flex-start; gap: 6px; }
-    .topbar-contact { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .topbar-utility .container { flex-direction: column; align-items: flex-end; gap: 6px; }
+    .topbar-contact { flex-direction: column; align-items: flex-end; gap: 4px; }
     .topbar-contact span { display: none; }
     .topbar-utility { font-size: 12px; }
 }

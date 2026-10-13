@@ -15,6 +15,7 @@ const student = ref(null)
 const isALevel = ref(false)
 const className = ref('')
 const electives = ref([])
+const compulsorySubjects = ref([])
 const enrolledIds = ref(new Set())
 const combinations = ref([])
 const comboSubjectMap = ref({})
@@ -30,6 +31,7 @@ async function load() {
     isALevel.value = data.is_a_level
     className.value = data.class_name
     electives.value = data.electives
+    compulsorySubjects.value = data.compulsory_subjects
     enrolledIds.value = new Set(data.enrolled_ids.map(String))
     combinations.value = data.combinations
     comboSubjectMap.value = data.combo_subject_map
@@ -61,6 +63,7 @@ async function save() {
     message.value = { type: 'success', text: data.message }
     student.value = data.student
     electives.value = data.electives
+    compulsorySubjects.value = data.compulsory_subjects
     enrolledIds.value = new Set(data.enrolled_ids.map(String))
     combinations.value = data.combinations
     comboSubjectMap.value = data.combo_subject_map
@@ -92,6 +95,25 @@ async function save() {
     <template v-else>
       <div v-if="isALevel && !combinations.length" class="disclaimer">
         No combinations are ready for {{ className }} yet — adopt one under the "A-Level Combinations" tab of Subject Catalog (its 3 subjects need adopting for this class first).
+      </div>
+
+      <div v-if="compulsorySubjects.length" class="section compulsory-section">
+        <div class="section-head">
+          <i class="bi bi-check2-circle"></i>
+          <div>
+            <div class="section-title">Compulsory Subjects — Already Included</div>
+            <div class="section-sub">Every student in {{ className }} automatically takes these. Nothing to assign here.</div>
+          </div>
+        </div>
+        <div class="subject-grid">
+          <div v-for="c in compulsorySubjects" :key="c.id" class="subject-tile compulsory">
+            <i class="bi bi-check-circle-fill"></i>
+            <div>
+              <div class="name">{{ c.subject_name }}</div>
+              <div class="meta">{{ c.subject_code }}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="section">
@@ -138,6 +160,13 @@ async function save() {
 .subject-tile input[type=checkbox]{width:auto;margin-top:3px;}
 .subject-tile .name{font-weight:600;font-size:0.88rem;}
 .subject-tile .meta{color:var(--muted);font-size:0.75rem;margin-top:2px;}
+.compulsory-section{background:rgba(16,185,129,.05);border-color:rgba(16,185,129,.25);}
+.section-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;}
+.section-head > i{font-size:1.3rem;color:var(--green);margin-top:2px;}
+.section-title{font-weight:700;font-size:0.92rem;}
+.section-sub{color:var(--muted);font-size:0.8rem;margin-top:2px;}
+.subject-tile.compulsory{display:flex;align-items:flex-start;gap:10px;background:var(--panel-raised);opacity:.85;}
+.subject-tile.compulsory i{color:var(--green);font-size:1rem;margin-top:2px;flex-shrink:0;}
 button{background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.85rem;}
 button:disabled{opacity:0.6;cursor:default;}
 .combo-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}

@@ -37,6 +37,7 @@ function admin_student_subjects_snapshot(array $profile): array
         'is_a_level' => $profile['is_a_level'],
         'class_name' => $profile['class_name'],
         'electives' => $profile['electives'],
+        'compulsory_subjects' => $profile['compulsory_subjects'],
         'enrolled_ids' => $profile['enrolled_ids'],
         'combinations' => $profile['combinations'],
         'combo_subject_map' => $profile['combo_subject_map'],

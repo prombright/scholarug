@@ -66,6 +66,26 @@ function admin_student_subjects_load(PDO $pdo, int $school_id, int $student_id):
         $electives = $elec_stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Shown read-only on the page, never ticked/saved here -- every
+    // non-Elective subject already applies to the whole class automatically
+    // (see _marks_entry_helpers.php/_report_card_render.php, which only
+    // check student_subjects for Electives). This list exists purely so an
+    // admin can SEE that, instead of wondering why compulsory subjects
+    // never show up to assign -- there's nothing to assign, they're already
+    // in effect for every student in the class.
+    $compulsory_subjects = [];
+    if ($class_name !== '') {
+        $comp_stmt = $pdo->prepare("
+            SELECT id, subject_name, subject_code
+            FROM subjects
+            WHERE school_id = ? AND subject_type != 'Elective'
+              AND REPLACE(UPPER(class_name), '.', '') = REPLACE(UPPER(?), '.', '')
+            ORDER BY subject_name ASC
+        ");
+        $comp_stmt->execute([$school_id, $class_name]);
+        $compulsory_subjects = $comp_stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     $enrolled_stmt = $pdo->prepare("SELECT subject_id FROM student_subjects WHERE student_id = ? AND school_id = ?");
     $enrolled_stmt->execute([$student_id, $school_id]);
     $enrolled_ids = array_map('intval', array_column($enrolled_stmt->fetchAll(PDO::FETCH_ASSOC), 'subject_id'));
@@ -92,6 +112,7 @@ function admin_student_subjects_load(PDO $pdo, int $school_id, int $student_id):
         'is_a_level' => $is_a_level,
         'class_name' => $class_name,
         'electives' => $electives,
+        'compulsory_subjects' => $compulsory_subjects,
         'enrolled_ids' => $enrolled_ids,
         'combinations' => $combinations,
         'combo_subject_map' => $combo_subject_map,

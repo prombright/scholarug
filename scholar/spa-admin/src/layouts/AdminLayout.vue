@@ -40,6 +40,7 @@ const ADMIN_NAV_GROUPS = [
     key: 'academics', label: 'Academics', icon: 'bi-mortarboard', children: [
       { key: 'students', label: 'Students', icon: 'bi-people', route: '/students' },
       { key: 'subjects', label: 'Subjects', icon: 'bi-journal-bookmark', route: '/subjects' },
+      { key: 'subject_enrollment', label: 'Assign Subjects to Students', icon: 'bi-person-check-fill', route: '/subject-enrollment' },
       { key: 'assessments', label: 'Assessments', icon: 'bi-clipboard-data', route: '/assessments' },
       { key: 'report_cards', label: 'Report Cards', icon: 'bi-file-earmark-text', route: '/grading' },
       { key: 'classes', label: 'Classes', icon: 'bi-diagram-3', route: '/classes' },
