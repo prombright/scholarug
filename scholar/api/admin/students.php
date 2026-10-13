@@ -101,6 +101,16 @@ if ($method === 'POST') {
                 );
             }
             break;
+        case 'delete_student':
+            $delete_student_id = (int) ($body['student_id'] ?? 0);
+            $result = admin_students_delete($pdo, $school_id, $delete_student_id);
+            if ($result['ok']) {
+                scholar_audit_log(
+                    $pdo, $school_id, $_SESSION['user_id'] ?? null, 'student_deleted', 'students', $delete_student_id,
+                    "Deleted student \"{$result['full_name']}\" (ID {$delete_student_id}) and all their records."
+                );
+            }
+            break;
         default:
             admin_students_json_error('Unknown action.');
     }

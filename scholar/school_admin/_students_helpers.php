@@ -149,6 +149,56 @@ function admin_students_regenerate_password(PDO $pdo, int $schoolId, int $studen
     return ['ok' => true, 'message' => "Password reset for {$user_row['full_name']} — New Access Code: {$new_code}. Share this with the student now; they'll set their own password on first login."];
 }
 
+/**
+ * Permanently deletes a student and everything that belongs to them.
+ * information_schema was audited the same way developer/_school_delete.php
+ * was built: most student-scoped tables already cascade via a real FK
+ * (student_marks, student_subjects, parent_students, teacher_comments,
+ * election_ballots_cast/candidates, ilearning_*, clinic_patients,
+ * student_skill_ratings) -- the rest (attendance, conversations, fees,
+ * fee_payments, guardians, parent_feedback, project_stages,
+ * report_card_remarks, and the student's own `users` login) don't have an
+ * enforced FK and are deleted explicitly here so nothing is left orphaned.
+ *
+ * @return array{ok:bool,message:string,full_name?:string}
+ */
+function admin_students_delete(PDO $pdo, int $schoolId, int $studentId): array
+{
+    $stmt = $pdo->prepare('SELECT full_name, photo_path FROM students WHERE id = ? AND school_id = ?');
+    $stmt->execute([$studentId, $schoolId]);
+    $student = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$student) {
+        return ['ok' => false, 'message' => 'Student not found for this school.'];
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $directTables = [
+            'attendance', 'conversations', 'fees', 'fee_payments',
+            'guardians', 'parent_feedback', 'project_stages', 'report_card_remarks',
+        ];
+        foreach ($directTables as $table) {
+            $pdo->prepare("DELETE FROM {$table} WHERE student_id = ?")->execute([$studentId]);
+        }
+
+        // users.student_id has no FK -- remove the login explicitly, same
+        // as staff_manager.php's own hard-delete does for a staff login.
+        $pdo->prepare('DELETE FROM users WHERE student_id = ? AND school_id = ?')->execute([$studentId, $schoolId]);
+
+        $pdo->prepare('DELETE FROM students WHERE id = ? AND school_id = ?')->execute([$studentId, $schoolId]);
+
+        if (!empty($student['photo_path']) && file_exists($student['photo_path']) && !str_contains($student['photo_path'], 'default')) {
+            unlink($student['photo_path']);
+        }
+
+        $pdo->commit();
+        return ['ok' => true, 'message' => "{$student['full_name']} and all their records have been permanently deleted.", 'full_name' => $student['full_name']];
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        return ['ok' => false, 'message' => 'Error deleting student: ' . $e->getMessage()];
+    }
+}
+
 /** @return array{students:array,classes:array,total:int,male:int,female:int} */
 function admin_students_fetch_all(PDO $pdo, int $schoolId): array
 {

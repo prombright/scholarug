@@ -99,6 +99,15 @@ function regeneratePassword(row) {
   submitAction({ action: 'regenerate_student_password', student_id: row.id })
 }
 
+function deleteStudent(row) {
+  const sure = confirm(
+    `Permanently delete ${row.full_name}?\n\n` +
+    `This removes their marks, fee records, attendance, portal login, and everything else attached to them -- it cannot be undone.`
+  )
+  if (!sure) return
+  submitAction({ action: 'delete_student', student_id: row.id })
+}
+
 const templateUrl = `${SB}school_admin/students.php?download_template=csv`
 const printCredentialsUrl = `${SB}school_admin/print_student_credentials.php`
 const csvImportAction = `${SB}school_admin/students.php`
@@ -210,6 +219,7 @@ const exportUrl = `${SB}school_admin/export_students.php`
               <span v-if="row.reset_requested" class="pill amber" title="A class teacher requested a password reset for this student">Reset requested</span>
               <button v-if="row.login_username" type="button" class="btn btn-ghost btn-sm" :disabled="busy" @click="regeneratePassword(row)">Regenerate Password</button>
               <button v-else type="button" class="btn btn-ghost btn-sm" :disabled="busy" @click="createLogin(row)">Create Login</button>
+              <button type="button" class="btn btn-danger btn-sm" :disabled="busy" @click="deleteStudent(row)">Delete</button>
             </div>
           </td>
         </tr>
@@ -225,6 +235,8 @@ const exportUrl = `${SB}school_admin/export_students.php`
 .header-actions{display:flex;flex-wrap:wrap;gap:10px;}
 .btn{display:inline-flex;align-items:center;gap:6px;background:var(--cyan);color:#04222a;font-weight:700;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:0.85rem;text-decoration:none;}
 .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(239,68,68,.35);}
+.btn-danger:hover{background:rgba(239,68,68,.1);}
 .btn-sm{padding:6px 12px;font-size:0.78rem;}
 .btn:disabled{opacity:0.6;cursor:default;}
 .alert{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;}

@@ -237,6 +237,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             );
         } else { $error = $result['message']; }
     }
+
+    // 5. Permanently delete a student -- removes marks, fees, attendance,
+    // login, and every other record that belongs to them. See
+    // admin_students_delete()'s own header comment for exactly what's
+    // cleaned up and why.
+    if ($_POST['action'] === 'delete_student') {
+        $delete_student_id = (int) ($_POST['student_id'] ?? 0);
+        $result = admin_students_delete($pdo, $school_id, $delete_student_id);
+        if ($result['ok']) {
+            $message = $result['message'];
+            scholar_audit_log(
+                $pdo, $school_id, $_SESSION['user_id'] ?? null, 'student_deleted', 'students', $delete_student_id,
+                "Deleted student \"{$result['full_name']}\" (ID {$delete_student_id}) and all their records."
+            );
+        } else { $error = $result['message']; }
+    }
 }
 
 // Which students already have a portal login? (drives the button/state per row)
@@ -495,6 +511,11 @@ tr:last-child td{border-bottom:none;}
                         <input type="hidden" name="action" value="create_student_login">
                         <input type="hidden" name="student_id" :value="row.id">
                         <button type="submit" class="btn btn-ghost btn-sm">Create Login</button>
+                    </form>
+                    <form method="POST" action="students.php" style="display:inline;" onsubmit="return confirm('Permanently delete this student?\n\nThis removes their marks, fee records, attendance, portal login, and everything else attached to them -- it cannot be undone.');"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                        <input type="hidden" name="action" value="delete_student">
+                        <input type="hidden" name="student_id" :value="row.id">
+                        <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,.35);">Delete</button>
                     </form>
                 </div>
             </td>
