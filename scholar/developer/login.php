@@ -143,6 +143,10 @@ content="width=device-width, initial-scale=1.0">
 Developer Portal | ScholarUg
 </title>
 
+<link rel="icon" href="../../favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../../assets/images/brand/apple-touch-icon.png">
+
 <style>
 
 
@@ -202,23 +206,15 @@ box-shadow:
 
 text-align:center;
 
-font-size:1.05rem;
-
-font-weight:700;
-
-letter-spacing:1.5px;
-
-text-transform:uppercase;
-
-color:var(--text);
-
 margin-bottom:6px;
 
 }
 
-.logo span{
+.logo img{
 
-color:#06b6d4;
+height:40px;
+
+width:auto;
 
 }
 
@@ -368,7 +364,7 @@ font-size:.75rem;
 <div class="card">
 
 <div class="logo">
-Scholar<span>Ug</span>
+<img src="../../assets/images/brand/logo-full-light.png" alt="ScholarUg">
 </div>
 
 <h1>

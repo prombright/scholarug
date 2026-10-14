@@ -46,6 +46,9 @@ if ($is_any_class_teacher) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Teacher Portal<?= isset($TEACHER_NAV_ITEMS[$ACTIVE_NAV]) ? ' — ' . htmlspecialchars($TEACHER_NAV_ITEMS[$ACTIVE_NAV]['label'], ENT_QUOTES, 'UTF-8') : '' ?></title>
+<link rel="icon" href="<?= $__SB ?>/../favicon.ico" sizes="any">
+<link rel="icon" href="<?= $__SB ?>/../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="<?= $__SB ?>/../assets/images/brand/apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
 :root{ --bg:#080b11; --panel:#131b28; --border:#2a3a52; --text:#e2e8f0; --muted:#64748b; --cyan:#00A8A8; --green:#10b981; --danger:#ef4444; --amber:#f59e0b; }

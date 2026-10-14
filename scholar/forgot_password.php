@@ -106,6 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_reset'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Scholar | Reset Password</title>
+    <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="icon" href="../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../assets/images/brand/apple-touch-icon.png">
     <style>
         :root { --login-bg: #0e1117; --login-card: #0b0d12; --login-border: #1e293b; --login-input: #12151c; --login-text: #e2e8f0; --login-muted: #64748b; --login-input-text: #fff; }
         :root[data-theme="light"] { --login-bg: #F1F5F9; --login-card: #FFFFFF; --login-border: rgba(15,23,42,.12); --login-input: #F8FAFC; --login-text: #1E293B; --login-muted: #64748B; --login-input-text: #1E293B; }
@@ -120,8 +123,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_reset'])) {
         .form-control:focus { outline: none; border-color: #00A8A8; }
         .btn-access { width: 100%; background: #00A8A8; color: #04222a; border: none; padding: 14px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; border-radius: 6px; cursor: pointer; letter-spacing: 0.5px; margin-top: 10px; }
         .hint { color: var(--login-muted); font-size: 0.7rem; text-align: center; margin-top: 18px; line-height: 1.5; }
-        .login-logo { font-size: 28px; font-weight: 800; }
-        .login-logo span { color: #00A8A8; }
+        .login-logo { display: flex; justify-content: center; }
+        .login-logo img { height: 40px; width: auto; }
+        .login-logo .logo-dark { display: block; }
+        .login-logo .logo-light { display: none; }
+        :root[data-theme="light"] .login-logo .logo-dark { display: none; }
+        :root[data-theme="light"] .login-logo .logo-light { display: block; }
         @media (max-width: 480px) {
             body { padding: 16px; }
             .login-card { padding: 28px 22px; }
@@ -133,7 +140,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_reset'])) {
 
     <div class="login-card">
         <div style="text-align: center; margin-bottom: 30px;">
-            <div class="login-logo">Scholar<span>Ug</span></div>
+            <div class="login-logo">
+                <img src="../assets/images/brand/logo-full-light.png" alt="ScholarUg" class="logo-dark">
+                <img src="../assets/images/brand/logo-full.png" alt="ScholarUg" class="logo-light">
+            </div>
             <div style="color: #64748b; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 5px;">Reset Password</div>
         </div>
 

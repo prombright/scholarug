@@ -14,7 +14,7 @@
 
 
 <h2>
-Scholar<span>Ug</span>
+<img src="assets/images/brand/logo-full-light.png" alt="ScholarUg" class="footer-logo-img">
 </h2>
 
 

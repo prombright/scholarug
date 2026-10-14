@@ -711,6 +711,10 @@ function format_dashboard_date(
     ScholarUg | Super Admin Control Center
 </title>
 
+<link rel="icon" href="../../favicon.ico" sizes="any">
+<link rel="icon" href="../../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../../assets/images/brand/apple-touch-icon.png">
+
 <style>
 
 
@@ -795,38 +799,18 @@ input {
 
 .logo {
 
-    width: 170px;
-
-    height: 52px;
-
     display: flex;
 
     align-items: center;
 
-    justify-content: center;
+}
 
-    border-radius: 12px;
+.logo img {
 
-    background:
-        linear-gradient(
-            135deg,
-            #a855f7,
-            #06b6d4
-        );
+    height: 44px;
 
-    color: white;
+    width: auto;
 
-    font-size: 1.05rem;
-
-    font-weight: 800;
-
-    letter-spacing: .3px;
-
-    white-space: nowrap;
-
-    box-shadow:
-        0 0 25px
-        rgba(168, 85, 247, .25);
 }
 
 .brand-info h1 {
@@ -1340,9 +1324,9 @@ td {
         flex-direction: column;
     }
 
-    .logo {
+    .logo img {
 
-        width: 140px;
+        height: 36px;
     }
 }
 
@@ -1361,7 +1345,7 @@ td {
     <div class="brand">
 
         <div class="logo">
-            ScholarUg
+            <img src="../../assets/images/brand/logo-full-light.png" alt="ScholarUg">
         </div>
 
         <div class="brand-info">

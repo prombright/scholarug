@@ -267,12 +267,27 @@ header {
 
     color: var(--primary);
 
+    display: flex;
+
+    align-items: center;
+
 }
 
 
 .logo span {
 
     color: var(--secondary);
+
+}
+
+
+.logo-img {
+
+    height: 38px;
+
+    width: auto;
+
+    display: block;
 
 }
 
@@ -1395,6 +1410,17 @@ footer {
 .footer-brand h2 span {
 
     color: var(--secondary);
+
+}
+
+
+.footer-logo-img {
+
+    height: 42px;
+
+    width: auto;
+
+    display: block;
 
 }
 

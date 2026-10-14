@@ -45,7 +45,7 @@
 
 <a href="index.php" class="logo">
 
-Scholar<span>Ug</span>
+<img src="assets/images/brand/logo-full.png" alt="ScholarUg" class="logo-img">
 
 </a>
 

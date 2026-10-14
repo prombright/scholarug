@@ -618,6 +618,9 @@ $login_school_name = 'ScholarUg';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title><?= htmlspecialchars($login_school_name, ENT_QUOTES, 'UTF-8') ?> | Login</title>
+    <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="icon" href="../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../assets/images/brand/apple-touch-icon.png">
     <style>
         /* Fixed brand-identity split, not the app's usual light/dark toggle
            theme -- this layout's two tones (white brand panel, dark navy
@@ -664,6 +667,7 @@ $login_school_name = 'ScholarUg';
         .brand-center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; padding: 16px 0; }
         .wordmark { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; }
         .wordmark .accent { color: var(--cyan); }
+        .wordmark-img { height: 56px; width: auto; display: block; }
         .tagline { color: #64748b; font-size: 0.8rem; letter-spacing: 0.02em; }
 
         /* Emphasized, not an afterthought -- a bordered block of its own
@@ -703,6 +707,7 @@ $login_school_name = 'ScholarUg';
             .panel-brand { flex: 0 0 44%; padding: 56px; }
             .panel-form { flex: 1; padding: 56px; }
             .wordmark { font-size: 40px; }
+            .wordmark-img { height: 72px; }
             /* Diagonal seam between the two panels, echoing the reference
                design -- clip-path on both edges so they interlock with no
                gap or overlap seam showing through. */
@@ -717,9 +722,7 @@ $login_school_name = 'ScholarUg';
 <div class="split">
     <div class="panel-brand">
         <div class="brand-center">
-            <div class="wordmark">
-                Scholar<span class="accent">Ug</span>
-            </div>
+            <img src="../assets/images/brand/logo-full.png" alt="ScholarUg" class="wordmark-img">
             <div class="tagline">Multi-Tenant School Management Platform</div>
         </div>
 
