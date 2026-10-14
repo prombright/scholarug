@@ -217,17 +217,13 @@ img {
     font-size: 15px;
 }
 .topbar-social a:hover { color: var(--accent); }
-/* Below ~600px there isn't room for "email · phone · location" on one
-   row even wrapped -- a long phone number as a single nowrap unit
-   (needed so "0759 815047" itself never breaks mid-number) was forcing
-   the whole bar, and with it every other `width:90%` .container on the
-   page, wider than the viewport. Stack instead of wrapping, and drop
-   the least essential item (location) entirely. */
-@media (max-width: 600px) {
-    .topbar-utility .container { flex-direction: column; align-items: flex-end; gap: 6px; }
-    .topbar-contact { flex-direction: column; align-items: flex-end; gap: 4px; }
-    .topbar-contact span { display: none; }
-    .topbar-utility { font-size: 12px; }
+/* Hidden outright on mobile (same breakpoint the nav's hamburger menu
+   switches at) rather than stacked/shrunk -- email/phone/location/social
+   just isn't essential on a small screen, and the floating login/WhatsApp
+   buttons (see includes/header.php) already cover the one thing from
+   this bar a mobile visitor would actually want to tap. */
+@media (max-width: 768px) {
+    .topbar-utility { display: none; }
 }
 
 header {
