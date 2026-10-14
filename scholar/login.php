@@ -610,6 +610,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $login_school_name = 'ScholarUg';
 
+// Reachable both as /scholar/login.php and as the short /login alias
+// (.htaccess rewrite, see root .htaccess) -- those two URLs sit at
+// different depths from the domain root, so a plain relative asset path
+// like "../assets/..." resolves correctly from one and breaks from the
+// other. SCHOLAR_BASE (domain-root-relative path to this scholar/ folder,
+// defined in config.php, already loaded via db.php above) makes every
+// asset path below root-relative instead, so it works from either URL.
+$__sb = rtrim(SCHOLAR_BASE, '/');
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -618,9 +627,9 @@ $login_school_name = 'ScholarUg';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title><?= htmlspecialchars($login_school_name, ENT_QUOTES, 'UTF-8') ?> | Login</title>
-    <link rel="icon" href="../favicon.ico" sizes="any">
-    <link rel="icon" href="../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
-    <link rel="apple-touch-icon" href="../assets/images/brand/apple-touch-icon.png">
+    <link rel="icon" href="<?= $__sb ?>/../favicon.ico" sizes="any">
+    <link rel="icon" href="<?= $__sb ?>/../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="<?= $__sb ?>/../assets/images/brand/apple-touch-icon.png">
     <style>
         /* Fixed brand-identity split, not the app's usual light/dark toggle
            theme -- this layout's two tones (white brand panel, dark navy
@@ -722,7 +731,7 @@ $login_school_name = 'ScholarUg';
 <div class="split">
     <div class="panel-brand">
         <div class="brand-center">
-            <img src="../assets/images/brand/logo-full.png" alt="ScholarUg" class="wordmark-img">
+            <img src="<?= $__sb ?>/../assets/images/brand/logo-full.png" alt="ScholarUg" class="wordmark-img">
             <div class="tagline">Multi-Tenant School Management Platform</div>
         </div>
 
@@ -750,7 +759,7 @@ $login_school_name = 'ScholarUg';
                 </div>
             <?php endif; ?>
 
-            <form action="login.php" method="POST" autocomplete="off"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+            <form action="<?= $__sb ?>/login.php" method="POST" autocomplete="off"><input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <div class="field">
                     <label>Username / Email / School Code</label>
                     <input type="text" name="username" required class="form-control" placeholder="e.g. jdoe or SC-001">
@@ -763,7 +772,7 @@ $login_school_name = 'ScholarUg';
                         <button type="button" class="pw-toggle-btn" onclick="scholarTogglePassword('loginPasswordField', this)" aria-label="Show password"><?= SCHOLAR_EYE_SVG ?></button>
                     </div>
                     <div style="text-align:right;margin-top:6px;">
-                        <a href="forgot_password.php" style="color:var(--muted-dark);font-size:0.7rem;">Forgot password?</a>
+                        <a href="<?= $__sb ?>/forgot_password" style="color:var(--muted-dark);font-size:0.7rem;">Forgot password?</a>
                     </div>
                 </div>
 

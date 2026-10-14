@@ -85,7 +85,7 @@ Contact
 
 <div class="header-cta">
 
-    <a href="scholar/login" class="btn btn-primary">
+    <a href="login" class="btn btn-primary">
 
     Login
 
@@ -122,7 +122,7 @@ Contact
      corners -- Login left, WhatsApp right -- so both are immediately
      visible/recognizable rather than blending into page content.
      WhatsApp opens a pre-filled chat via wa.me, no JS SDK. -->
-<a href="scholar/login" class="floating-btn floating-login" aria-label="Login to Scholar">
+<a href="login" class="floating-btn floating-login" aria-label="Login to Scholar">
     <i class="bi bi-box-arrow-in-right"></i>
 </a>
 

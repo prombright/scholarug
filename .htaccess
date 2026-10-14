@@ -40,6 +40,15 @@ Options -Indexes
     RewriteCond %{THE_REQUEST} \s/+(.+)\.php[\s?] [NC]
     RewriteRule ^ /%1 [R=301,L]
 
+    # Friendly short URL for the central login gateway: scholarug.com/login
+    # instead of the "real" scholar/login.php. A GET to /login.php already
+    # redirects to the clean /login via the rule above before it ever
+    # reaches here; this also covers the login form's own POST (its action
+    # is the relative "login.php", which resolves to /login.php when the
+    # page was loaded from /login -- POST isn't touched by the GET-only
+    # redirect rule above, so it needs its own match here too).
+    RewriteRule ^login(\.php)?/?$ scholar/login.php [L]
+
     # Serve the matching .php file for a clean extensionless URL, without
     # changing what's shown in the address bar.
     RewriteCond %{REQUEST_FILENAME} !-d
