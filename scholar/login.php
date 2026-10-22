@@ -630,6 +630,18 @@ $__sb = rtrim(SCHOLAR_BASE, '/');
     <link rel="icon" href="<?= $__sb ?>/../favicon.ico" sizes="any">
     <link rel="icon" href="<?= $__sb ?>/../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="<?= $__sb ?>/../assets/images/brand/apple-touch-icon.png">
+
+    <!-- Installable as a standalone app (Android/desktop "Install"
+         prompt, iOS "Add to Home Screen") -- this is the launch target
+         (manifest.json's start_url), so this is the one page the manifest
+         link MUST be on; also added to the dashboard shells/SPAs so
+         someone already logged in doesn't have to come back here first. -->
+    <link rel="manifest" href="<?= $__sb ?>/../manifest.json">
+    <meta name="theme-color" content="#080b11">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ScholarUg">
     <style>
         /* Fixed brand-identity split, not the app's usual light/dark toggle
            theme -- this layout's two tones (white brand panel, dark navy
