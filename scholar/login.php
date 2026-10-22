@@ -691,6 +691,26 @@ $__sb = rtrim(SCHOLAR_BASE, '/');
         .wordmark-img { height: 56px; width: auto; display: block; }
         .tagline { color: #64748b; font-size: 0.8rem; letter-spacing: 0.02em; }
 
+        /* Hidden by default -- JS only reveals one of these two once it
+           knows which is actually relevant to this browser (the real
+           install prompt on Chrome/Edge/Android, or the manual-steps
+           hint on iOS Safari, which has no prompt API at all). Neither
+           shows if the page is already running as the installed app. */
+        .install-app-btn {
+            display: none; align-items: center; justify-content: center; gap: 8px;
+            margin-top: 18px; padding: 10px 20px;
+            background: transparent; border: 1.5px solid var(--cyan); color: var(--cyan);
+            border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+            letter-spacing: 0.02em; cursor: pointer; transition: background 0.15s, color 0.15s;
+        }
+        .install-app-btn:hover { background: var(--cyan); color: #04222a; }
+        .install-app-btn svg { width: 16px; height: 16px; }
+        .ios-install-hint {
+            display: none; margin-top: 18px; font-size: 0.75rem; color: #64748b;
+            line-height: 1.5;
+        }
+        .ios-install-hint strong { color: #0f172a; }
+
         /* Emphasized, not an afterthought -- a bordered block of its own
            rather than small muted text tucked under the form. */
         .contacts {
@@ -745,6 +765,14 @@ $__sb = rtrim(SCHOLAR_BASE, '/');
         <div class="brand-center">
             <img src="<?= $__sb ?>/../assets/images/brand/logo-full.png" alt="ScholarUg" class="wordmark-img">
             <div class="tagline">Multi-Tenant School Management Platform</div>
+
+            <button type="button" id="scholarInstallBtn" class="install-app-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+                Install App
+            </button>
+            <p id="scholarIosInstallHint" class="ios-install-hint">
+                Install: tap the <strong>Share</strong> button, then <strong>Add to Home Screen</strong>.
+            </p>
         </div>
 
         <div class="contacts">
@@ -799,5 +827,52 @@ $__sb = rtrim(SCHOLAR_BASE, '/');
 </div>
 
 <script><?= SCHOLAR_PASSWORD_TOGGLE_JS ?></script>
+<script>
+(function () {
+    // Already running as the installed app -- nothing to offer.
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+    if (isStandalone) return;
+
+    var installBtn = document.getElementById('scholarInstallBtn');
+    var iosHint = document.getElementById('scholarIosInstallHint');
+    var deferredPrompt = null;
+
+    // Chrome/Edge/Android fire this when the page meets install criteria
+    // (manifest.json + HTTPS -- never fires on local http:// dev). Default
+    // behavior is an automatic mini-infobar; preventDefault() suppresses
+    // that so our own button is the only prompt, triggered on demand.
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (installBtn) installBtn.style.display = 'inline-flex';
+    });
+
+    if (installBtn) {
+        installBtn.addEventListener('click', function () {
+            if (!deferredPrompt) return;
+            installBtn.style.display = 'none';
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.finally(function () { deferredPrompt = null; });
+        });
+    }
+
+    window.addEventListener('appinstalled', function () {
+        if (installBtn) installBtn.style.display = 'none';
+        if (iosHint) iosHint.style.display = 'none';
+    });
+
+    // iOS Safari has no beforeinstallprompt/install-banner API at all --
+    // "Add to Home Screen" only exists as a manual Share-sheet action, so
+    // the best this page can do is point at it instead of offering a
+    // button that would do nothing.
+    var ua = window.navigator.userAgent;
+    var isIos = /iphone|ipad|ipod/i.test(ua);
+    var isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+    if (isIos && isSafari && iosHint) {
+        iosHint.style.display = 'block';
+    }
+})();
+</script>
 </body>
 </html>
