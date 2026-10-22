@@ -22,22 +22,13 @@ The people guiding ScholarUg's vision, innovation and strategic growth.
 
 
 
-<!-- FOUNDER PROFILE -->
+<!-- LEADERSHIP CARDS (no photos -- name, position and bio only) -->
+
+
+<div class="founders-grid">
 
 
 <div class="founder-card">
-
-
-<div class="founder-image">
-
-
-<img src="assets/images/team/Bright.jpg"
-alt="Bright Arinaitwe">
-
-
-</div>
-
-
 
 
 <div class="founder-content">
@@ -123,19 +114,7 @@ Digital Transformation
 
 <!-- CO-FOUNDER -->
 
-<div class="founder-card" style="margin-top:30px;">
-
-
-<div class="founder-image">
-
-
-<img src="assets/images/team/Natalie.jpg"
-alt="Natalie Tukamushaba">
-
-
-</div>
-
-
+<div class="founder-card">
 
 
 <div class="founder-content">
@@ -181,6 +160,9 @@ Outreach
 
 </div>
 
+
+
+</div>
 
 
 </div>

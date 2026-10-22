@@ -2799,15 +2799,24 @@ footer hr {
 
 
 
-.founder-card {
-
-    background: white;
+/* Leadership cards with no photo: a grid of self-contained cards instead
+   of the old single-column stack, since dropping the 300px image column
+   left each card mostly empty horizontal space otherwise. */
+.founders-grid {
 
     display: grid;
 
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 
     gap: 40px;
+
+}
+
+
+
+.founder-card {
+
+    background: white;
 
     padding: 45px;
 
@@ -2815,70 +2824,15 @@ footer hr {
 
     box-shadow: var(--shadow);
 
-    align-items: center;
-
-    margin-bottom: 60px;
-
-}
-
-
-
-.founder-image {
-
-    position: relative;
-
     text-align: center;
 
 }
 
 
 
-.founder-image img {
-
-    width: 260px;
-
-    height: 260px;
-
-    border-radius: 50%;
-
-    object-fit: cover;
-
-    border: 8px solid #e8ffff;
-
-}
-
-
-
-.founder-badge {
-
-    position: absolute;
-
-    bottom: 15px;
-
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    background: var(--secondary);
-
-    color: white;
-
-    padding: 8px 20px;
-
-    border-radius: 50px;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-}
-
-
-
-
 .founder-content h3 {
 
-    font-size: 35px;
+    font-size: 30px;
 
     color: var(--primary);
 
@@ -2918,7 +2872,41 @@ footer hr {
 
     flex-wrap: wrap;
 
+    justify-content: center;
+
     margin-bottom: 20px;
+
+}
+
+
+
+/* .social-links on its own (footer, dark backgrounds) uses a near-
+   invisible white-on-white icon circle -- fine there, wrong on this
+   card's white background, so the leadership cards get their own
+   tinted-circle treatment matching the tags above. */
+.founder-content .social-links {
+
+    justify-content: center;
+
+}
+
+
+
+.founder-content .social-links a {
+
+    background: #e8ffff;
+
+    color: var(--primary);
+
+}
+
+
+
+.founder-content .social-links a:hover {
+
+    background: var(--secondary);
+
+    color: white;
 
 }
 
@@ -3052,29 +3040,6 @@ footer hr {
 
 
 
-
-@media(max-width:768px) {
-
-
-    .founder-card {
-
-        grid-template-columns: 1fr;
-
-        text-align: center;
-
-    }
-
-
-    .board-profile {
-
-        flex-direction: column;
-
-        text-align: center;
-
-    }
-
-
-}
 
 /* ===============================
    PRODUCTS PAGE
