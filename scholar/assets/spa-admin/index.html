@@ -5,7 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>ScholarUg | Admin Panel</title>
-  <link rel="icon" href="./assets/favicon-CY76s6Cn.ico" sizes="any">
+  <!-- Vite resolves/copies this one at BUILD time against this file's own
+       source location (scholar/spa-admin/, 2 levels deep), not against
+       where the built output ends up served from (scholar/assets/spa-
+       admin/, 3 levels deep) -- so this needs ONE FEWER ".." than the
+       png/manifest links below it, which vite leaves untouched as plain
+       text and are instead resolved by the BROWSER at runtime against the
+       injected <base href> (which does point at the 3-deep output dir).
+       Getting this wrong doesn't 404 -- "../../../favicon.ico" from here
+       is also a real file (XAMPP's own default favicon.ico, one level
+       above the project root), so vite bundles that instead with no
+       warning at all. Verify by hash after every rebuild, not just that
+       *a* file landed at this URL. -->
+  <link rel="icon" href="./assets/favicon-DLQ9Le6z.ico" sizes="any">
   <link rel="icon" href="../../../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="../../../assets/images/brand/apple-touch-icon.png">
   <link rel="manifest" href="../../../manifest.json">

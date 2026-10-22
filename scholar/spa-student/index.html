@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>ScholarUg | Student Portal</title>
-  <link rel="icon" href="../../../favicon.ico" sizes="any">
+  <!-- See scholar/spa-admin/index.html's comment on this line -- vite
+       resolves this one at build time against the SOURCE location (one
+       level shallower than the built output), so it needs one fewer ".."
+       than the png/manifest links below, which are browser-resolved at
+       runtime against the (correctly 3-deep) injected <base href>. -->
+  <link rel="icon" href="../../favicon.ico" sizes="any">
   <link rel="icon" href="../../../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="../../../assets/images/brand/apple-touch-icon.png">
   <link rel="manifest" href="../../../manifest.json">
