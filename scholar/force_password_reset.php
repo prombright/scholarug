@@ -70,6 +70,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Set Your Password</title>
+<link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../favicon.ico" sizes="any">
+<link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/apple-touch-icon.png">
+<link rel="manifest" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../manifest.json">
+<meta name="theme-color" content="#080b11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ScholarUg">
 <style>
     :root { --login-bg: #0e1117; --login-card: #0b0d12; --login-border: #1e293b; --login-input: #12151c; --login-text: #e2e8f0; --login-muted: #64748b; --login-input-text: #fff; }
     :root[data-theme="light"] { --login-bg: #F1F5F9; --login-card: #FFFFFF; --login-border: rgba(15,23,42,.12); --login-input: #F8FAFC; --login-text: #1E293B; --login-muted: #64748B; --login-input-text: #1E293B; }

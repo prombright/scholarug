@@ -82,6 +82,8 @@ $back_fallback_url = role_destination($_SESSION['role']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Report Card | <?= htmlspecialchars($result['student_name'] ?? 'Data Lookup') ?></title>
+    <link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../favicon.ico" sizes="any">
+    <link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #ffffff; color: #1e293b; margin: 0; padding: 25px; font-size: 13px; line-height: 1.4; }
         .report-card-wrapper { margin: 0 auto; }

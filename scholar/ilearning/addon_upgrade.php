@@ -36,6 +36,15 @@ if ($addon) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScholarUg | iLearning Live Classes Add-On</title>
+<link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../favicon.ico" sizes="any">
+<link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/apple-touch-icon.png">
+<link rel="manifest" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../manifest.json">
+<meta name="theme-color" content="#080b11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ScholarUg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
 body { margin:0; background:#080b11; font-family:Inter,Segoe UI,sans-serif; color:#e2e8f0; }
