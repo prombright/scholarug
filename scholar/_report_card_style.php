@@ -163,7 +163,7 @@ report-content rules that must look identical either way live here. */ ?>
        margin for print in their own @media print blocks (later in the
        cascade, so they win) -- not repeated here. */
     @page { size: A4; margin: 8mm; }
-    .rc-header { margin-bottom: 10px; }
+    .rc-header { margin-bottom: 8px; }
     .rc-header-spacer { width: 64px; }
     .rc-logo-ring { width: 64px; height: 64px; }
     .rc-logo-fallback { font-size: 24px; }
@@ -171,12 +171,15 @@ report-content rules that must look identical either way live here. */ ?>
     .school-title::after { width: 36px; height: 2px; margin-top: 4px; }
     .school-meta { font-size: 9.5px; margin: 2px 0; }
     .rc-photo-corner { top: 18px; right: 18px; width: 58px; height: 58px; }
-    .rc-title-bar { font-size: 11px; padding: 5px 0; margin-bottom: 14px; }
-    .bio-infomatrix { padding: 10px; gap: 8px 20px; margin-bottom: 12px; }
-    .bio-item { font-size: 11px; margin-bottom: 2px; }
-    .matrix-table { margin-bottom: 10px; }
-    .matrix-table th { font-size: 9px; padding: 6px 6px; }
-    .matrix-table td { font-size: 10.5px; padding: 5px 6px; }
+    .rc-title-bar { font-size: 11px; padding: 5px 0; margin-bottom: 10px; }
+    /* .bio-infomatrix's own base margin-bottom (26px) was never tightened
+       here -- harmless on an 8-subject report with headroom to spare, but
+       real lost space on a subject-heavy one. */
+    .bio-infomatrix { padding: 8px 10px; gap: 6px 20px; margin-bottom: 8px; }
+    .bio-item { font-size: 11px; margin-bottom: 1px; }
+    .matrix-table { margin-bottom: 8px; }
+    .matrix-table th { font-size: 9px; padding: 5px 6px; }
+    .matrix-table td { font-size: 10.5px; padding: 4px 6px; }
     .rc-grade-badge { font-size: 10px; padding: 2px 8px; }
     .rc-score-bar-track { margin-top: 3px; height: 4px; }
     .assessment-breakdown { font-size: 8.5px; margin-top: 1px; }
