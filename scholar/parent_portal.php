@@ -114,6 +114,15 @@ if (!empty($__school_brand['school_badge']) && file_exists(__DIR__ . '/' . $__sc
 <head>
 <meta charset="UTF-8">
 <title>Parent Portal</title>
+<link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../favicon.ico" sizes="any">
+<link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/apple-touch-icon.png">
+<link rel="manifest" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../manifest.json">
+<meta name="theme-color" content="#080b11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ScholarUg">
 <style>
 :root{ --bg:#080b11; --panel:#131b28; --border:#2a3a52; --text:#e2e8f0; --muted:#64748b; --cyan:#00A8A8; --green:#10b981; --danger:#ef4444; }
 *{box-sizing:border-box;}

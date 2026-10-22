@@ -64,6 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>Request Access — Scholar</title>
+<link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../favicon.ico" sizes="any">
+<link rel="icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="<?= rtrim(SCHOLAR_BASE, '/') ?>/../assets/images/brand/apple-touch-icon.png">
 <style>
 :root{ --bg:#080b11; --panel:#131b28; --panel-raised:#1a2436; --border:#2a3a52; --text:#e2e8f0; --muted:#94a3b8; --cyan:#00A8A8; --cyan-dark:#0A3D62; }
 *{box-sizing:border-box;}
